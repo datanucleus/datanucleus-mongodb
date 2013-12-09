@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<!--**********************************************************************
+Copyright (c) 2011 Andy Jefferson and others. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Contributors:
+    ...
+**********************************************************************-->
+
+<plugin>
+    <!-- STORE MANAGER -->
+    <extension point="org.datanucleus.store_manager">
+        <store-manager class-name="org.datanucleus.store.mongodb.MongoDBStoreManager" key="mongodb" url-key="mongodb"/>
+    </extension>
+
+    <!-- PERSISTENCE PROPERTIES -->
+    <extension point="org.datanucleus.persistence_properties">
+        <persistence-property name="datanucleus.mongodb.connectionsPerHost" datastore="true"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+        <persistence-property name="datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier" datastore="true"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+    </extension>
+
+    <!-- QUERY LANGUAGES -->
+    <extension point="org.datanucleus.store_query_query">
+        <query class-name="org.datanucleus.store.mongodb.query.JDOQLQuery" datastore="mongodb" name="JDOQL"/>
+        <query class-name="org.datanucleus.store.mongodb.query.JPQLQuery" datastore="mongodb" name="JPQL"/>
+    </extension>
+
+    <!-- CONNECTION FACTORY -->
+    <extension point="org.datanucleus.store_connectionfactory">
+        <connectionfactory name="mongodb" class-name="org.datanucleus.store.mongodb.ConnectionFactoryImpl" transactional="true"
+            datastore="mongodb"/>
+    </extension>
+
+    <!-- VALUE GENERATORS -->
+    <extension point="org.datanucleus.store_valuegenerator">
+        <valuegenerator name="increment" class-name="org.datanucleus.store.mongodb.valuegenerator.IncrementGenerator" datastore="mongodb"/>
+    </extension>
+</plugin>
