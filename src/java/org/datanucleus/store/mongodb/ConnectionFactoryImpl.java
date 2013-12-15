@@ -41,8 +41,9 @@ import org.datanucleus.util.StringUtils;
 
 import com.mongodb.DB;
 import com.mongodb.Mongo;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoException;
-import com.mongodb.MongoOptions;
 import com.mongodb.ServerAddress;
 
 /**
@@ -164,14 +165,14 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 NucleusLogger.CONNECTION.debug(LOCALISER.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(),
                     StringUtils.collectionToString(serverAddrs)));
             }
-            // TODO Update this to MongoDB Java driver 2.10 and above
+
             if (serverAddrs.size() == 1)
             {
-                mongo = new Mongo(serverAddrs.get(0), getMongodbOptions(storeMgr));
+                mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
             }
             else
             {
-                mongo = new Mongo(serverAddrs, getMongodbOptions(storeMgr));
+                mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
             }
         }
         catch (UnknownHostException e)
@@ -184,20 +185,20 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         }
     }
 
-    private MongoOptions getMongodbOptions(StoreManager storeManager)
+    private MongoClientOptions getMongodbOptions(StoreManager storeManager)
     {
         Object connectionsPerHost = storeManager.getProperty("datanucleus.mongodb.connectionsPerHost");
         Object threadsAllowedToBlockForConnectionMultiplier = storeManager.getProperty("datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier");
-        MongoOptions mongoOptions = new MongoOptions();
+        MongoClientOptions.Builder mongoOptionsBuilder = MongoClientOptions.builder();
         if (connectionsPerHost != null)
         {
-            mongoOptions.connectionsPerHost = Integer.parseInt((String) connectionsPerHost);
+            mongoOptionsBuilder.connectionsPerHost(Integer.parseInt((String) connectionsPerHost));
         }
         if (threadsAllowedToBlockForConnectionMultiplier != null)
         {
-            mongoOptions.threadsAllowedToBlockForConnectionMultiplier = Integer.parseInt((String) threadsAllowedToBlockForConnectionMultiplier);
+            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(Integer.parseInt((String) threadsAllowedToBlockForConnectionMultiplier));
         }
-        return mongoOptions;
+        return mongoOptionsBuilder.build();
     }
 
     public void close()

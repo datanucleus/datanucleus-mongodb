@@ -18,8 +18,7 @@
 
     <properties>
         <dn.core.version>3.2.9</dn.core.version>
-        <mongodb.version>2.9.0</mongodb.version>
-        <mongodb.max.version>2.9.9</mongodb.max.version>
+        <mongodb.version>2.11.3</mongodb.version>
     </properties>
 
     <scm>
@@ -38,7 +37,7 @@
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
-            <version>[${mongodb.version}, ${mongodb.max.version})</version>
+            <version>${mongodb.version}</version>
         </dependency>
     </dependencies>
 
@@ -57,7 +56,7 @@
                     <instructions>
                         <Bundle-SymbolicName>org.datanucleus.store.mongodb;singleton:=true</Bundle-SymbolicName>
                         <Import-Package>
-                            com.mongodb*;version="[${mongodb.version},${mongodb.max.version})",
+                            com.mongodb*;version="${mongodb.version}",
                             org.datanucleus*;version="${dn.core.version}",
                             *;resolution:=optional
                         </Import-Package>
