@@ -589,16 +589,19 @@ public class MongoDBUtils
                 if (orderingObject != null)
                 {
                     curs = curs.sort(orderingObject);
+                    qr.setOrderProcessed(true);
                 }
 
                 // We have a single DBCursor so apply the range specification directly to this DBCursor
                 if (skip != null && skip > 0)
                 {
                     curs = curs.skip(skip);
+                    qr.setRangeProcessed(true);
                 }
                 if (limit != null && limit > 0)
                 {
                     curs = curs.limit(limit);
+                    qr.setRangeProcessed(true);
                 }
             }
 

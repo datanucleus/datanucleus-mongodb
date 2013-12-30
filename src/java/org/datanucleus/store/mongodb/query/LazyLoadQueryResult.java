@@ -58,6 +58,10 @@ public class LazyLoadQueryResult extends AbstractQueryResult implements Serializ
     /** Map of object, keyed by the index (0, 1, etc). */
     protected Map<Integer, Object> itemsByIndex = null;
 
+    boolean rangeProcessed = false;
+
+    boolean orderProcessed = false;
+
     public LazyLoadQueryResult(Query q)
     {
         super(q);
@@ -110,6 +114,34 @@ public class LazyLoadQueryResult extends AbstractQueryResult implements Serializ
     public void addCandidateResult(AbstractClassMetaData cmd, DBCursor cursor, int[] fpMembers)
     {
         candidateResults.add(new CandidateClassResult(cmd, cursor, fpMembers));
+    }
+
+    /**
+     * Allow the creator to signify that the query range was processed when generating this QueryResult
+     * @param processed Whether the range was processed when the query was executed
+     */
+    public void setRangeProcessed(boolean processed)
+    {
+        this.rangeProcessed = processed;
+    }
+
+    public boolean getRangeProcessed()
+    {
+        return rangeProcessed;
+    }
+
+    /**
+     * Allow the creator to signify that the query order was processed when generating this QueryResult
+     * @param processed Whether the order was processed when the query was executed
+     */
+    public void setOrderProcessed(boolean processed)
+    {
+        this.orderProcessed = processed;
+    }
+
+    public boolean getOrderProcessed()
+    {
+        return orderProcessed;
     }
 
     /* (non-Javadoc)

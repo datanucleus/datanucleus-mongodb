@@ -19,6 +19,7 @@ package org.datanucleus.store.mongodb.query;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -238,6 +239,7 @@ public class JPQLQuery extends AbstractJPQLQuery
             }
 
             boolean filterInMemory = true;
+            boolean orderInMemory = (ordering != null);
             boolean rangeInMemory = (range != null);
             List candidates = null;
             if (candidateCollection != null)
@@ -286,13 +288,23 @@ public class JPQLQuery extends AbstractJPQLQuery
                         // Execute as much as possible in the datastore
                         BasicDBObject orderingObject = datastoreCompilation.getOrdering();
                         candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
-                            (int) this.fromInclNo - 1, (int) (this.toExclNo - this.fromInclNo));
+                            (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
+                        if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
+                        {
+                            // Order processed when getting candidates
+                            orderInMemory = false;
+                        }
+                        if (rangeInMemory && ((LazyLoadQueryResult)candidates).getRangeProcessed())
+                        {
+                            // Range processed when getting candidates
+                            rangeInMemory = false;
+                        }
                     }
                 }
             }
 
             Collection results = candidates;
-            if (filterInMemory || result != null || resultClass != null || rangeInMemory)
+            if (filterInMemory || result != null || resultClass != null || rangeInMemory || orderInMemory)
             {
                 if (results instanceof QueryResult)
                 {
@@ -303,7 +315,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                 // Perform any additional evaluation in-memory
                 JavaQueryEvaluator resultMapper = new JPQLEvaluator(this, candidates, compilation, 
                     parameters, ec.getClassLoaderResolver());
-                results = resultMapper.execute(filterInMemory, result != null, resultClass != null, true, rangeInMemory);
+                results = resultMapper.execute(filterInMemory, orderInMemory, result != null, resultClass != null, rangeInMemory);
             }
 
             if (NucleusLogger.QUERY.isDebugEnabled())

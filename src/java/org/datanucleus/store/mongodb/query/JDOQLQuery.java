@@ -258,7 +258,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery
             }
 
             boolean filterInMemory = true;
-            boolean rangeInMemory = (range != null);
+            Boolean orderInMemory = (ordering != null);
+            Boolean rangeInMemory = (range != null);
             List candidates = null;
             if (candidateCollection != null)
             {
@@ -279,8 +280,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
 
                 MongoDBResult resultObject = datastoreCompilation.getResult();
                 // TODO properly support GROUP BY
-                if (resultObject != null && resultObject.isCountOnly() && datastoreCompilation.isFilterComplete() && 
-                    grouping == null) 
+                if (resultObject != null && resultObject.isCountOnly() && datastoreCompilation.isFilterComplete() && grouping == null) 
                 {
                     return MongoDBUtils.performMongoCount(db, filterObject, candidateClass, subclasses, ec);
                 }
@@ -306,13 +306,23 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                         // Execute as much as possible in the datastore
                         BasicDBObject orderingObject = datastoreCompilation.getOrdering();
                         candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
-                            (int) this.fromInclNo - 1, (int) (this.toExclNo - this.fromInclNo));
+                            (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
+                        if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
+                        {
+                            // Order processed when getting candidates
+                            orderInMemory = false;
+                        }
+                        if (rangeInMemory && ((LazyLoadQueryResult)candidates).getRangeProcessed())
+                        {
+                            // Range processed when getting candidates
+                            rangeInMemory = false;
+                        }
                     }
                 }
             }
 
             Collection results = candidates;
-            if (filterInMemory || result != null || resultClass != null || rangeInMemory)
+            if (filterInMemory || result != null || resultClass != null || rangeInMemory || orderInMemory)
             {
                 if (candidates instanceof QueryResult)
                 {
@@ -320,10 +330,9 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                     ((QueryResult)candidates).disconnect();
                 }
 
-                // Apply any result restrictions to the results
                 JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation,
                     parameters, ec.getClassLoaderResolver());
-                results = resultMapper.execute(filterInMemory, true, result != null, resultClass != null, rangeInMemory);
+                results = resultMapper.execute(filterInMemory, orderInMemory, result != null, resultClass != null, rangeInMemory);
             }
 
             if (NucleusLogger.QUERY.isDebugEnabled())
