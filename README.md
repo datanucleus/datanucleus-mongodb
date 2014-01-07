@@ -20,6 +20,6 @@ __Javadocs__ : [3.2](http://www.datanucleus.org/javadocs/store.mongodb/3.2/), [3
 
 __Download(Releases)__ : [Maven Central](http://central.maven.org/maven2/org/datanucleus/datanucleus-mongodb)
 
-__Download(Nightly)__ : [Nightly Builds](http://central.maven.org/maven2/org/datanucleus/datanucleus-mongodb)
+__Download(Nightly)__ : [Nightly Builds](http://www.datanucleus.org/downloads/maven2-nightly/org/datanucleus/datanucleus-mongodb)
 
 __Dependencies__ : See file [pom.xml](pom.xml)
