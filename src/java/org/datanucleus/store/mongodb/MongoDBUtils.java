@@ -605,7 +605,11 @@ public class MongoDBUtils
                 }
             }
 
-            qr.addCandidateResult(rootCmd, curs, fpMembers);
+            if (curs.hasNext())
+            {
+                // Contains result(s) so add it to our QueryResult
+                qr.addCandidateResult(rootCmd, curs, fpMembers);
+            }
         }
 
         return qr;
