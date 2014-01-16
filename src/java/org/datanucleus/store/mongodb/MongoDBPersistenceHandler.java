@@ -71,7 +71,6 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     public MongoDBPersistenceHandler(StoreManager storeMgr)
     {
         super(storeMgr);
-        this.storeMgr = (MongoDBStoreManager) storeMgr;
     }
 
     public void close()
