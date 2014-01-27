@@ -744,7 +744,19 @@ public class FetchFieldManager extends AbstractFieldManager
 
         try
         {
-            return IdentityUtils.getObjectFromIdString(idStr, mmd, FieldRole.ROLE_FIELD, ec, true);
+            Object obj = null;
+            AbstractClassMetaData memberCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
+            if (memberCmd.usesSingleFieldIdentityClass() && idStr.indexOf(':') > 0)
+            {
+                // Uses persistent identity
+                obj = IdentityUtils.getObjectFromPersistableIdentity(idStr, memberCmd, ec);
+            }
+            else
+            {
+                // Uses legacy identity
+                obj = IdentityUtils.getObjectFromIdString(idStr, memberCmd, ec, true);
+            }
+            return obj;
         }
         catch (NucleusObjectNotFoundException onfe)
         {
@@ -789,6 +801,8 @@ public class FetchFieldManager extends AbstractFieldManager
             Collection collIds = (Collection)value;
             Iterator idIter = collIds.iterator();
             boolean changeDetected = false;
+            AbstractClassMetaData elementCmd = mmd.getCollection().getElementClassMetaData(
+                ec.getClassLoaderResolver(), ec.getMetaDataManager());
             while (idIter.hasNext())
             {
                 String elementIdStr = (String)idIter.next();
@@ -800,7 +814,18 @@ public class FetchFieldManager extends AbstractFieldManager
                 {
                     try
                     {
-                        coll.add(IdentityUtils.getObjectFromIdString(elementIdStr, elemCmd, ec, true));
+                        Object element = null;
+                        if (elementCmd.usesSingleFieldIdentityClass() && elementIdStr.indexOf(':') > 0)
+                        {
+                            // Uses persistent identity
+                            element = IdentityUtils.getObjectFromPersistableIdentity(elementIdStr, elementCmd, ec);
+                        }
+                        else
+                        {
+                            // Uses legacy identity
+                            element = IdentityUtils.getObjectFromIdString(elementIdStr, elementCmd, ec, true);
+                        }
+                        coll.add(element);
                     }
                     catch (NucleusObjectNotFoundException onfe)
                     {
@@ -852,7 +877,17 @@ public class FetchFieldManager extends AbstractFieldManager
                     if (keyCmd != null)
                     {
                         // TODO handle Map<interface, ?>
-                        mapKey = IdentityUtils.getObjectFromIdString((String)keyObj, keyCmd, ec, true);
+                        String keyStr = (String)keyObj;
+                        if (keyCmd.usesSingleFieldIdentityClass() && keyStr.indexOf(':') > 0)
+                        {
+                            // Uses persistent identity
+                            mapKey = IdentityUtils.getObjectFromPersistableIdentity(keyStr, keyCmd, ec);
+                        }
+                        else
+                        {
+                            // Uses legacy identity
+                            mapKey = IdentityUtils.getObjectFromIdString(keyStr, keyCmd, ec, true);
+                        }
                     }
                     else
                     {
@@ -863,7 +898,17 @@ public class FetchFieldManager extends AbstractFieldManager
                     if (valueCmd != null)
                     {
                         // TODO handle Collection<?, interface>
-                        mapVal = IdentityUtils.getObjectFromIdString((String)valueObj, valueCmd, ec, true);
+                        String valStr = (String)valueObj;
+                        if (valueCmd.usesSingleFieldIdentityClass() && valStr.indexOf(':') > 0)
+                        {
+                            // Uses persistent identity
+                            mapVal = IdentityUtils.getObjectFromPersistableIdentity(valStr, valueCmd, ec);
+                        }
+                        else
+                        {
+                            // Uses legacy identity
+                            mapVal = IdentityUtils.getObjectFromIdString(valStr, valueCmd, ec, true);
+                        }
                     }
                     else
                     {
@@ -927,7 +972,18 @@ public class FetchFieldManager extends AbstractFieldManager
                 {
                     try
                     {
-                        Array.set(array, i++, IdentityUtils.getObjectFromIdString(elementIdStr, elemCmd, ec, true));
+                        Object element = null;
+                        if (elemCmd.usesSingleFieldIdentityClass() && elementIdStr.indexOf(':') > 0)
+                        {
+                            // Uses persistent identity
+                            element = IdentityUtils.getObjectFromPersistableIdentity(elementIdStr, elemCmd, ec);
+                        }
+                        else
+                        {
+                            // Uses legacy identity
+                            element = IdentityUtils.getObjectFromIdString(elementIdStr, elemCmd, ec, true);
+                        }
+                        Array.set(array, i++, element);
                     }
                     catch (NucleusObjectNotFoundException onfe)
                     {

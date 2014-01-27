@@ -30,6 +30,7 @@ import com.mongodb.DBObject;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -50,6 +51,8 @@ import org.datanucleus.store.types.converters.TypeConverter;
  */
 public class StoreFieldManager extends AbstractStoreFieldManager
 {
+    protected ExecutionContext ec;
+
     protected DBObject dbObject;
 
     /** Metadata of the owner field if this is for an embedded object. */
@@ -58,6 +61,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     public StoreFieldManager(ObjectProvider op, DBObject dbObject, boolean insert)
     {
         super(op, insert);
+        this.ec = op.getExecutionContext();
         this.dbObject = dbObject;
     }
 
@@ -592,7 +596,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         Object valuePC = op.getExecutionContext().persistObjectInternal(value, null, -1, -1);
         Object valueId = ec.getApiAdapter().getIdForObject(valuePC);
         // TODO Add option to store DBRef here instead of just the id string
-        dbObject.put(fieldName, valueId.toString()); // Store the id String form
+        dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter(), valueId)); // Store the id String form
     }
 
     protected void processContainerRelationField(AbstractMemberMetaData mmd, Object value, ExecutionContext ec,
@@ -619,7 +623,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     Object elementPC = ec.persistObjectInternal(element, null, -1, -1);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
-                    collIds.add(elementID.toString());
+                    collIds.add(IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter(), elementID));
                 }
                 else
                 {
@@ -652,7 +656,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     Object pc = ec.persistObjectInternal(mapKey, null, -1, -1);
                     Object keyID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
-                    entryObj.append("key", keyID.toString());
+                    entryObj.append("key", IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter(), keyID));
                 }
                 else
                 {
@@ -664,7 +668,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     Object pc = ec.persistObjectInternal(mapValue, null, -1, -1);
                     Object valueID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
-                    entryObj.append("value", valueID.toString());
+                    entryObj.append("value", IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter(), valueID));
                 }
                 else
                 {
@@ -693,7 +697,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     Object elementPC = ec.persistObjectInternal(element, null, -1, -1);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
-                    collIds.add(elementID.toString());
+                    collIds.add(IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter(), elementID));
                 }
                 else
                 {
