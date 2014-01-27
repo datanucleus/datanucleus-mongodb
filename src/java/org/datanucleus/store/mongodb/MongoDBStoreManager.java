@@ -264,10 +264,17 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.store.schema.SchemaAwareStoreManager#createSchema(java.util.Set, java.util.Properties)
-     */
-    public void createSchema(Set<String> classNames, Properties props)
+    public void createSchema(String schemaName, Properties props)
+    {
+        throw new UnsupportedOperationException("Dont support the creation of a schema with MongoDB");
+    }
+
+    public void deleteSchema(String schemaName, Properties props)
+    {
+        throw new UnsupportedOperationException("Dont support the deletion of a schema with MongoDB");
+    }
+
+    public void createSchemaForClasses(Set<String> classNames, Properties props)
     {
         ManagedConnection mconn = getConnection(-1);
         try
@@ -493,10 +500,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         return uniObj;
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.store.schema.SchemaAwareStoreManager#deleteSchema(java.util.Set)
-     */
-    public void deleteSchema(Set<String> classNames, Properties props)
+    public void deleteSchemaForClasses(Set<String> classNames, Properties props)
     {
         ManagedConnection mconn = getConnection(-1);
         try
@@ -523,10 +527,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.store.schema.SchemaAwareStoreManager#validateSchema(java.util.Set)
-     */
-    public void validateSchema(Set<String> classNames, Properties props)
+    public void validateSchemaForClasses(Set<String> classNames, Properties props)
     {
         boolean success = true;
         ManagedConnection mconn = getConnection(-1);
