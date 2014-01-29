@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
-import org.datanucleus.NucleusContext;
+import org.datanucleus.PersistenceNucleusContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.SCOID;
@@ -68,7 +68,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
      * @param nucleusCtx Nucleus context
      * @param props Properties for the store manager
      */
-    public MongoDBStoreManager(ClassLoaderResolver clr, NucleusContext nucleusCtx, Map<String, Object> props)
+    public MongoDBStoreManager(ClassLoaderResolver clr, PersistenceNucleusContext nucleusCtx, Map<String, Object> props)
     {
         super("mongodb", clr, nucleusCtx, props);
 
