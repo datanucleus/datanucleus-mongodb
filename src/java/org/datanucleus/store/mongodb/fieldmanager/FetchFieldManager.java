@@ -268,8 +268,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
 
-        // Determine if this field is stored embedded
-        boolean embedded = isMemberEmbedded(mmd, ownerMmd, relationType);
+        boolean embedded = isMemberEmbedded(mmd, relationType, ownerMmd);
         if (embedded)
         {
             if (RelationType.isRelationSingleValued(relationType))
@@ -414,6 +413,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             {
                 if (mmd.hasCollection())
                 {
+                    // Embedded Collection<PC>
                     String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
                     if (!dbObject.containsField(fieldName))
                     {
@@ -475,6 +475,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
                 else if (mmd.hasArray())
                 {
+                    // Embedded [PC]
                     String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
                     if (!dbObject.containsField(fieldName))
                     {
@@ -521,6 +522,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
                 else
                 {
+                    // Embedded Map<NonPC,PC>, Map<PC,NonPC>, Map<PC,PC>
                     // TODO Allow for inherited keys/values and discriminator
                     String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
                     if (!dbObject.containsField(fieldName))
