@@ -41,7 +41,7 @@ import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
-import org.datanucleus.store.fieldmanager.AbstractFieldManager;
+import org.datanucleus.store.fieldmanager.AbstractFetchFieldManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.naming.ColumnType;
@@ -52,38 +52,29 @@ import org.datanucleus.util.NucleusLogger;
 /**
  * Field Manager for retrieving values from MongoDB.
  */
-public class FetchFieldManager extends AbstractFieldManager
+public class FetchFieldManager extends AbstractFetchFieldManager
 {
-    protected ExecutionContext ec;
-
-    protected ObjectProvider op;
-
     protected DBObject dbObject;
-
-    protected AbstractClassMetaData cmd;
 
     boolean embedded = false;
 
     /** Metadata for the owner field if this is embedded. */
     protected AbstractMemberMetaData ownerMmd = null;
 
-    public FetchFieldManager(ObjectProvider op, DBObject dbObject, AbstractClassMetaData acmd)
+    public FetchFieldManager(ObjectProvider op, DBObject dbObject)
     {
-        this.op = op;
-        this.ec = op.getExecutionContext();
+        super(op);
         this.dbObject = dbObject;
-        this.cmd = acmd;
         if (op.getEmbeddedOwners() != null)
         {
             embedded = true;
         }
     }
 
-    public FetchFieldManager(ExecutionContext ec, DBObject dbObject, AbstractClassMetaData acmd)
+    public FetchFieldManager(ExecutionContext ec, DBObject dbObject, AbstractClassMetaData cmd)
     {
-        this.ec = ec;
+        super(ec, cmd);
         this.dbObject = dbObject;
-        this.cmd = acmd;
     }
 
     @Override
@@ -278,82 +269,7 @@ public class FetchFieldManager extends AbstractFieldManager
         RelationType relationType = mmd.getRelationType(clr);
 
         // Determine if this field is stored embedded
-        boolean embedded = false;
-        if (mmd.isEmbedded() || mmd.getEmbeddedMetaData() != null)
-        {
-            // Field marked directly as embedded
-            embedded = true;
-        }
-        else if (RelationType.isRelationMultiValued(relationType))
-        {
-            // Field container contents marked directly as embedded
-            if (mmd.hasCollection() && mmd.getElementMetaData() != null && mmd.getElementMetaData().getEmbeddedMetaData() != null)
-            {
-                // Embedded collection element
-                embedded = true;
-            }
-            else if (mmd.hasArray() && mmd.getElementMetaData() != null && mmd.getElementMetaData().getEmbeddedMetaData() != null)
-            {
-                // Embedded collection element
-                embedded = true;
-            }
-            else if (mmd.hasMap() && 
-                    ((mmd.getKeyMetaData() != null && mmd.getKeyMetaData().getEmbeddedMetaData() != null) || 
-                            (mmd.getValueMetaData() != null && mmd.getValueMetaData().getEmbeddedMetaData() != null)))
-            {
-                // Embedded map key/value
-                embedded = true;
-            }
-        }
-        if (!embedded && ownerMmd != null)
-        {
-            // Check for any nested embedded information (like can be specified with JDO)
-            if (RelationType.isRelationSingleValued(relationType))
-            {
-                if (ownerMmd.hasCollection())
-                {
-                    // This is a field of the element of the collection, so check for any metadata spec for it
-                    EmbeddedMetaData embmd = ownerMmd.getElementMetaData().getEmbeddedMetaData();
-                    if (embmd != null)
-                    {
-                        AbstractMemberMetaData[] embMmds = embmd.getMemberMetaData();
-                        if (embMmds != null)
-                        {
-                            for (AbstractMemberMetaData embMmd : embMmds)
-                            {
-                                if (embMmd.getName().equals(mmd.getName()))
-                                {
-                                    if (embMmd.isEmbedded() || embMmd.getEmbeddedMetaData() != null)
-                                    {
-                                        // Embedded Field is marked in nested embedded definition as embedded
-                                        embedded = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                else if (ownerMmd.getEmbeddedMetaData() != null)
-                {
-                    // This is a field of an embedded persistable object, so check for any metadata spec for it
-                    AbstractMemberMetaData[] embMmds = ownerMmd.getEmbeddedMetaData().getMemberMetaData();
-                    if (embMmds != null)
-                    {
-                        for (AbstractMemberMetaData embMmd : embMmds)
-                        {
-                            if (embMmd.getName().equals(mmd.getName()))
-                            {
-                                // Embedded Field is marked in nested embedded definition as embedded
-                                embedded = true;
-                                break;
-                            }
-                        }
-                    }                    
-                }
-            }
-        }
-
+        boolean embedded = isMemberEmbedded(mmd, ownerMmd, relationType);
         if (embedded)
         {
             if (RelationType.isRelationSingleValued(relationType))
@@ -441,7 +357,7 @@ public class FetchFieldManager extends AbstractFieldManager
                     }
 
                     ObjectProvider embOP = ec.newObjectProviderForEmbedded(embcmd, op, fieldNumber);
-                    FetchFieldManager ffm = new FetchFieldManager(embOP, embeddedValue, embcmd);
+                    FetchFieldManager ffm = new FetchFieldManager(embOP, embeddedValue);
                     ffm.ownerMmd = mmd;
                     ffm.embedded = true;
                     embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
@@ -544,7 +460,7 @@ public class FetchFieldManager extends AbstractFieldManager
 
                         ObjectProvider embOP = ec.newObjectProviderForEmbedded(elementCmd, op, fieldNumber);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elementCmd);
+                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj);
                         ffm.ownerMmd = mmd;
                         ffm.embedded = true;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
@@ -594,7 +510,7 @@ public class FetchFieldManager extends AbstractFieldManager
 
                         ObjectProvider embOP = ec.newObjectProviderForEmbedded(elementCmd, op, fieldNumber);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elementCmd);
+                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj);
                         ffm.ownerMmd = mmd;
                         ffm.embedded = true;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
@@ -640,7 +556,7 @@ public class FetchFieldManager extends AbstractFieldManager
                             DBObject keyDbObj = (DBObject)keyObj;
                             ObjectProvider embOP = ec.newObjectProviderForEmbedded(keyCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
-                            FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyCmd);
+                            FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj);
                             ffm.ownerMmd = mmd;
                             ffm.embedded = true;
                             embOP.replaceFields(keyCmd.getAllMemberPositions(), ffm);
@@ -658,7 +574,7 @@ public class FetchFieldManager extends AbstractFieldManager
                             DBObject valDbObj = (DBObject)valObj;
                             ObjectProvider embOP = ec.newObjectProviderForEmbedded(valCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
-                            FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valCmd);
+                            FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj);
                             ffm.ownerMmd = mmd;
                             ffm.embedded = true;
                             embOP.replaceFields(valCmd.getAllMemberPositions(), ffm);

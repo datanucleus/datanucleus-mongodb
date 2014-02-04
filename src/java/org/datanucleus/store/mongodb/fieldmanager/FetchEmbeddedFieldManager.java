@@ -42,7 +42,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
 
     public FetchEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, AbstractMemberMetaData ownerMmd)
     {
-        super(op, dbObject, null);
+        super(op, dbObject);
         this.ownerMmd = ownerMmd;
     }
 

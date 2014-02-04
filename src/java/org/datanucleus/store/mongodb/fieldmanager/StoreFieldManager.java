@@ -51,8 +51,6 @@ import org.datanucleus.store.types.converters.TypeConverter;
  */
 public class StoreFieldManager extends AbstractStoreFieldManager
 {
-    protected ExecutionContext ec;
-
     protected DBObject dbObject;
 
     /** Metadata of the owner field if this is for an embedded object. */
@@ -61,7 +59,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     public StoreFieldManager(ObjectProvider op, DBObject dbObject, boolean insert)
     {
         super(op, insert);
-        this.ec = op.getExecutionContext();
         this.dbObject = dbObject;
     }
 
@@ -198,57 +195,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
 
-        boolean embedded = false;
-        if (relationType != RelationType.NONE)
-        {
-            // Determine if this relation field is embedded
-            if (RelationType.isRelationSingleValued(relationType))
-            {
-                if (ownerMmd != null && ownerMmd.getEmbeddedMetaData() != null)
-                {
-                    // Is this a nested embedded (from JDO definition) with specification for this field?
-                    AbstractMemberMetaData[] embMmds = ownerMmd.getEmbeddedMetaData().getMemberMetaData();
-                    if (embMmds != null)
-                    {
-                        for (int i=0;i<embMmds.length;i++)
-                        {
-                            if (embMmds[i].getName().equals(mmd.getName()))
-                            {
-                                embedded = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (mmd.isEmbedded() || mmd.getEmbeddedMetaData() != null)
-            {
-                // Does this field have @Embedded definition?
-                embedded = true;
-            }
-            else if (RelationType.isRelationMultiValued(relationType))
-            {
-                // Is this an embedded element/key/value?
-                if (mmd.hasCollection() && mmd.getElementMetaData() != null && mmd.getElementMetaData().getEmbeddedMetaData() != null)
-                {
-                    // Embedded collection element
-                    embedded = true;
-                }
-                else if (mmd.hasArray() && mmd.getElementMetaData() != null && mmd.getElementMetaData().getEmbeddedMetaData() != null)
-                {
-                    // Embedded array element
-                    embedded = true;
-                }
-                else if (mmd.hasMap() && 
-                        ((mmd.getKeyMetaData() != null && mmd.getKeyMetaData().getEmbeddedMetaData() != null) || 
-                        (mmd.getValueMetaData() != null && mmd.getValueMetaData().getEmbeddedMetaData() != null)))
-                {
-                    // Embedded map key/value
-                    embedded = true;
-                }
-            }
-        }
-
+        boolean embedded = isMemberEmbedded(mmd, relationType, ownerMmd);
         if (embedded)
         {
             if (RelationType.isRelationSingleValued(relationType))
