@@ -176,8 +176,6 @@ public class JDOQLQuery extends AbstractJDOQLQuery
         // Make sure any persistence info is loaded
         ec.hasPersistenceInformationForClass(candidateClass);
 
-        AbstractClassMetaData cmd = getCandidateClassMetaData();
-
         QueryManager qm = getQueryManager();
         String datastoreKey = getStoreManager().getQueryCacheKey();
         String cacheKey = getQueryCacheKey();
@@ -195,6 +193,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
         }
 
         datastoreCompilation = new MongoDBQueryCompilation();
+        AbstractClassMetaData cmd = getCandidateClassMetaData();
         synchronized (datastoreCompilation)
         {
             if (inMemory)

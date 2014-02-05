@@ -184,7 +184,6 @@ public class JPQLQuery extends AbstractJPQLQuery
 
         // Make sure any persistence info is loaded
         ec.hasPersistenceInformationForClass(candidateClass);
-        AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(candidateClass, clr);
 
         QueryManager qm = getQueryManager();
         String datastoreKey = getStoreManager().getQueryCacheKey();
@@ -203,6 +202,7 @@ public class JPQLQuery extends AbstractJPQLQuery
         }
 
         datastoreCompilation = new MongoDBQueryCompilation();
+        AbstractClassMetaData cmd = getCandidateClassMetaData();
         synchronized (datastoreCompilation)
         {
             if (inMemory)
