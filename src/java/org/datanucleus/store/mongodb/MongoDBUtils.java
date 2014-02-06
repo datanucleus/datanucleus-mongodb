@@ -550,7 +550,7 @@ public class MongoDBUtils
                     rootCmd.getDiscriminatorValue());
             }
 
-            if (storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null)
+            if (storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID) != null)
             {
                 // Multitenancy discriminator present : Add restriction for this tenant
                 if ("true".equalsIgnoreCase(rootCmd.getValueForExtension("multitenancy-disable")))
@@ -560,7 +560,7 @@ public class MongoDBUtils
                 else
                 {
                     String fieldName = storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.MULTITENANCY_COLUMN);
-                    String value = storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID);
+                    String value = storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID);
                     query.put(fieldName, value);
                 }
             }

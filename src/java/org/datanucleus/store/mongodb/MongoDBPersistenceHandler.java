@@ -350,7 +350,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
 
         // Add Multi-tenancy discriminator if applicable
-        if (storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null)
+        if (storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID) != null)
         {
             if ("true".equalsIgnoreCase(cmd.getValueForExtension("multitenancy-disable")))
             {
@@ -359,7 +359,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             else
             {
                 String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.MULTITENANCY_COLUMN);
-                dbObject.put(fieldName, storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
+                dbObject.put(fieldName, storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID));
             }
         }
 
