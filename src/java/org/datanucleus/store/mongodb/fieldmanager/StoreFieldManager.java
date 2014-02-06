@@ -37,6 +37,7 @@ import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityStrategy;
+import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.fieldmanager.AbstractStoreFieldManager;
@@ -194,302 +195,304 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
-
-        boolean embedded = isMemberEmbedded(mmd, relationType, ownerMmd);
-        if (embedded)
+        if (relationType != RelationType.NONE)
         {
-            if (RelationType.isRelationSingleValued(relationType))
+            if (MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, ownerMmd))
             {
-                // Embedded PC object
-                // Can be stored nested in the BSON doc (default), or flat
-                boolean nested = true;
-                String nestedStr = mmd.getValueForExtension("nested");
-                if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
+                // Embedded field
+                if (RelationType.isRelationSingleValued(relationType))
                 {
-                    nested = false;
-                }
-
-                if (nested && ownerMmd != null)
-                {
-                    if (RelationType.isBidirectional(relationType))
+                    // Embedded PC object
+                    // Can be stored nested in the BSON doc (default), or flat
+                    boolean nested = true;
+                    String nestedStr = mmd.getValueForExtension("nested");
+                    if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
                     {
-                        // Field has mapped-by, so just use that
-                        if ((ownerMmd.getMappedBy() != null && mmd.getName().equals(ownerMmd.getMappedBy())) ||
-                            (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
-                        {
-                            // Other side of owner bidirectional, so omit
-                            return;
-                        }
+                        nested = false;
                     }
-                    else 
+
+                    if (nested && ownerMmd != null)
                     {
-                        // mapped-by not set but could have owner-field
-                        if (ownerMmd.hasCollection())
+                        if (RelationType.isBidirectional(relationType))
                         {
-                            if (ownerMmd.getElementMetaData().getEmbeddedMetaData() != null &&
-                                ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember() != null &&
-                                ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
+                            // Field has mapped-by, so just use that
+                            if ((ownerMmd.getMappedBy() != null && mmd.getName().equals(ownerMmd.getMappedBy())) ||
+                                    (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
+                            {
+                                // Other side of owner bidirectional, so omit
+                                return;
+                            }
+                        }
+                        else 
+                        {
+                            // mapped-by not set but could have owner-field
+                            if (ownerMmd.hasCollection())
+                            {
+                                if (ownerMmd.getElementMetaData().getEmbeddedMetaData() != null &&
+                                        ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember() != null &&
+                                        ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
+                                {
+                                    // This is the owner-field linking back to the owning object so stop
+                                    return;
+                                }
+                            }
+                            else if (ownerMmd.getEmbeddedMetaData() != null &&
+                                    ownerMmd.getEmbeddedMetaData().getOwnerMember() != null &&
+                                    ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                             {
                                 // This is the owner-field linking back to the owning object so stop
                                 return;
                             }
                         }
-                        else if (ownerMmd.getEmbeddedMetaData() != null &&
-                                ownerMmd.getEmbeddedMetaData().getOwnerMember() != null &&
-                                ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
+                    }
+
+                    if (value == null)
+                    {
+                        if (nested)
                         {
-                            // This is the owner-field linking back to the owning object so stop
+                            dbObject.removeField(fieldName);
+                            return;
+                        }
+                        else
+                        {
+                            // TODO Delete any fields for the embedded object
                             return;
                         }
                     }
-                }
 
-                if (value == null)
-                {
+                    AbstractClassMetaData embcmd = ec.getMetaDataManager().getMetaDataForClass(value.getClass(), clr);
+                    if (embcmd == null)
+                    {
+                        throw new NucleusUserException("Field " + mmd.getFullFieldName() +
+                            " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
+                    }
+
+                    ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
                     if (nested)
                     {
-                        dbObject.removeField(fieldName);
+                        // Nested embedding, as nested document
+                        BasicDBObject embeddedObject = new BasicDBObject();
+                        if (embcmd.hasDiscriminatorStrategy())
+                        {
+                            // Discriminator for embedded object
+                            String discPropName = null;
+                            if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                            {
+                                discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                            }
+                            else
+                            {
+                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            }
+                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
+                            String discVal = null;
+                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                            {
+                                discVal = embcmd.getFullClassName();
+                            }
+                            else
+                            {
+                                discVal = discmd.getValue();
+                            }
+                            embeddedObject.put(discPropName, discVal);
+                        }
+
+                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
+                        sfm.ownerMmd = mmd;
+                        embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
+                        dbObject.put(fieldName, embeddedObject);
                         return;
                     }
                     else
                     {
-                        // TODO Delete any fields for the embedded object
+                        // Flat embedding as fields of the owning document
+                        if (embcmd.hasDiscriminatorStrategy())
+                        {
+                            // Discriminator for embedded object
+                            String discPropName = null;
+                            if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                            {
+                                discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                            }
+                            else
+                            {
+                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            }
+                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
+                            String discVal = null;
+                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                            {
+                                discVal = embcmd.getFullClassName();
+                            }
+                            else
+                            {
+                                discVal = discmd.getValue();
+                            }
+                            dbObject.put(discPropName, discVal);
+                        }
+
+                        FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, mmd, insert);
+                        embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
                         return;
                     }
                 }
-
-                AbstractClassMetaData embcmd = ec.getMetaDataManager().getMetaDataForClass(value.getClass(), clr);
-                if (embcmd == null)
+                else if (RelationType.isRelationMultiValued(relationType))
                 {
-                    throw new NucleusUserException("Field " + mmd.getFullFieldName() +
-                        " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
-                }
-
-                ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                if (nested)
-                {
-                    // Nested embedding, as nested document
-                    BasicDBObject embeddedObject = new BasicDBObject();
-                    if (embcmd.hasDiscriminatorStrategy())
+                    // Embedded collection/map/array - stored nested
+                    if (value == null)
                     {
-                        // Discriminator for embedded object
-                        String discPropName = null;
-                        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
-                        {
-                            discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
-                        }
-                        else
-                        {
-                            discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                        }
-                        DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                        String discVal = null;
-                        if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                        {
-                            discVal = embcmd.getFullClassName();
-                        }
-                        else
-                        {
-                            discVal = discmd.getValue();
-                        }
-                        embeddedObject.put(discPropName, discVal);
+                        dbObject.removeField(fieldName);
+                        return;
                     }
 
-                    StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
-                    sfm.ownerMmd = mmd;
-                    embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
-                    dbObject.put(fieldName, embeddedObject);
-                    return;
-                }
-                else
-                {
-                    // Flat embedding as fields of the owning document
-                    if (embcmd.hasDiscriminatorStrategy())
+                    if (mmd.hasCollection())
                     {
-                        // Discriminator for embedded object
-                        String discPropName = null;
-                        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                        AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+                        Collection coll = new ArrayList();
+                        Collection valueColl = (Collection)value;
+                        Iterator collIter = valueColl.iterator();
+                        while (collIter.hasNext())
                         {
-                            discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
-                        }
-                        else
-                        {
-                            discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                        }
-                        DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                        String discVal = null;
-                        if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                        {
-                            discVal = embcmd.getFullClassName();
-                        }
-                        else
-                        {
-                            discVal = discmd.getValue();
-                        }
-                        dbObject.put(discPropName, discVal);
-                    }
-
-                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, mmd, insert);
-                    embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
-                    return;
-                }
-            }
-            else if (RelationType.isRelationMultiValued(relationType))
-            {
-                // Embedded collection/map/array - stored nested
-                if (value == null)
-                {
-                    dbObject.removeField(fieldName);
-                    return;
-                }
-
-                if (mmd.hasCollection())
-                {
-                    AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
-                    Collection coll = new ArrayList();
-                    Collection valueColl = (Collection)value;
-                    Iterator collIter = valueColl.iterator();
-                    while (collIter.hasNext())
-                    {
-                        Object element = collIter.next();
-                        if (!element.getClass().getName().equals(embcmd.getFullClassName()))
-                        {
-                            // Inherited object
-                            embcmd = ec.getMetaDataManager().getMetaDataForClass(element.getClass(), clr);
-                        }
-
-                        BasicDBObject embeddedObject = new BasicDBObject();
-                        if (embcmd.hasDiscriminatorStrategy())
-                        {
-                            // Discriminator for embedded object
-                            String discPropName = null;
-                            if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                            Object element = collIter.next();
+                            if (!element.getClass().getName().equals(embcmd.getFullClassName()))
                             {
-                                discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                // Inherited object
+                                embcmd = ec.getMetaDataManager().getMetaDataForClass(element.getClass(), clr);
                             }
-                            else
-                            {
-                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                            }
-                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                            String discVal = null;
-                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                            {
-                                discVal = embcmd.getFullClassName();
-                            }
-                            else
-                            {
-                                discVal = discmd.getValue();
-                            }
-                            embeddedObject.put(discPropName, discVal);
-                        }
 
-                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
-                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
-                        sfm.ownerMmd = mmd;
-                        embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
-                        coll.add(embeddedObject);
-                    }
-                    dbObject.put(fieldName, coll); // Store as List<DBObject>
-                    return;
-                }
-                else if (mmd.hasArray())
-                {
-                    AbstractClassMetaData embcmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
-                    Object[] array = new Object[Array.getLength(value)];
-                    for (int i=0;i<array.length;i++)
-                    {
-                        Object element = Array.get(value, i);
-                        if (!element.getClass().getName().equals(embcmd.getFullClassName()))
-                        {
-                            // Inherited object
-                            embcmd = ec.getMetaDataManager().getMetaDataForClass(element.getClass(), clr);
-                        }
-
-                        BasicDBObject embeddedObject = new BasicDBObject();
-                        if (embcmd.hasDiscriminatorStrategy())
-                        {
-                            // Discriminator for embedded object
-                            String discPropName = null;
-                            if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                            BasicDBObject embeddedObject = new BasicDBObject();
+                            if (embcmd.hasDiscriminatorStrategy())
                             {
-                                discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                // Discriminator for embedded object
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                }
+                                DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
+                                String discVal = null;
+                                if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                                {
+                                    discVal = embcmd.getFullClassName();
+                                }
+                                else
+                                {
+                                    discVal = discmd.getValue();
+                                }
+                                embeddedObject.put(discPropName, discVal);
                             }
-                            else
-                            {
-                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                            }
-                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                            String discVal = null;
-                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                            {
-                                discVal = embcmd.getFullClassName();
-                            }
-                            else
-                            {
-                                discVal = discmd.getValue();
-                            }
-                            embeddedObject.put(discPropName, discVal);
-                        }
 
-                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
-                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
-                        sfm.ownerMmd = mmd;
-                        embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
-                        array[i] = embeddedObject;
-                    }
-                    dbObject.put(fieldName, array); // Store as DBObject[]
-                    return;
-                }
-                else
-                {
-                    AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
-                    AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
-
-                    // TODO Allow for inherited keys/values and discriminator
-                    Collection entryList = new ArrayList();
-                    Map valueMap = (Map)value;
-                    Iterator<Map.Entry> mapEntryIter = valueMap.entrySet().iterator();
-                    while (mapEntryIter.hasNext())
-                    {
-                        Map.Entry entry = mapEntryIter.next();
-                        BasicDBObject entryObj = new BasicDBObject();
-
-                        if (keyCmd == null)
-                        {
-                            processContainerNonRelationField("key", ec, entry.getKey(), entryObj, mmd, FieldRole.ROLE_MAP_KEY);
-                        }
-                        else
-                        {
-                            ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getKey(), op, mmd);
-                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
-                            BasicDBObject embeddedKey = new BasicDBObject();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert);
+                            ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
+                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
                             sfm.ownerMmd = mmd;
-                            embOP.provideFields(keyCmd.getAllMemberPositions(), sfm);
-                            entryObj.append("key", embeddedKey);
+                            embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
+                            coll.add(embeddedObject);
                         }
-
-                        if (valCmd == null)
-                        {
-                            processContainerNonRelationField("value", ec, entry.getValue(), entryObj, mmd, FieldRole.ROLE_MAP_VALUE);
-                        }
-                        else
-                        {
-                            ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getValue(), op, mmd);
-                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
-                            BasicDBObject embeddedVal = new BasicDBObject();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert);
-                            sfm.ownerMmd = mmd;
-                            embOP.provideFields(valCmd.getAllMemberPositions(), sfm);
-                            entryObj.append("value", embeddedVal);
-                        }
-                        entryList.add(entryObj);
+                        dbObject.put(fieldName, coll); // Store as List<DBObject>
+                        return;
                     }
-                    dbObject.put(fieldName, entryList);
-                    return;
+                    else if (mmd.hasArray())
+                    {
+                        AbstractClassMetaData embcmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+                        Object[] array = new Object[Array.getLength(value)];
+                        for (int i=0;i<array.length;i++)
+                        {
+                            Object element = Array.get(value, i);
+                            if (!element.getClass().getName().equals(embcmd.getFullClassName()))
+                            {
+                                // Inherited object
+                                embcmd = ec.getMetaDataManager().getMetaDataForClass(element.getClass(), clr);
+                            }
+
+                            BasicDBObject embeddedObject = new BasicDBObject();
+                            if (embcmd.hasDiscriminatorStrategy())
+                            {
+                                // Discriminator for embedded object
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                }
+                                DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
+                                String discVal = null;
+                                if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                                {
+                                    discVal = embcmd.getFullClassName();
+                                }
+                                else
+                                {
+                                    discVal = discmd.getValue();
+                                }
+                                embeddedObject.put(discPropName, discVal);
+                            }
+
+                            ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
+                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
+                            sfm.ownerMmd = mmd;
+                            embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
+                            array[i] = embeddedObject;
+                        }
+                        dbObject.put(fieldName, array); // Store as DBObject[]
+                        return;
+                    }
+                    else
+                    {
+                        AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
+                        AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
+
+                        // TODO Allow for inherited keys/values and discriminator
+                        Collection entryList = new ArrayList();
+                        Map valueMap = (Map)value;
+                        Iterator<Map.Entry> mapEntryIter = valueMap.entrySet().iterator();
+                        while (mapEntryIter.hasNext())
+                        {
+                            Map.Entry entry = mapEntryIter.next();
+                            BasicDBObject entryObj = new BasicDBObject();
+
+                            if (keyCmd == null)
+                            {
+                                processContainerNonRelationField("key", ec, entry.getKey(), entryObj, mmd, FieldRole.ROLE_MAP_KEY);
+                            }
+                            else
+                            {
+                                ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getKey(), op, mmd);
+                                embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
+                                BasicDBObject embeddedKey = new BasicDBObject();
+                                StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert);
+                                sfm.ownerMmd = mmd;
+                                embOP.provideFields(keyCmd.getAllMemberPositions(), sfm);
+                                entryObj.append("key", embeddedKey);
+                            }
+
+                            if (valCmd == null)
+                            {
+                                processContainerNonRelationField("value", ec, entry.getValue(), entryObj, mmd, FieldRole.ROLE_MAP_VALUE);
+                            }
+                            else
+                            {
+                                ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getValue(), op, mmd);
+                                embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
+                                BasicDBObject embeddedVal = new BasicDBObject();
+                                StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert);
+                                sfm.ownerMmd = mmd;
+                                embOP.provideFields(valCmd.getAllMemberPositions(), sfm);
+                                entryObj.append("value", embeddedVal);
+                            }
+                            entryList.add(entryObj);
+                        }
+                        dbObject.put(fieldName, entryList);
+                        return;
+                    }
                 }
             }
         }
