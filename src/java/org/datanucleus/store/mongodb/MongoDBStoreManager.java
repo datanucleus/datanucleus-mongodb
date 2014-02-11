@@ -342,6 +342,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                 collection = db.getCollection(collectionName);
             }
 
+            // TODO Indexes at class-level for persistable superclasses
             IndexMetaData[] idxmds = cmd.getIndexMetaData();
             if (idxmds != null && idxmds.length > 0)
             {
