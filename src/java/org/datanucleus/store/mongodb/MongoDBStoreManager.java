@@ -36,7 +36,6 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ClassPersistenceModifier;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.IdentityMetaData;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.IndexMetaData;
@@ -457,15 +456,15 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     private DBObject getDBObjectForIndex(AbstractClassMetaData cmd, IndexMetaData idxmd)
     {
         BasicDBObject idxObj = new BasicDBObject();
-        if (idxmd.getColumnMetaData() != null)
+        if (idxmd.getNumberOfColumns() > 0)
         {
-            ColumnMetaData[] idxcolmds = idxmd.getColumnMetaData();
-            for (int j=0;j<idxcolmds.length;j++)
+            String[] idxcolNames = idxmd.getColumnNames();
+            for (int j=0;j<idxcolNames.length;j++)
             {
-                idxObj.append(idxcolmds[j].getName(), 1);
+                idxObj.append(idxcolNames[j], 1);
             }
         }
-        else if (idxmd.getMemberNames() != null)
+        else if (idxmd.getNumberOfMembers() > 0)
         {
             String[] idxMemberNames = idxmd.getMemberNames();
             for (int i=0;i<idxMemberNames.length;i++)
@@ -480,12 +479,12 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     private DBObject getDBObjectForUnique(AbstractClassMetaData cmd, UniqueMetaData unimd)
     {
         BasicDBObject uniObj = new BasicDBObject();
-        if (unimd.getColumnMetaData() != null)
+        if (unimd.getNumberOfColumns() > 0)
         {
-            ColumnMetaData[] unicolmds = unimd.getColumnMetaData();
-            for (int j=0;j<unicolmds.length;j++)
+            String[] unicolNames = unimd.getColumnNames();
+            for (int j=0;j<unicolNames.length;j++)
             {
-                uniObj.append(unicolmds[j].getName(), 1);
+                uniObj.append(unicolNames[j], 1);
             }
         }
         else if (unimd.getMemberNames() != null)
