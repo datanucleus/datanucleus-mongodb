@@ -302,7 +302,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     {
         String collectionName = getNamingFactory().getTableName(cmd);
         DBCollection collection = null;
-        if (autoCreateTables)
+        if (isAutoCreateTables())
         {
             // Create collection (if not existing)
             if (cmd.hasExtension(CAPPED_SIZE_EXTENSION_NAME))
