@@ -33,6 +33,7 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.AbstractConnectionFactory;
+import org.datanucleus.store.connection.AbstractEmulatedXAResource;
 import org.datanucleus.store.connection.AbstractManagedConnection;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
@@ -343,74 +344,30 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     /**
      * Emulate the two phase protocol for non XA
      */
-    static class EmulatedXAResource implements XAResource
+    static class EmulatedXAResource extends AbstractEmulatedXAResource
     {
-        ManagedConnectionImpl mconn;
         DB db;
 
         EmulatedXAResource(ManagedConnectionImpl mconn, DB db)
         {
-            this.mconn = mconn;
+            super(mconn);
             this.db = db;
-        }
-
-        public void start(Xid xid, int flags) throws XAException
-        {
         }
 
         public void commit(Xid xid, boolean onePhase) throws XAException
         {
-            NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
-                " is committing for transaction "+xid.toString()+" with onePhase="+onePhase);
             db.requestDone();
-            mconn.startRequested = false;
+            ((ManagedConnectionImpl)mconn).startRequested = false;
             NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
                 " committed connection for transaction "+xid.toString()+" with onePhase="+onePhase);
         }
 
         public void rollback(Xid xid) throws XAException
         {
-            NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
-                " is rolling back for transaction "+xid.toString());
             db.requestDone();
-            mconn.startRequested = false;
+            ((ManagedConnectionImpl)mconn).startRequested = false;
             NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
                 " rolled back connection for transaction "+xid.toString());
-        }
-
-        public void end(Xid xid, int flags) throws XAException
-        {
-        }
-
-        public void forget(Xid xid) throws XAException
-        {
-        }
-
-        public int prepare(Xid xid) throws XAException
-        {
-            NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
-                " is preparing for transaction "+xid.toString());
-            return 0;
-        }
-
-        public Xid[] recover(int flags) throws XAException
-        {
-            throw new XAException("Unsupported operation");
-        }
-
-        public int getTransactionTimeout() throws XAException
-        {
-            return 0;
-        }
-
-        public boolean setTransactionTimeout(int timeout) throws XAException
-        {
-            return false;
-        }
-
-        public boolean isSameRM(XAResource xares) throws XAException
-        {
-            return (this == xares);
         }
     }
 }
