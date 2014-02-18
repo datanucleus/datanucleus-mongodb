@@ -356,6 +356,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
         public void commit(Xid xid, boolean onePhase) throws XAException
         {
+            super.commit(xid, onePhase);
             db.requestDone();
             ((ManagedConnectionImpl)mconn).startRequested = false;
             NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
@@ -364,6 +365,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
         public void rollback(Xid xid) throws XAException
         {
+            super.rollback(xid);
             db.requestDone();
             ((ManagedConnectionImpl)mconn).startRequested = false;
             NucleusLogger.CONNECTION.debug("Managed connection "+this.toString()+
