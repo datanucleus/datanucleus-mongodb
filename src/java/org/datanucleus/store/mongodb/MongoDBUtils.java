@@ -145,19 +145,22 @@ public class MongoDBUtils
             embMmd = embmmds[fieldNumber];
         }
 
-        ColumnMetaData[] colmds = embMmd.getColumnMetaData();
-        if (colmds != null && colmds.length > 0)
+        if (embMmd != null)
         {
-            columnName = colmds[0].getName();
-        }
-        if (columnName == null)
-        {
-            // Fallback to the field/property name
-            columnName = embMmd.getName();
-        }
-        if (columnName == null)
-        {
-            columnName = embMmd.getName();
+            ColumnMetaData[] colmds = embMmd.getColumnMetaData();
+            if (colmds != null && colmds.length > 0)
+            {
+                columnName = colmds[0].getName();
+            }
+            if (columnName == null)
+            {
+                // Fallback to the field/property name
+                columnName = embMmd.getName();
+            }
+            if (columnName == null)
+            {
+                columnName = embMmd.getName();
+            }
         }
         return columnName;
     }
@@ -201,10 +204,11 @@ public class MongoDBUtils
         {
             DB db = (DB)mconn.getConnection();
 
-            for (String dbCollName : classNamesByDbCollectionName.keySet())
+            for (Map.Entry<String, Set<String>> dbCollEntry : classNamesByDbCollectionName.entrySet())
             {
                 // Check each DBCollection for the id PK field(s)
-                Set<String> classNames = classNamesByDbCollectionName.get(dbCollName);
+                String dbCollName = dbCollEntry.getKey();
+                Set<String> classNames = dbCollEntry.getValue();
                 DBCollection dbColl = db.getCollection(dbCollName);
                 BasicDBObject query = new BasicDBObject();
                 if (id instanceof OID)
@@ -326,7 +330,7 @@ public class MongoDBUtils
         {
             // Datastore id - Add "id" field to the query object
             OID oid = (OID) op.getInternalObjectId();
-            if (oid == null && storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+            if (oid == null || storeMgr.isStrategyDatastoreAttributed(cmd, -1))
             {
                 // Not yet set, so return null (needs to be attributed in the datastore)
                 return null;
@@ -1160,7 +1164,7 @@ public class MongoDBUtils
         else if (java.sql.Timestamp.class.isAssignableFrom(type) && value instanceof Date)
         {
             java.sql.Timestamp sqlTs = null;
-            if (value instanceof java.sql.Time)
+            if (value instanceof java.sql.Timestamp)
             {
                 sqlTs = (java.sql.Timestamp) value;
             }

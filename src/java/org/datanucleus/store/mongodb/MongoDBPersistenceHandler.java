@@ -124,9 +124,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
         }
 
-        for (String tableName : opsByTable.keySet())
+        for (Map.Entry<String, Set<ObjectProvider>> opsEntry : opsByTable.entrySet())
         {
-            Set<ObjectProvider> opsForTable = opsByTable.get(tableName);
+            String tableName = opsEntry.getKey();
+            Set<ObjectProvider> opsForTable = opsEntry.getValue();
             ExecutionContext ec = ops[0].getExecutionContext();
             ManagedConnection mconn = storeMgr.getConnection(ec);
             try
@@ -391,7 +392,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 {
                     // Surrogate version
                     String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
-                    dbObject.put(fieldName, new Long(versionNumber));
+                    dbObject.put(fieldName, Long.valueOf(versionNumber));
                 }
             }
             else if (vermd.getVersionStrategy() == VersionStrategy.DATE_TIME)

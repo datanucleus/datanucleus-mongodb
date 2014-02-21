@@ -114,7 +114,7 @@ public class IncrementGenerator extends AbstractDatastoreGenerator implements Va
                 }
                 BasicDBObject dbObject = new BasicDBObject();
                 dbObject.put("field-name", key);
-                dbObject.put(INCREMENT_COL_NAME, new Long(initialValue));
+                dbObject.put(INCREMENT_COL_NAME, Long.valueOf(initialValue));
                 dbCollection.insert(dbObject);
             }
 
