@@ -537,7 +537,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 paramValue = parameters.get(expr.getId());
                 paramValueSet = true;
             }
-            else if (parameters != null && parameters.containsKey(expr.getId()))
+            else if (parameters.containsKey(expr.getId()))
             {
                 // Positional parameter, but already encountered
                 paramValue = parameters.get(expr.getId());
@@ -655,7 +655,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             }
             else if (paramValue == null)
             {
-                MongoLiteral lit = new MongoLiteral(paramValue);
+                MongoLiteral lit = new MongoLiteral(null);
                 stack.push(lit);
                 precompilable = false;
                 return lit;
@@ -715,7 +715,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
         else if (litValue == null)
         {
-            MongoLiteral lit = new MongoLiteral(litValue);
+            MongoLiteral lit = new MongoLiteral(null);
             stack.push(lit);
             return lit;
         }

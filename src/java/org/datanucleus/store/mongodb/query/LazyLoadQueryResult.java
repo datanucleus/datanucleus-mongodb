@@ -471,6 +471,11 @@ public class LazyLoadQueryResult extends AbstractQueryResult implements Serializ
         return StringUtils.toJVMIDString(other).equals(StringUtils.toJVMIDString(this));
     }
 
+    public int hashCode()
+    {
+        return super.hashCode();
+    }
+
     /**
      * Handle serialisation by returning a java.util.ArrayList of all of the results for this query
      * after disconnecting the query which has the consequence of enforcing the load of all objects.
