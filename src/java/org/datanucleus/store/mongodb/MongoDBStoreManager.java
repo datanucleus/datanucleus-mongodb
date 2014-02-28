@@ -37,6 +37,7 @@ import org.datanucleus.metadata.IdentityMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.store.AbstractStoreManager;
 import org.datanucleus.store.StoreData;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.schema.SchemaAwareStoreManager;
 import org.datanucleus.util.Localiser;
@@ -69,11 +70,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     public Collection getSupportedOptions()
     {
         Set set = new HashSet();
-        set.add("ApplicationIdentity");
-        set.add("DatastoreIdentity");
-        set.add("NonDurableIdentity");
-        set.add("ORM");
-        set.add("TransactionIsolationLevel.read-committed");
+        set.add(StoreManager.OPTION_APPLICATION_ID);
+        set.add(StoreManager.OPTION_DATASTORE_ID);
+        set.add(StoreManager.OPTION_NONDURABLE_ID);
+        set.add(StoreManager.OPTION_ORM);
+        set.add(StoreManager.OPTION_TXN_ISOLATION_READ_COMMITTED);
         return set;
     }
 
