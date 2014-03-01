@@ -330,7 +330,7 @@ public class MongoDBUtils
         {
             // Datastore id - Add "id" field to the query object
             OID oid = (OID) op.getInternalObjectId();
-            if (oid == null || storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+            if (oid == null && storeMgr.isStrategyDatastoreAttributed(cmd, -1))
             {
                 // Not yet set, so return null (needs to be attributed in the datastore)
                 return null;
