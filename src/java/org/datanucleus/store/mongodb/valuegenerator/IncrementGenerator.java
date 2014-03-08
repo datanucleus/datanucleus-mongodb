@@ -130,7 +130,7 @@ public class IncrementGenerator extends AbstractDatastoreGenerator implements Va
             {
                 oids.add(number + i + 1);
             }
-            dbObject.put(INCREMENT_COL_NAME, new Long(number+size));
+            dbObject.put(INCREMENT_COL_NAME, Long.valueOf(number+size));
             dbCollection.save(dbObject);
         }
         finally

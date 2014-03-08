@@ -793,7 +793,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
 
         MongoExpression mongoExpr = null;
-        MongoExpression mongoExprArg0 = (mongoExprArgs.size() == 1) ? mongoExprArgs.get(0) : null;
+        MongoExpression mongoExprArg0 = (mongoExprArgs != null && mongoExprArgs.size() == 1) ? mongoExprArgs.get(0) : null;
         if (supported)
         {
             if (invokedMongoExpr instanceof MongoFieldExpression && mongoExprArg0 instanceof MongoLiteral)
