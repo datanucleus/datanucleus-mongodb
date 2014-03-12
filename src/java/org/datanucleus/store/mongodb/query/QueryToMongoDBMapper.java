@@ -146,29 +146,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     public void compile()
     {
-        compileFrom();
         compileFilter();
         compileResult();
         compileGrouping();
         compileHaving();
         compileOrdering();
-    }
-
-    /**
-     * Method to compile the FROM clause of the query
-     */
-    protected void compileFrom()
-    {
-        if (compilation.getExprFrom() != null)
-        {
-            // Process all ClassExpression(s) in the FROM, adding joins to the statement as required
-            compileComponent = CompilationComponent.FROM;
-            Expression[] fromExprs = compilation.getExprFrom();
-            for (int i=0;i<fromExprs.length;i++)
-            {
-                // TODO Compile FROM class expression
-            }
-        }
     }
 
     /**
