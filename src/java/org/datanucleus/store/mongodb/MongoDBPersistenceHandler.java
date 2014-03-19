@@ -145,7 +145,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     if (!storeMgr.managesClass(cmd.getFullClassName()))
                     {
                         // Make sure schema exists (using this connection)
-                        ((MongoDBStoreManager)storeMgr).addClasses(new String[] {cmd.getFullClassName()}, op.getExecutionContext().getClassLoaderResolver(), db);
+                        ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, op.getExecutionContext().getClassLoaderResolver(), db);
                     }
 
                     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
@@ -211,7 +211,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             if (!storeMgr.managesClass(cmd.getFullClassName()))
             {
                 // Make sure schema exists, using this connection
-                ((MongoDBStoreManager)storeMgr).addClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
             }
 
             long startTime = System.currentTimeMillis();

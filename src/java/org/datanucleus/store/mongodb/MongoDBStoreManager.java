@@ -202,7 +202,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
 	}
 
 	/* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractStoreManager#addClasses(java.lang.String[], org.datanucleus.ClassLoaderResolver)
+     * @see org.datanucleus.store.AbstractStoreManager#manageClasses(org.datanucleus.ClassLoaderResolver, java.lang.String[])
      */
     @Override
     public void manageClasses(ClassLoaderResolver clr, String... classNames)
@@ -217,7 +217,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         {
             DB db = (DB)mconn.getConnection();
 
-            addClasses(classNames, clr, db);
+            manageClasses(classNames, clr, db);
         }
         finally
         {
@@ -225,7 +225,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         }
     }
 
-    public void addClasses(String[] classNames, ClassLoaderResolver clr, DB db)
+    public void manageClasses(String[] classNames, ClassLoaderResolver clr, DB db)
     {
         if (classNames == null)
         {
