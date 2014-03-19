@@ -17,9 +17,7 @@ Contributors :
 ***********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,7 +45,6 @@ import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
-import org.datanucleus.metadata.VersionStrategy;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.AbstractPersistenceHandler;
 import org.datanucleus.store.StoreManager;
@@ -364,56 +361,27 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
         }
 
-        if (cmd.isVersioned())
+        VersionMetaData vermd = cmd.getVersionMetaDataForClass();
+        if (vermd != null)
         {
-            VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd.getVersionStrategy() == VersionStrategy.VERSION_NUMBER)
+            Object versionValue = VersionHelper.getNextVersion(vermd.getVersionStrategy(), null);
+            if (vermd.getFieldName() != null)
             {
-                long versionNumber = 1;
-                op.setTransactionalVersion(Long.valueOf(versionNumber));
-                if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
+                // Version is stored in a member, so update the member too
+                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
+                Object verFieldValue = Long.valueOf((Long)versionValue);
+                if (verMmd.getType() == int.class || verMmd.getType() == Integer.class)
                 {
-                    NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.ObjectPersistedWithVersion",
-                        op.getObjectAsPrintable(), op.getInternalObjectId(), "" + versionNumber));
+                    verFieldValue = Integer.valueOf(((Long)versionValue).intValue());
                 }
-
-                if (vermd.getFieldName() != null)
-                {
-                    // Version stored in a field
-                    AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                    Object verFieldValue = Long.valueOf(versionNumber);
-                    if (verMmd.getType() == int.class || verMmd.getType() == Integer.class)
-                    {
-                        verFieldValue = Integer.valueOf((int)versionNumber);
-                    }
-                    op.replaceField(verMmd.getAbsoluteFieldNumber(), verFieldValue);
-                }
-                else
-                {
-                    // Surrogate version
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
-                    dbObject.put(fieldName, Long.valueOf(versionNumber));
-                }
+                op.replaceField(verMmd.getAbsoluteFieldNumber(), verFieldValue);
             }
-            else if (vermd.getVersionStrategy() == VersionStrategy.DATE_TIME)
+            else
             {
-                Date date = new Date();
-                Timestamp ts = new Timestamp(date.getTime());
-                op.setTransactionalVersion(ts);
-
-                if (vermd.getFieldName() != null)
-                {
-                    // Version field
-                    AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                    op.replaceField(verMmd.getAbsoluteFieldNumber(), ts);
-                }
-                else
-                {
-                    // Surrogate version
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
-                    dbObject.put(fieldName, ts);
-                }
+                String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
+                dbObject.put(fieldName, (Long)versionValue);
             }
+            op.setTransactionalVersion(versionValue);
         }
 
         StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true);
@@ -471,11 +439,11 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
 
             int[] updatedFieldNums = fieldNumbers;
-            if (cmd.isVersioned())
+            VersionMetaData vermd = cmd.getVersionMetaDataForClass();
+            if (vermd != null)
             {
                 // Version object so calculate version to store with
                 Object currentVersion = op.getTransactionalVersion();
-                VersionMetaData vermd = cmd.getVersionMetaDataForClass();
                 Object nextVersion = VersionHelper.getNextVersion(vermd.getVersionStrategy(), currentVersion);
                 op.setTransactionalVersion(nextVersion);
 
@@ -666,15 +634,14 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             FetchFieldManager fieldManager = new FetchFieldManager(op, dbObject);
             op.replaceFields(fieldNumbers, fieldManager);
 
-            if (cmd.isVersioned() && op.getTransactionalVersion() == null)
+            VersionMetaData vermd = cmd.getVersionMetaDataForClass();
+            if (vermd != null && op.getTransactionalVersion() == null)
             {
                 // No version set, so retrieve it (note we do this after the retrieval of fields in case just got version)
-                VersionMetaData vermd = cmd.getVersionMetaDataForClass();
                 if (vermd.getFieldName() != null)
                 {
                     // Version stored in a field
-                    Object datastoreVersion =
-                        op.provideField(cmd.getAbsolutePositionOfMember(vermd.getFieldName()));
+                    Object datastoreVersion = op.provideField(cmd.getAbsolutePositionOfMember(vermd.getFieldName()));
                     op.setVersion(datastoreVersion);
                 }
                 else
