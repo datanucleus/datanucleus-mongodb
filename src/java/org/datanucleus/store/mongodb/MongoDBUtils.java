@@ -971,6 +971,7 @@ public class MongoDBUtils
         }
 
         // Fallback to built-in type converters
+        // TODO Make use of default TypeConverter for a type before falling back to String/Long
         TypeConverter strConv = ec.getTypeManager().getTypeConverterForType(type, String.class);
         TypeConverter longConv = ec.getTypeManager().getTypeConverterForType(type, Long.class);
         if (strConv != null)
@@ -1207,6 +1208,7 @@ public class MongoDBUtils
             return returnValue;
         }
 
+        // TODO Make use of default TypeConverter for a type before falling back to String/Long
         TypeConverter strConv = ec.getTypeManager().getTypeConverterForType(type, String.class);
         TypeConverter longConv = ec.getTypeManager().getTypeConverterForType(type, Long.class);
         if (strConv != null)
