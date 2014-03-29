@@ -176,13 +176,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         else
         {
             IdentityMetaData idmd = cmd.getBaseIdentityMetaData();
-            if (idmd != null && idmd.getColumnMetaData() != null)
+            if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
             {
-                String jdbcType = idmd.getColumnMetaData().getJdbcType();
-                if (MetaDataUtils.isJdbcTypeString(jdbcType))
-                {
-                    return "uuid-hex";
-                }
+                return "uuid-hex";
             }
 
             if (supportsValueStrategy("identity"))
