@@ -52,6 +52,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
 
     /**
      * Constructs a new query instance that uses the given execution context.
+     * @param storeMgr Store Manager
      * @param ec Execution Context
      */
     public JDOQLQuery(StoreManager storeMgr, ExecutionContext ec)
