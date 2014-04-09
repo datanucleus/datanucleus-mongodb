@@ -80,6 +80,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         set.add(StoreManager.OPTION_ORM_EMBEDDED_MAP);
         set.add(StoreManager.OPTION_ORM_EMBEDDED_ARRAY);
         set.add(StoreManager.OPTION_ORM_EMBEDDED_PC_NESTED);
+        set.add(StoreManager.OPTION_ORM_EMBEDDED_COLLECTION_NESTED);
+        set.add(StoreManager.OPTION_ORM_EMBEDDED_MAP_NESTED);
+        set.add(StoreManager.OPTION_ORM_EMBEDDED_ARRAY_NESTED);
         set.add(StoreManager.OPTION_TXN_ISOLATION_READ_COMMITTED);
         return set;
     }
