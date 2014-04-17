@@ -101,7 +101,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                 return null;
             }
 
-            ObjectProvider embOP = ec.newObjectProviderForEmbedded(embcmd, op, fieldNumber);
+            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
             FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmd);
             embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
             return embOP.getObject();

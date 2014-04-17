@@ -353,7 +353,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                     }
 
-                    ObjectProvider embOP = ec.newObjectProviderForEmbedded(embcmd, op, fieldNumber);
+                    ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
                     FetchFieldManager ffm = new FetchFieldManager(embOP, embeddedValue);
                     ffm.ownerMmd = mmd;
                     ffm.embedded = true;
@@ -401,7 +401,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         return null;
                     }
 
-                    ObjectProvider embOP = ec.newObjectProviderForEmbedded(embcmd, op, fieldNumber);
+                    ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
                     FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, mmd);
                     embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
                     return embOP.getObject();
@@ -456,7 +456,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embOP = ec.newObjectProviderForEmbedded(elementCmd, op, fieldNumber);
+                        ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj);
                         ffm.ownerMmd = mmd;
@@ -507,7 +507,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embOP = ec.newObjectProviderForEmbedded(elementCmd, op, fieldNumber);
+                        ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj);
                         ffm.ownerMmd = mmd;
@@ -554,7 +554,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         {
                             // Key is embedded object
                             DBObject keyDbObj = (DBObject)keyObj;
-                            ObjectProvider embOP = ec.newObjectProviderForEmbedded(keyCmd, op, fieldNumber);
+                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, keyCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
                             FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj);
                             ffm.ownerMmd = mmd;
@@ -572,7 +572,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         {
                             // Value is embedded object
                             DBObject valDbObj = (DBObject)valObj;
-                            ObjectProvider embOP = ec.newObjectProviderForEmbedded(valCmd, op, fieldNumber);
+                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, valCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
                             FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj);
                             ffm.ownerMmd = mmd;
@@ -620,7 +620,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 ObjectProvider embSM = ec.findObjectProvider(obj);
                 if (embSM == null || ec.getApiAdapter().getExecutionContext(obj) == null)
                 {
-                    ec.newObjectProviderForEmbedded(obj, false, op, fieldNumber);
+                    ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, obj, false, op, fieldNumber);
                 }
             }
             return obj;
