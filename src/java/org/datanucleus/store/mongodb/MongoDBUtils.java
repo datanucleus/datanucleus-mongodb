@@ -174,8 +174,7 @@ public class MongoDBUtils
      * @param clr ClassLoader resolver
      * @return The class name of the object with this id
      */
-    public static String getClassNameForIdentity(Object id, AbstractClassMetaData rootCmd, ExecutionContext ec,
-            ClassLoaderResolver clr)
+    public static String getClassNameForIdentity(Object id, AbstractClassMetaData rootCmd, ExecutionContext ec, ClassLoaderResolver clr)
     {
         Map<String, Set<String>> classNamesByDbCollectionName = new HashMap<String, Set<String>>();
         StoreManager storeMgr = ec.getStoreManager();
@@ -211,9 +210,8 @@ public class MongoDBUtils
                 Set<String> classNames = dbCollEntry.getValue();
                 DBCollection dbColl = db.getCollection(dbCollName);
                 BasicDBObject query = new BasicDBObject();
-                if (id instanceof OID)
+                if (rootCmd.getIdentityType() == IdentityType.DATASTORE)
                 {
-                    // TODO Really ought to use cmd of the class using this dbCollection
                     Object key = ((OID)id).getKeyValue();
                     if (storeMgr.isStrategyDatastoreAttributed(rootCmd, -1))
                     {
@@ -224,23 +222,26 @@ public class MongoDBUtils
                         query.put(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DATASTOREID_COLUMN), key);
                     }
                 }
-                else if (ec.getApiAdapter().isSingleFieldIdentity(id))
+                else if (rootCmd.getIdentityType() == IdentityType.APPLICATION)
                 {
-                    Object key = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(id);
-                    int[] pkNums = rootCmd.getPKMemberPositions();
-                    AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[0]);
-                    String pkPropName = storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN);
-                    query.put(pkPropName, key);
-                }
-                else
-                {
-                    int[] pkNums = rootCmd.getPKMemberPositions();
-                    for (int i=0;i<pkNums.length;i++)
+                    if (IdentityUtils.isSingleFieldIdentity(id))
                     {
-                        AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[i]);
+                        Object key = IdentityUtils.getTargetKeyForSingleFieldIdentity(id);
+                        int[] pkNums = rootCmd.getPKMemberPositions();
+                        AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[0]);
                         String pkPropName = storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN);
-                        Object pkVal = IdentityUtils.getValueForMemberInId(id, pkMmd);
-                        query.put(pkPropName, pkVal);
+                        query.put(pkPropName, key);
+                    }
+                    else
+                    {
+                        int[] pkNums = rootCmd.getPKMemberPositions();
+                        for (int i=0;i<pkNums.length;i++)
+                        {
+                            AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[i]);
+                            String pkPropName = storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN);
+                            Object pkVal = IdentityUtils.getValueForMemberInId(id, pkMmd);
+                            query.put(pkPropName, pkVal);
+                        }
                     }
                 }
 
