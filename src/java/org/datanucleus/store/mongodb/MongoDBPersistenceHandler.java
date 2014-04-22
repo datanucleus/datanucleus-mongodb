@@ -38,7 +38,7 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.identity.OID;
+import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -325,8 +325,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         {
             // Add surrogate datastore identity field (if using identity then just uses "_id" MongoDB special)
             String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN);
-            OID oid = (OID) op.getInternalObjectId();
-            Object key = oid.getKeyValue();
+            Object key = IdentityUtils.getTargetKeyForDatastoreIdentity(op.getInternalObjectId());
             dbObject.put(fieldName, key);
         }
 
