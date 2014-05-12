@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.datanucleus.ExecutionContext;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.query.evaluator.JDOQLEvaluator;
@@ -339,6 +340,22 @@ public class JDOQLQuery extends AbstractJDOQLQuery
             {
                 NucleusLogger.QUERY.debug(LOCALISER.msg("021074", "JDOQL", 
                     "" + (System.currentTimeMillis() - startTime)));
+            }
+
+            if (type == BULK_DELETE)
+            {
+                if (results instanceof QueryResult)
+                {
+                    // Make sure the cursor(s) are all loaded
+                    ((QueryResult)results).disconnect();
+                }
+
+                ec.deleteObjects(results.toArray());
+                return Long.valueOf(results.size());
+            }
+            else if (type == BULK_UPDATE)
+            {
+                throw new NucleusException("Bulk Update is not yet supported");
             }
 
             if (results instanceof QueryResult)
