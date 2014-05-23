@@ -46,8 +46,10 @@ import com.mongodb.DB;
 
 public class MongoDBStoreManager extends AbstractStoreManager implements SchemaAwareStoreManager
 {
-    protected static final Localiser LOCALISER = Localiser.getInstance(
-        "org.datanucleus.store.mongodb.Localisation", MongoDBStoreManager.class.getClassLoader());
+    static
+    {
+        Localiser.registerBundle("org.datanucleus.store.mongodb.Localisation", MongoDBStoreManager.class.getClassLoader());
+    }
 
     public static final String CAPPED_SIZE_EXTENSION_NAME = "mongodb.capped.size";
 

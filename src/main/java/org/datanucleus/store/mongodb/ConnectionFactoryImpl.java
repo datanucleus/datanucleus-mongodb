@@ -57,9 +57,6 @@ import com.mongodb.ServerAddress;
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
-    protected static final Localiser LOCALISER = Localiser.getInstance(
-        "org.datanucleus.store.mongodb.Localisation", MongoDBStoreManager.class.getClassLoader());
-
     public static final String MONGODB_CONNECTIONS_PER_HOST = "datanucleus.mongodb.connectionsPerHost";
     public static final String MONGODB_THREAD_BLOCK_FOR_MULTIPLIER = "datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier";
 
@@ -167,7 +164,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             // Create the Mongo connection pool
             if (NucleusLogger.CONNECTION.isDebugEnabled())
             {
-                NucleusLogger.CONNECTION.debug(LOCALISER.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(),
+                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(),
                     StringUtils.collectionToString(serverAddrs)));
             }
 

@@ -40,6 +40,7 @@ import org.datanucleus.store.query.AbstractJPQLQuery;
 import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.QueryManager;
 import org.datanucleus.store.query.QueryResult;
+import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 /**
@@ -229,7 +230,7 @@ public class JPQLQuery extends AbstractJPQLQuery
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JPQL", getSingleStringQuery(), null));
+                NucleusLogger.QUERY.debug(Localiser.msg("021046", "JPQL", getSingleStringQuery(), null));
             }
 
             boolean filterInMemory = true;
@@ -314,7 +315,7 @@ public class JPQLQuery extends AbstractJPQLQuery
 
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(LOCALISER.msg("021074", "JPQL", 
+                NucleusLogger.QUERY.debug(Localiser.msg("021074", "JPQL", 
                     "" + (System.currentTimeMillis() - startTime)));
             }
 
@@ -388,7 +389,7 @@ public class JPQLQuery extends AbstractJPQLQuery
         if (NucleusLogger.QUERY.isDebugEnabled())
         {
             startTime = System.currentTimeMillis();
-            NucleusLogger.QUERY.debug(LOCALISER.msg("021083", getLanguage(), toString()));
+            NucleusLogger.QUERY.debug(Localiser.msg("021083", getLanguage(), toString()));
         }
 
         // Generate statement for candidate(s)
@@ -417,7 +418,7 @@ public class JPQLQuery extends AbstractJPQLQuery
 
         if (NucleusLogger.QUERY.isDebugEnabled())
         {
-            NucleusLogger.QUERY.debug(LOCALISER.msg("021084", getLanguage(), System.currentTimeMillis()-startTime));
+            NucleusLogger.QUERY.debug(Localiser.msg("021084", getLanguage(), System.currentTimeMillis()-startTime));
         }
     }
 }

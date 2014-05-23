@@ -25,6 +25,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
 import org.datanucleus.store.valuegenerator.ValueGenerationBlock;
+import org.datanucleus.util.Localiser;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -95,7 +96,7 @@ public class IncrementGenerator extends AbstractDatastoreGenerator<Long>
             DB db = (DB)mconn.getConnection();
             if (!storeMgr.getSchemaHandler().isAutoCreateTables() && !db.collectionExists(collectionName))
             {
-                throw new NucleusUserException(LOCALISER.msg("040011", collectionName));
+                throw new NucleusUserException(Localiser.msg("040011", collectionName));
             }
 
             // Create the collection if not existing

@@ -60,9 +60,6 @@ import org.datanucleus.util.StringUtils;
 
 public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 {
-    protected static final Localiser LOCALISER_MONGODB = Localiser.getInstance(
-            "org.datanucleus.store.mongodb.Localisation", MongoDBStoreManager.class.getClassLoader());
-
     public static final String OP_DB_OBJECT = "DB_OBJECT";
 
     public MongoDBPersistenceHandler(StoreManager storeMgr)
@@ -147,16 +144,14 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
                     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.Start", 
-                            op.getObjectAsPrintable(), op.getInternalObjectId()));
+                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
                     }
 
                     dbObjects[i] = getDBObjectForObjectProviderToInsert(op, true);
 
                     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.ObjectPersisted",
-                            op.getObjectAsPrintable(), op.getInternalObjectId()));
+                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersisted", op.getObjectAsPrintable(), op.getInternalObjectId()));
                     }
 
                     i++;
@@ -178,8 +173,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
                 if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                 {
-                    NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.ExecutionTime", 
-                        (System.currentTimeMillis() - startTime)));
+                    NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
                 }
             }
             catch (MongoException me)
@@ -214,8 +208,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.Start", 
-                    op.getObjectAsPrintable(), op.getInternalObjectId()));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
             DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
@@ -238,8 +231,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     op.setPostStoreNewObjectId(idKey.toString());
                     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.ObjectPersistedWithIdentity",
-                            op.getObjectAsPrintable(), idKey));
+                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersistedWithIdentity", op.getObjectAsPrintable(), idKey));
                     }
                 }
                 else if (cmd.getIdentityType() == IdentityType.APPLICATION)
@@ -260,8 +252,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                             op.setPostStoreNewObjectId(idKey); // TODO This is incorrect if part of a composite PK
                             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                             {
-                                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.ObjectPersistedWithIdentity",
-                                    op.getObjectAsPrintable(), idKey));
+                                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersistedWithIdentity", op.getObjectAsPrintable(), idKey));
                             }
                         }
                     }
@@ -285,15 +276,13 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             {
                 if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                 {
-                    NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Insert.ObjectPersisted",
-                        op.getObjectAsPrintable(), op.getInternalObjectId()));
+                    NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersisted", op.getObjectAsPrintable(), op.getInternalObjectId()));
                 }
             }
 
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.ExecutionTime", 
-                    (System.currentTimeMillis() - startTime)));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
             }
             if (ec.getStatistics() != null)
             {
@@ -418,7 +407,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     }
                     fieldStr.append(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]).getName());
                 }
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Update.Start", 
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Update.Start", 
                     op.getObjectAsPrintable(), op.getInternalObjectId(), fieldStr.toString()));
             }
 
@@ -491,8 +480,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.ExecutionTime", 
-                    (System.currentTimeMillis() - startTime)));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
             }
         }
         catch (MongoException me)
@@ -530,8 +518,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.Delete.Start", 
-                    op.getObjectAsPrintable(), op.getInternalObjectId()));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Delete.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
             DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
@@ -570,8 +557,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_PERSIST.debug(LOCALISER_MONGODB.msg("MongoDB.ExecutionTime", 
-                    (System.currentTimeMillis() - startTime)));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
             }
         }
         catch (MongoException me)
@@ -615,8 +601,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_RETRIEVE.debug(LOCALISER_MONGODB.msg("MongoDB.Fetch.Start", 
-                    op.getObjectAsPrintable(), op.getInternalObjectId()));
+                NucleusLogger.DATASTORE_RETRIEVE.debug(Localiser.msg("MongoDB.Fetch.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
             DBObject dbObject = (DBObject) op.getAssociatedValue(OP_DB_OBJECT);
@@ -654,8 +639,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
             if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_RETRIEVE.debug(LOCALISER_MONGODB.msg("MongoDB.ExecutionTime",
-                    (System.currentTimeMillis() - startTime)));
+                NucleusLogger.DATASTORE_RETRIEVE.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
             }
             if (ec.getStatistics() != null)
             {

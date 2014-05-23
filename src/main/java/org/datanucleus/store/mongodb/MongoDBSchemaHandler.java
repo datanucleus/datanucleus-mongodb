@@ -47,9 +47,6 @@ import com.mongodb.DBObject;
  */
 public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
 {
-    protected static final Localiser LOCALISER = Localiser.getInstance(
-        "org.datanucleus.store.mongodb.Localisation", MongoDBStoreManager.class.getClassLoader());
-
     public MongoDBSchemaHandler(StoreManager storeMgr)
     {
         super(storeMgr);
@@ -145,7 +142,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     DBObject idxObj = getDBObjectForIndex(cmd, idxmds[i]);
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                             idxmds[i].getName(), collectionName, idxObj));
                     }
                     collection.ensureIndex(idxObj, idxmds[i].getName(), idxmds[i].isUnique());
@@ -159,7 +156,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     DBObject uniObj = getDBObjectForUnique(cmd, unimds[i]);
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                             unimds[i].getName(), collectionName, uniObj));
                     }
                     collection.ensureIndex(uniObj, unimds[i].getName(), true);
@@ -187,7 +184,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                             pkName, collectionName, query));
                     }
                     collection.ensureIndex(query, pkName, true);
@@ -206,7 +203,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                             pkName, collectionName, query));
                     }
                     collection.ensureIndex(query, pkName, true);
@@ -226,7 +223,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         query.append(colName, 1);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
-                            NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                                 idxmd.getName(), collectionName, query));
                         }
                         collection.ensureIndex(query, idxmd.getName(), idxmd.isUnique());
@@ -238,7 +235,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         query.append(colName, 1);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
-                            NucleusLogger.DATASTORE_SCHEMA.debug(LOCALISER.msg("MongoDB.SchemaCreate.Class.Index",
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
                                 unimd.getName(), collectionName, query));
                         }
                         collection.ensureIndex(query, unimd.getName(), true);
