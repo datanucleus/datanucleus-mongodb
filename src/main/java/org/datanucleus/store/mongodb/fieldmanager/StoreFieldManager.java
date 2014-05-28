@@ -656,7 +656,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     }
 
     protected void processContainerNonRelationField(String fieldName, ExecutionContext ec, Object value, 
-            DBObject dbObject, AbstractMemberMetaData mmd, int fieldRole)
+            DBObject dbObject, AbstractMemberMetaData mmd, FieldRole fieldRole)
     {
         Object storeValue = MongoDBUtils.getStoredValueForField(ec, mmd, value, fieldRole);
         dbObject.put(fieldName, storeValue);
