@@ -33,7 +33,6 @@ import org.datanucleus.metadata.UniqueMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.schema.AbstractStoreSchemaHandler;
-import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.naming.NamingFactory;
 import org.datanucleus.store.schema.table.Column;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
@@ -150,7 +149,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     for (int i=0;i<clsIdxMds.length;i++)
                     {
                         IndexMetaData idxmd = clsIdxMds[i];
-                        DBObject idxObj = getDBObjectForIndex(cmd, idxmd);
+                        DBObject idxObj = getDBObjectForIndex(cmd, idxmd, table);
                         String idxName = namingFactory.getConstraintName(theCmd, idxmd, i);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
@@ -166,7 +165,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     for (int i=0;i<clsUniMds.length;i++)
                     {
                         UniqueMetaData unimd = clsUniMds[i];
-                        DBObject uniObj = getDBObjectForUnique(cmd, unimd);
+                        DBObject uniObj = getDBObjectForUnique(cmd, unimd, table);
                         String uniName = namingFactory.getConstraintName(theCmd, unimd, i);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
@@ -192,7 +191,15 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         applyIndex = false;
                         break;
                     }
-                    query.append(storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN), 1);
+                    else if (pkMmd.getUniqueMetaData() != null)
+                    {
+                        applyIndex = false;
+                        break;
+                    }
+                    MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
+                    Column[] cols = mapping.getColumns();
+                    String colName = cols[0].getIdentifier(); // TODO Support multicolumn PK fields
+                    query.append(colName, 1);
                 }
                 if (applyIndex)
                 {
@@ -255,7 +262,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         }
     }
 
-    private DBObject getDBObjectForIndex(AbstractClassMetaData cmd, IndexMetaData idxmd)
+    private DBObject getDBObjectForIndex(AbstractClassMetaData cmd, IndexMetaData idxmd, Table table)
     {
         BasicDBObject idxObj = new BasicDBObject();
         if (idxmd.getNumberOfColumns() > 0)
@@ -272,13 +279,18 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             for (int i=0;i<idxMemberNames.length;i++)
             {
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(idxMemberNames[i]);
-                idxObj.append(storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), 1);
+                Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns();
+                for (int j=0;j<cols.length;j++)
+                {
+                    String colName = cols[j].getIdentifier();
+                    idxObj.append(colName, 1);
+                }
             }
         }
         return idxObj;
     }
 
-    private DBObject getDBObjectForUnique(AbstractClassMetaData cmd, UniqueMetaData unimd)
+    private DBObject getDBObjectForUnique(AbstractClassMetaData cmd, UniqueMetaData unimd, Table table)
     {
         BasicDBObject uniObj = new BasicDBObject();
         if (unimd.getNumberOfColumns() > 0)
@@ -295,7 +307,12 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             for (int i=0;i<uniMemberNames.length;i++)
             {
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(uniMemberNames[i]);
-                uniObj.append(storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), 1);
+                Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns();
+                for (int j=0;j<cols.length;j++)
+                {
+                    String colName = cols[j].getIdentifier();
+                    uniObj.append(colName, 1);
+                }
             }
         }
         return uniObj;
@@ -391,7 +408,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         for (int i=0;i<idxmds.length;i++)
                         {
-                            DBObject idxObj = getDBObjectForIndex(cmd, idxmds[i]);
+                            DBObject idxObj = getDBObjectForIndex(cmd, idxmds[i], table);
                             DBObject indexObj = getIndexObjectForIndex(indices, idxmds[i].getName(), idxObj, true);
                             if (indexObj != null)
                             {
@@ -413,7 +430,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         for (int i=0;i<unimds.length;i++)
                         {
-                            DBObject uniObj = getDBObjectForUnique(cmd, unimds[i]);
+                            DBObject uniObj = getDBObjectForUnique(cmd, unimds[i], table);
                             DBObject indexObj = getIndexObjectForIndex(indices, unimds[i].getName(), uniObj, true);
                             if (indexObj != null)
                             {
@@ -439,9 +456,11 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         for (int i=0;i<pkFieldNumbers.length;i++)
                         {
                             AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFieldNumbers[i]);
-                            query.append(storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN), 1);
+                            Column[] cols = table.getMemberColumnMappingForMember(pkMmd).getColumns();
+                            String colName = cols[0].getIdentifier();
+                            query.append(colName, 1); // TODO Support multicolumn PK field
                         }
-                        String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
+                        String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK"); // TODO Do through NamingFactory
                         DBObject indexObj = getIndexObjectForIndex(indices, pkName, query, true);
                         if (indexObj != null)
                         {
@@ -494,8 +513,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                             IndexMetaData idxmd = mmds[i].getIndexMetaData();
                             if (idxmd != null)
                             {
+                                Column[] cols = table.getMemberColumnMappingForMember(mmds[i]).getColumns(); // TODO Check for embedded fields
                                 BasicDBObject query = new BasicDBObject();
-                                query.append(storeMgr.getNamingFactory().getColumnName(mmds[i], ColumnType.COLUMN), 1);
+                                query.append(cols[0].getIdentifier(), 1);
                                 DBObject indexObj = getIndexObjectForIndex(indices, idxmd.getName(), query, true);
                                 if (indexObj != null)
                                 {
@@ -514,8 +534,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                             UniqueMetaData unimd = mmds[i].getUniqueMetaData();
                             if (unimd != null)
                             {
+                                Column[] cols = table.getMemberColumnMappingForMember(mmds[i]).getColumns(); // TODO Check for embedded fields
                                 BasicDBObject query = new BasicDBObject();
-                                query.append(storeMgr.getNamingFactory().getColumnName(mmds[i], ColumnType.COLUMN), 1);
+                                query.append(cols[0].getIdentifier(), 1);
                                 DBObject indexObj = getIndexObjectForIndex(indices, unimd.getName(), query, true);
                                 if (indexObj != null)
                                 {
