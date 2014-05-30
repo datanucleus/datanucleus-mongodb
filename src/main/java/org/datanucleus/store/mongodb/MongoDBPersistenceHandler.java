@@ -670,8 +670,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     public void locateObject(ObjectProvider op)
     {
         final AbstractClassMetaData cmd = op.getClassMetaData();
-        if (cmd.getIdentityType() == IdentityType.APPLICATION || 
-            cmd.getIdentityType() == IdentityType.DATASTORE)
+        if (cmd.getIdentityType() == IdentityType.APPLICATION || cmd.getIdentityType() == IdentityType.DATASTORE)
         {
             ExecutionContext ec = op.getExecutionContext();
             ManagedConnection mconn = storeMgr.getConnection(ec);

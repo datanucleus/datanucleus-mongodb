@@ -34,6 +34,10 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.schema.AbstractStoreSchemaHandler;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.naming.NamingFactory;
+import org.datanucleus.store.schema.table.Column;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
@@ -91,7 +95,8 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
 
     protected void createSchemaForClass(AbstractClassMetaData cmd, DB db)
     {
-        String collectionName = storeMgr.getNamingFactory().getTableName(cmd);
+        Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+        String collectionName = table.getIdentifier();
         DBCollection collection = null;
         if (isAutoCreateTables())
         {
@@ -133,34 +138,44 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 collection = db.getCollection(collectionName);
             }
 
-            // TODO Indexes at class-level for persistable superclasses
-            IndexMetaData[] idxmds = cmd.getIndexMetaData();
-            if (idxmds != null && idxmds.length > 0)
+
+            // Class-level indexes
+            NamingFactory namingFactory = storeMgr.getNamingFactory();
+            AbstractClassMetaData theCmd = cmd;
+            while (theCmd != null)
             {
-                for (int i=0;i<idxmds.length;i++)
+                IndexMetaData[] clsIdxMds = theCmd.getIndexMetaData();
+                if (clsIdxMds != null)
                 {
-                    DBObject idxObj = getDBObjectForIndex(cmd, idxmds[i]);
-                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    for (int i=0;i<clsIdxMds.length;i++)
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                            idxmds[i].getName(), collectionName, idxObj));
+                        IndexMetaData idxmd = clsIdxMds[i];
+                        DBObject idxObj = getDBObjectForIndex(cmd, idxmd);
+                        String idxName = namingFactory.getConstraintName(theCmd, idxmd, i);
+                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, idxObj));
+                        }
+                        collection.ensureIndex(idxObj, idxName, idxmd.isUnique());
                     }
-                    collection.ensureIndex(idxObj, idxmds[i].getName(), idxmds[i].isUnique());
                 }
-            }
-            UniqueMetaData[] unimds = cmd.getUniqueMetaData();
-            if (unimds != null && unimds.length > 0)
-            {
-                for (int i=0;i<unimds.length;i++)
+
+                UniqueMetaData[] clsUniMds = theCmd.getUniqueMetaData();
+                if (clsUniMds != null)
                 {
-                    DBObject uniObj = getDBObjectForUnique(cmd, unimds[i]);
-                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    for (int i=0;i<clsUniMds.length;i++)
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                            unimds[i].getName(), collectionName, uniObj));
+                        UniqueMetaData unimd = clsUniMds[i];
+                        DBObject uniObj = getDBObjectForUnique(cmd, unimd);
+                        String uniName = namingFactory.getConstraintName(theCmd, unimd, i);
+                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", uniName, collectionName, uniObj));
+                        }
+                        collection.ensureIndex(uniObj, uniName, true);
                     }
-                    collection.ensureIndex(uniObj, unimds[i].getName(), true);
                 }
+                theCmd = theCmd.getSuperAbstractClassMetaData();
             }
 
             if (cmd.getIdentityType() == IdentityType.APPLICATION)
@@ -184,8 +199,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                            pkName, collectionName, query));
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
                     }
                     collection.ensureIndex(query, pkName, true);
                 }
@@ -199,47 +213,43 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 else
                 {
                     BasicDBObject query = new BasicDBObject();
-                    query.append(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN), 1);
+                    query.append(table.getDatastoreIdColumn().getIdentifier(), 1);
                     String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                            pkName, collectionName, query));
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
                     }
                     collection.ensureIndex(query, pkName, true);
                 }
             }
 
-            AbstractMemberMetaData[] mmds = cmd.getManagedMembers();
-            if (mmds != null && mmds.length > 0)
+            // Column-level indexes
+            Set<MemberColumnMapping> mappings = table.getMemberColumnMappings();
+            for (MemberColumnMapping mapping : mappings)
             {
-                for (int i=0;i<mmds.length;i++)
+                Column column = mapping.getColumn(0);
+                IndexMetaData idxmd = mapping.getMemberMetaData().getIndexMetaData();
+                if (idxmd != null)
                 {
-                    String colName = storeMgr.getNamingFactory().getColumnName(mmds[i], ColumnType.COLUMN);
-                    IndexMetaData idxmd = mmds[i].getIndexMetaData();
-                    if (idxmd != null)
+                    BasicDBObject query = new BasicDBObject();
+                    query.append(column.getIdentifier(), 1);
+                    String idxName = namingFactory.getConstraintName(mapping.getMemberMetaData(), idxmd);
+                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        BasicDBObject query = new BasicDBObject();
-                        query.append(colName, 1);
-                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
-                        {
-                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                                idxmd.getName(), collectionName, query));
-                        }
-                        collection.ensureIndex(query, idxmd.getName(), idxmd.isUnique());
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, query));
                     }
-                    UniqueMetaData unimd = mmds[i].getUniqueMetaData();
-                    if (unimd != null)
+                    collection.ensureIndex(query, idxName, idxmd.isUnique());
+                }
+                UniqueMetaData unimd = mapping.getMemberMetaData().getUniqueMetaData();
+                if (unimd != null)
+                {
+                    BasicDBObject query = new BasicDBObject();
+                    query.append(column.getIdentifier(), 1);
+                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
-                        BasicDBObject query = new BasicDBObject();
-                        query.append(colName, 1);
-                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
-                        {
-                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaCreate.Class.Index",
-                                unimd.getName(), collectionName, query));
-                        }
-                        collection.ensureIndex(query, unimd.getName(), true);
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", unimd.getName(), collectionName, query));
                     }
+                    collection.ensureIndex(query, unimd.getName(), true);
                 }
             }
         }
@@ -315,7 +325,8 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
-                    DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+                    Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+                    DBCollection collection = db.getCollection(table.getIdentifier());
                     collection.dropIndexes();
                     collection.drop();
                 }
@@ -356,12 +367,12 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 if (cmd != null)
                 {
                     // Validate the schema for the class
-                    String tableName = storeMgr.getNamingFactory().getTableName(cmd);
+                    Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+                    String tableName = table.getIdentifier();
                     if (!db.collectionExists(tableName))
                     {
                         success = false;
-                        String msg = "Table doesn't exist for " + cmd.getFullClassName() +
-                            " - should have name="+ tableName;
+                        String msg = "Table doesn't exist for " + cmd.getFullClassName() + " - should have name="+ tableName;
                         System.out.println(msg);
                         NucleusLogger.DATASTORE_SCHEMA.error(msg);
                         continue;
@@ -372,8 +383,8 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         NucleusLogger.DATASTORE_SCHEMA.info(msg);
                     }
 
-                    DBCollection table = db.getCollection(tableName);
-                    List<DBObject> indices = new ArrayList(table.getIndexInfo());
+                    DBCollection dbColl = db.getCollection(tableName);
+                    List<DBObject> indices = new ArrayList(dbColl.getIndexInfo());
 
                     IndexMetaData[] idxmds = cmd.getIndexMetaData();
                     if (idxmds != null && idxmds.length > 0)
@@ -456,19 +467,19 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         {
                             // Check unique index on PK
                             BasicDBObject query = new BasicDBObject();
-                            query.append(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN), 1);
+                            query.append(table.getDatastoreIdColumn().getIdentifier(), 1);
                             String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                             DBObject indexObj = getIndexObjectForIndex(indices, pkName, query, true);
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                String msg = "Index for datastore-identity with name="+pkName + " validated";
+                                String msg = "Index for datastore-identity with name=" + pkName + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                String  msg = "Index missing for datastore id name="+pkName + " key="+query;
+                                String  msg = "Index missing for datastore id name=" + pkName + " key=" + query;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
@@ -488,14 +499,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                                 DBObject indexObj = getIndexObjectForIndex(indices, idxmd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    String msg = "Index for field=" + mmds[i].getFullFieldName() + " with name="+idxmd.getName() + " validated";
+                                    String msg = "Index for field=" + mmds[i].getFullFieldName() + " with name=" + idxmd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    String msg = "Index missing for field="+mmds[i].getFullFieldName() + " name="+idxmd.getName() + " key="+query;
+                                    String msg = "Index missing for field="+mmds[i].getFullFieldName() + " name=" + idxmd.getName() + " key=" + query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }
@@ -508,14 +519,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                                 DBObject indexObj = getIndexObjectForIndex(indices, unimd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    String msg = "Unique index for field=" + mmds[i].getFullFieldName() + " with name="+unimd.getName() + " validated";
+                                    String msg = "Unique index for field=" + mmds[i].getFullFieldName() + " with name=" + unimd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    String msg = "Unique index missing for field="+mmds[i].getFullFieldName() + " name="+unimd.getName() + " key="+query;
+                                    String msg = "Unique index missing for field=" + mmds[i].getFullFieldName() + " name=" + unimd.getName() + " key="+query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }

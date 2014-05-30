@@ -40,6 +40,7 @@ import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.schema.SchemaAwareStoreManager;
+import org.datanucleus.store.schema.table.CompleteClassTable;
 import org.datanucleus.util.Localiser;
 
 import com.mongodb.DB;
@@ -235,8 +236,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         }
 
         // Filter out any "simple" type classes
-        String[] filteredClassNames = 
-            getNucleusContext().getTypeManager().filterOutSupportedSecondClassNames(classNames);
+        String[] filteredClassNames = getNucleusContext().getTypeManager().filterOutSupportedSecondClassNames(classNames);
 
         // Find the ClassMetaData for these classes and all referenced by these classes
         Iterator iter = getMetaDataManager().getReferencedClasses(filteredClassNames, clr).iterator();
@@ -244,14 +244,22 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         while (iter.hasNext())
         {
             ClassMetaData cmd = (ClassMetaData)iter.next();
-            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE)
+            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isEmbeddedOnly())
             {
+                if (cmd.isAbstract())
+                {
+                    continue;
+                }
+
                 if (!storeDataMgr.managesClass(cmd.getFullClassName()))
                 {
                     StoreData sd = storeDataMgr.get(cmd.getFullClassName());
                     if (sd == null)
                     {
-                        registerStoreData(newStoreData(cmd, clr));
+                        CompleteClassTable table = new CompleteClassTable(this, cmd, new SchemaVerifierImpl(this, cmd, clr));
+                        sd = newStoreData(cmd, clr);
+                        sd.addProperty("tableObject", table);
+                        registerStoreData(sd);
                     }
 
                     // Create schema for class
