@@ -258,7 +258,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                     {
                         CompleteClassTable table = new CompleteClassTable(this, cmd, new SchemaVerifierImpl(this, cmd, clr));
                         sd = newStoreData(cmd, clr);
-                        sd.addProperty("tableObject", table);
+                        sd.setTable(table);
                         registerStoreData(sd);
                     }
 

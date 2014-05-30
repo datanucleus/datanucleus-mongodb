@@ -94,7 +94,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
 
     protected void createSchemaForClass(AbstractClassMetaData cmd, DB db)
     {
-        Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+        Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
         String collectionName = table.getIdentifier();
         DBCollection collection = null;
         if (isAutoCreateTables())
@@ -342,7 +342,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
-                    Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
                     DBCollection collection = db.getCollection(table.getIdentifier());
                     collection.dropIndexes();
                     collection.drop();
@@ -384,7 +384,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 if (cmd != null)
                 {
                     // Validate the schema for the class
-                    Table table = (Table) storeMgr.getStoreDataForClass(cmd.getFullClassName()).getProperty("tableObject");
+                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
                     String tableName = table.getIdentifier();
                     if (!db.collectionExists(tableName))
                     {
