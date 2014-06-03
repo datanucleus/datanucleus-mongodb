@@ -17,6 +17,9 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb.fieldmanager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -27,6 +30,8 @@ import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.Table;
 
 import com.mongodb.DBObject;
 
@@ -37,10 +42,21 @@ import com.mongodb.DBObject;
  */
 public class StoreEmbeddedFieldManager extends StoreFieldManager
 {
-    public StoreEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, AbstractMemberMetaData ownerMmd, boolean insert)
+    /** Metadata for the embedded member (maybe nested) that this FieldManager represents). */
+    protected List<AbstractMemberMetaData> mmds;
+
+    // TODO Pass in mmds rather than ownerMmd (see Cassandra plugin for an example)
+    public StoreEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, AbstractMemberMetaData ownerMmd, boolean insert, Table table)
     {
-        super(op, dbObject, insert);
+        super(op, dbObject, insert, table);
         this.ownerMmd = ownerMmd;
+    }
+
+    protected MemberColumnMapping getColumnMapping(int fieldNumber)
+    {
+        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+        embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+        return table.getMemberColumnMappingForEmbeddedMember(embMmds);
     }
 
     protected String getFieldName(int fieldNumber)
@@ -88,7 +104,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
             // Process all fields of the embedded object
             ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, embMmd);
-            FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, embMmd, insert);
+            FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, embMmd, insert, table);
             embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
             return;
         }

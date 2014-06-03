@@ -264,7 +264,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
 
                 // Update any relation fields
-                StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true);
+                StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true, table);
                 int[] fieldNumbers = cmd.getRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
                 if (fieldNumbers != null && fieldNumbers.length > 0)
                 {
@@ -378,7 +378,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             op.setTransactionalVersion(versionValue);
         }
 
-        StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true);
+        StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true, table);
         int[] fieldNumbers = cmd.getAllMemberPositions();
         if (!includeRelationFields)
         {
@@ -477,7 +477,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
             }
 
-            StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, false);
+            StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, false, table);
             op.provideFields(updatedFieldNums, fieldManager);
             if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
             {

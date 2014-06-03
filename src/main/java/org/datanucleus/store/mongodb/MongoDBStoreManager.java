@@ -245,7 +245,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         while (iter.hasNext())
         {
             ClassMetaData cmd = (ClassMetaData)iter.next();
-            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isEmbeddedOnly() && !cmd.isAbstract())
+            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isAbstract())
             {
                 if (!storeDataMgr.managesClass(cmd.getFullClassName()))
                 {

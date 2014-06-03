@@ -40,10 +40,13 @@ import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.AbstractStoreFieldManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
 
@@ -52,22 +55,30 @@ import org.datanucleus.store.types.converters.TypeConverter;
  */
 public class StoreFieldManager extends AbstractStoreFieldManager
 {
+    protected Table table;
+
     protected DBObject dbObject;
 
     /** Metadata of the owner field if this is for an embedded object. */
     protected AbstractMemberMetaData ownerMmd = null;
 
-    public StoreFieldManager(ObjectProvider op, DBObject dbObject, boolean insert)
+    public StoreFieldManager(ObjectProvider op, DBObject dbObject, boolean insert, Table table)
     {
         super(op, insert);
+        this.table = table;
         this.dbObject = dbObject;
     }
 
+    protected MemberColumnMapping getColumnMapping(int fieldNumber)
+    {
+        return table.getMemberColumnMappingForMember(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+    }
+
+    // TODO Drop this and use getColumnMapping so we can support multicolumn fields (see Cassandra for an example)
     protected String getFieldName(int fieldNumber)
     {
-        // TODO Change this to use Table
-        return op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(
-            cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber), ColumnType.COLUMN);
+        AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
+        return op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
     }
 
     @Override
@@ -196,6 +207,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
+        StoreManager storeMgr = ec.getStoreManager();
         if (relationType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, ownerMmd))
         {
             // Embedded field
@@ -281,7 +293,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
                         }
                         DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                         String discVal = null;
@@ -296,7 +308,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         embeddedObject.put(discPropName, discVal);
                     }
 
-                    StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
+                    Table elemTable = op.getStoreManager().getStoreDataForClass(embOP.getClassMetaData().getFullClassName()).getTable();
+                    StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                     sfm.ownerMmd = mmd;
                     embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
                     dbObject.put(fieldName, embeddedObject);
@@ -315,7 +328,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
                         }
                         DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                         String discVal = null;
@@ -330,7 +343,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         dbObject.put(discPropName, discVal);
                     }
 
-                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, mmd, insert);
+                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, mmd, insert, table);
                     embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
                     return;
                 }
@@ -370,7 +383,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
                             else
                             {
-                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
                             }
                             DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                             String discVal = null;
@@ -387,7 +400,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
+                        String embClassName = embOP.getClassMetaData().getFullClassName();
+                        if (!storeMgr.managesClass(embClassName))
+                        {
+                            storeMgr.manageClasses(clr, embClassName);
+                        }
+                        Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
                         coll.add(embeddedObject);
@@ -419,7 +438,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
                             else
                             {
-                                discPropName = ec.getStoreManager().getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
                             }
                             DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                             String discVal = null;
@@ -436,7 +455,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert);
+                        String embClassName = embOP.getClassMetaData().getFullClassName();
+                        if (!storeMgr.managesClass(embClassName))
+                        {
+                            storeMgr.manageClasses(clr, embClassName);
+                        }
+                        Table elemTable = op.getStoreManager().getStoreDataForClass(embClassName).getTable();
+                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
                         array[i] = embeddedObject;
@@ -467,7 +492,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getKey(), op, mmd);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert);
+                            String keyClassName = embOP.getClassMetaData().getFullClassName();
+                            if (!storeMgr.managesClass(keyClassName))
+                            {
+                                storeMgr.manageClasses(clr, keyClassName);
+                            }
+                            Table keyTable = op.getStoreManager().getStoreDataForClass(keyClassName).getTable();
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert, keyTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(keyCmd.getAllMemberPositions(), sfm);
                             entryObj.append("key", embeddedKey);
@@ -482,7 +513,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getValue(), op, mmd);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert);
+                            String valClassName = embOP.getClassMetaData().getFullClassName();
+                            if (!storeMgr.managesClass(valClassName))
+                            {
+                                storeMgr.manageClasses(clr, valClassName);
+                            }
+                            Table valTable = op.getStoreManager().getStoreDataForClass(valClassName).getTable();
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert, valTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(valCmd.getAllMemberPositions(), sfm);
                             entryObj.append("value", embeddedVal);
