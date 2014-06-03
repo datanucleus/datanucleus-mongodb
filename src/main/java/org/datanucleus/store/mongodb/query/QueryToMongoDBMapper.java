@@ -884,8 +884,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     {
                         if (embeddedFlat)
                         {
-                            return new MongoFieldExpression(
-                                MongoDBUtils.getFieldName(embMmd, mmd.getAbsoluteFieldNumber()), mmd);
+                            return new MongoFieldExpression(MongoDBUtils.getFieldName(embMmd, mmd.getAbsoluteFieldNumber()), mmd);
                         } 
                         else
                         {

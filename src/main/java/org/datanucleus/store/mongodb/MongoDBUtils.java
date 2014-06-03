@@ -64,6 +64,7 @@ import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.query.LazyLoadQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
@@ -93,7 +94,8 @@ public class MongoDBUtils
         long count = 0;
         for (AbstractClassMetaData cmd : MetaDataUtils.getMetaDataForCandidates(candidateClass, subclasses, ec)) 
         {
-            String collectionName = storeMgr.getNamingFactory().getTableName(cmd);
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+            String collectionName = table.getName();
             count += db.getCollection(collectionName).count(filterObject);
         }
         List<Long> results =  new LinkedList<Long>();
@@ -178,19 +180,21 @@ public class MongoDBUtils
         StoreManager storeMgr = ec.getStoreManager();
         Set rootClassNames = new HashSet<String>();
         rootClassNames.add(rootCmd.getFullClassName());
-        classNamesByDbCollectionName.put(storeMgr.getNamingFactory().getTableName(rootCmd), rootClassNames);
+        Table rootTable = storeMgr.getStoreDataForClass(rootCmd.getFullClassName()).getTable();
+        classNamesByDbCollectionName.put(rootTable.getName(), rootClassNames);
         String[] subclassNames = ec.getMetaDataManager().getSubclassesForClass(rootCmd.getFullClassName(), true);
         if (subclassNames != null)
         {
             for (int i=0;i<subclassNames.length;i++)
             {
                 AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassNames[i], clr);
-                String collName = storeMgr.getNamingFactory().getTableName(cmd);
-                Set<String> classNames = classNamesByDbCollectionName.get(collName);
+                Table subTable = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                String subTableName = subTable.getName();
+                Set<String> classNames = classNamesByDbCollectionName.get(subTableName);
                 if (classNames == null)
                 {
                     classNames = new HashSet<String>();
-                    classNamesByDbCollectionName.put(collName, classNames);
+                    classNamesByDbCollectionName.put(subTableName, classNames);
                 }
                 classNames.add(cmd.getFullClassName());
             }
@@ -217,7 +221,7 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        query.put(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DATASTOREID_COLUMN), key);
+                        query.put(rootTable.getDatastoreIdColumn().getName(), key);
                     }
                 }
                 else if (rootCmd.getIdentityType() == IdentityType.APPLICATION)
@@ -227,7 +231,7 @@ public class MongoDBUtils
                         Object key = IdentityUtils.getTargetKeyForSingleFieldIdentity(id);
                         int[] pkNums = rootCmd.getPKMemberPositions();
                         AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[0]);
-                        String pkPropName = storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN);
+                        String pkPropName = rootTable.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
                         query.put(pkPropName, key);
                     }
                     else
@@ -236,7 +240,7 @@ public class MongoDBUtils
                         for (int i=0;i<pkNums.length;i++)
                         {
                             AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[i]);
-                            String pkPropName = storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN);
+                            String pkPropName = rootTable.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
                             Object pkVal = IdentityUtils.getValueForMemberInId(id, pkMmd);
                             query.put(pkPropName, pkVal);
                         }
@@ -265,7 +269,7 @@ public class MongoDBUtils
                     {
                         if (rootCmd.hasDiscriminatorStrategy())
                         {
-                            String disPropName = storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            String disPropName = rootTable.getDiscriminatorColumn().getName();
                             String discValue = (String)foundObj.get(disPropName);
                             return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
                         }
@@ -299,6 +303,7 @@ public class MongoDBUtils
         // Build query object to use as template for the find
         BasicDBObject query = new BasicDBObject();
         AbstractClassMetaData cmd = op.getClassMetaData();
+        Table table = op.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         StoreManager storeMgr = op.getExecutionContext().getStoreManager();
 
         if (cmd.getIdentityType() == IdentityType.APPLICATION)
@@ -321,7 +326,7 @@ public class MongoDBUtils
                 else
                 {
                     Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, value, FieldRole.ROLE_FIELD);
-                    query.put(storeMgr.getNamingFactory().getColumnName(pkMmd, ColumnType.COLUMN), storeValue);
+                    query.put(table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName(), storeValue);
                 }
             }
         }
@@ -341,7 +346,7 @@ public class MongoDBUtils
             }
             else
             {
-                query.put(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN), value);
+                query.put(table.getDatastoreIdColumn().getName(), value);
             }
         }
         else
@@ -373,7 +378,7 @@ public class MongoDBUtils
                     }
 
                     Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), mmd, fieldValue, FieldRole.ROLE_FIELD);
-                    query.put(storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), storeValue);
+                    query.put(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), storeValue);
                 }
             }
         }
@@ -381,7 +386,7 @@ public class MongoDBUtils
         if (cmd.hasDiscriminatorStrategy())
         {
             // Add discriminator to the query object
-            query.put(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DISCRIMINATOR_COLUMN), cmd.getDiscriminatorValue());
+            query.put(table.getDiscriminatorColumn().getName(), cmd.getDiscriminatorValue());
         }
         if (checkVersion && cmd.isVersioned())
         {
@@ -392,13 +397,13 @@ public class MongoDBUtils
             {
                 // Version field in class
                 AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                String fieldName = storeMgr.getNamingFactory().getColumnName(verMmd, ColumnType.COLUMN);
+                String fieldName = table.getMemberColumnMappingForMember(verMmd).getColumn(0).getName();
                 query.put(fieldName, currentVersion);
             }
             else
             {
                 // Surrogate version field
-                String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
+                String fieldName = table.getVersionColumn().getName();
                 query.put(fieldName, currentVersion);
             }
         }
@@ -442,8 +447,7 @@ public class MongoDBUtils
         ExecutionContext ec = q.getExecutionContext();
         StoreManager storeMgr = ec.getStoreManager();
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
-        List<AbstractClassMetaData> cmds =
-            MetaDataUtils.getMetaDataForCandidates(q.getCandidateClass(), q.isSubclasses(), ec);
+        List<AbstractClassMetaData> cmds = MetaDataUtils.getMetaDataForCandidates(q.getCandidateClass(), q.isSubclasses(), ec);
 
         Map<String, List<AbstractClassMetaData>> classesByCollectionName = new HashMap();
         for (AbstractClassMetaData cmd : cmds)
@@ -454,7 +458,13 @@ public class MongoDBUtils
             }
             else
             {
-                String collectionName = storeMgr.getNamingFactory().getTableName(cmd);
+                if (!storeMgr.managesClass(cmd.getFullClassName()))
+                {
+                    // Make sure schema exists, using this connection
+                    ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                }
+                Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                String collectionName = table.getName();
                 List<AbstractClassMetaData> cmdsForCollection = classesByCollectionName.get(collectionName);
                 if (cmdsForCollection == null)
                 {
@@ -474,6 +484,7 @@ public class MongoDBUtils
             List<AbstractClassMetaData> cmdsForCollection = entry.getValue();
 
             AbstractClassMetaData rootCmd = cmdsForCollection.get(0);
+            Table rootTable = storeMgr.getStoreDataForClass(rootCmd.getFullClassName()).getTable();
             int[] fpMembers = q.getFetchPlan().getFetchPlanForClass(rootCmd).getMemberNumbers();
             BasicDBObject fieldsSelection = new BasicDBObject();
             if (fpMembers != null && fpMembers.length > 0)
@@ -495,7 +506,7 @@ public class MongoDBUtils
                         if (nested)
                         {
                             // Nested Embedded field, so include field
-                            String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                            String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN); // TODO Use Table
                             fieldsSelection.append(fieldName, 1);
                         }
                         else
@@ -506,14 +517,14 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                        String fieldName = rootTable.getMemberColumnMappingForMember(mmd).getColumn(0).getName();
                         fieldsSelection.append(fieldName, 1);
                     }
                 }
             }
             if (rootCmd.getIdentityType() == IdentityType.DATASTORE)
             {
-                fieldsSelection.append(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DATASTOREID_COLUMN), 1);
+                fieldsSelection.append(rootTable.getDatastoreIdColumn().getName(), 1);
             }
             if (rootCmd.isVersioned())
             {
@@ -521,17 +532,17 @@ public class MongoDBUtils
                 if (vermd.getFieldName() != null)
                 {
                     AbstractMemberMetaData verMmd = rootCmd.getMetaDataForMember(vermd.getFieldName());
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(verMmd, ColumnType.COLUMN);
+                    String fieldName = rootTable.getMemberColumnMappingForMember(verMmd).getColumn(0).getName();
                     fieldsSelection.append(fieldName, 1);
                 }
                 else
                 {
-                    fieldsSelection.append(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.VERSION_COLUMN), 1);
+                    fieldsSelection.append(rootTable.getVersionColumn().getName(), 1);
                 }
             }
             if (rootCmd.hasDiscriminatorStrategy())
             {
-                fieldsSelection.append(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DISCRIMINATOR_COLUMN), 1);
+                fieldsSelection.append(rootTable.getDiscriminatorColumn().getName(), 1);
             }
 
             BasicDBObject query = new BasicDBObject();
@@ -549,8 +560,7 @@ public class MongoDBUtils
             {
                 // TODO Add this restriction on *all* possible cmds for this DBCollection
                 // Discriminator present : Add restriction on the discriminator value for this class
-                query.put(storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.DISCRIMINATOR_COLUMN),
-                    rootCmd.getDiscriminatorValue());
+                query.put(rootTable.getDiscriminatorColumn().getName(), rootCmd.getDiscriminatorValue());
             }
 
             if (storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID) != null)
@@ -562,7 +572,7 @@ public class MongoDBUtils
                 }
                 else
                 {
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(rootCmd, ColumnType.MULTITENANCY_COLUMN);
+                    String fieldName = rootTable.getMultitenancyColumn().getName();
                     String value = storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID);
                     query.put(fieldName, value);
                 }
@@ -631,10 +641,11 @@ public class MongoDBUtils
     public static Object getPojoForDBObjectForCandidate(DBObject dbObject, ExecutionContext ec,
             AbstractClassMetaData cmd, int[] fpMembers, boolean ignoreCache)
     {
+        Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         if (cmd.hasDiscriminatorStrategy())
         {
             // Determine the class from the discriminator property
-            String disPropName = ec.getStoreManager().getNamingFactory().getColumnName(cmd, ColumnType.DISCRIMINATOR_COLUMN);
+            String disPropName = table.getDiscriminatorColumn().getName();
             String discValue = (String)dbObject.get(disPropName);
             String clsName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, cmd.getDiscriminatorMetaData());
             if (!cmd.getFullClassName().equals(clsName) && clsName != null)
@@ -707,21 +718,22 @@ public class MongoDBUtils
         if (cmd.isVersioned())
         {
             // Set the version on the retrieved object
-            ObjectProvider sm = ec.findObjectProvider(pc);
+            ObjectProvider op = ec.findObjectProvider(pc);
             Object version = null;
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
                 AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                version = sm.provideField(verMmd.getAbsoluteFieldNumber());
+                version = op.provideField(verMmd.getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN));
+                version = dbObject.get(table.getVersionColumn().getName());
             }
-            sm.setVersion(version);
+            op.setVersion(version);
         }
         return pc;
     }
@@ -731,6 +743,7 @@ public class MongoDBUtils
     {
         Object idKey = null;
         StoreManager storeMgr = ec.getStoreManager();
+        Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
         if (storeMgr.isStrategyDatastoreAttributed(cmd, -1))
         {
             idKey = dbObject.get("_id");
@@ -741,7 +754,7 @@ public class MongoDBUtils
         }
         else
         {
-            idKey = dbObject.get(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN));
+            idKey = dbObject.get(table.getDatastoreIdColumn().getName());
         }
 
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd);
@@ -780,7 +793,7 @@ public class MongoDBUtils
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN));
+                version = dbObject.get(table.getVersionColumn().getName());
             }
             sm.setVersion(version);
         }
@@ -815,6 +828,7 @@ public class MongoDBUtils
             // Set the version on the retrieved object
             ObjectProvider sm = ec.findObjectProvider(pc);
             StoreManager storeMgr = ec.getStoreManager();
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
@@ -826,7 +840,7 @@ public class MongoDBUtils
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN));
+                version = dbObject.get(table.getVersionColumn().getName());
             }
             sm.setVersion(version);
         }
