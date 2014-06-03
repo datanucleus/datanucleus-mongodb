@@ -86,8 +86,7 @@ import javax.imageio.ImageIO;
  */
 public class MongoDBUtils
 {
-    public static List<Long> performMongoCount(DB db, BasicDBObject filterObject, Class candidateClass,
-        boolean subclasses, ExecutionContext ec)
+    public static List<Long> performMongoCount(DB db, BasicDBObject filterObject, Class candidateClass, boolean subclasses, ExecutionContext ec)
     throws MongoException 
     {
         StoreManager storeMgr = ec.getStoreManager();
@@ -106,6 +105,18 @@ public class MongoDBUtils
             ec.getStatistics().incrementNumReads();
         }
         return results;
+    }
+
+    public static boolean isMemberNested(AbstractMemberMetaData mmd)
+    {
+        boolean nested = true;
+        String nestedStr = mmd.getValueForExtension("nested");
+        if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
+        {
+            nested = false;
+        }
+
+        return nested;
     }
 
     /**
@@ -297,8 +308,7 @@ public class MongoDBUtils
      * @param originalValue Whether to use the original value of fields (when using nondurable id and doing update).
      * @return The object (or null if not found)
      */
-    public static DBObject getObjectForObjectProvider(DBCollection dbCollection, ObjectProvider op, boolean checkVersion,
-            boolean originalValue)
+    public static DBObject getObjectForObjectProvider(DBCollection dbCollection, ObjectProvider op, boolean checkVersion, boolean originalValue)
     {
         // Build query object to use as template for the find
         BasicDBObject query = new BasicDBObject();
@@ -638,8 +648,7 @@ public class MongoDBUtils
      * @param ignoreCache Whether to ignore the cache
      * @return The Pojo object
      */
-    public static Object getPojoForDBObjectForCandidate(DBObject dbObject, ExecutionContext ec,
-            AbstractClassMetaData cmd, int[] fpMembers, boolean ignoreCache)
+    public static Object getPojoForDBObjectForCandidate(DBObject dbObject, ExecutionContext ec, AbstractClassMetaData cmd, int[] fpMembers, boolean ignoreCache)
     {
         Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         if (cmd.hasDiscriminatorStrategy())
@@ -670,8 +679,7 @@ public class MongoDBUtils
         return pojo;
     }
 
-    protected static void selectAllFieldsOfEmbeddedObject(AbstractMemberMetaData mmd, BasicDBObject fieldsSelection,
-            ExecutionContext ec, ClassLoaderResolver clr)
+    protected static void selectAllFieldsOfEmbeddedObject(AbstractMemberMetaData mmd, BasicDBObject fieldsSelection, ExecutionContext ec, ClassLoaderResolver clr)
     {
         EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
         AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
@@ -693,10 +701,10 @@ public class MongoDBUtils
     public static Object getObjectUsingApplicationIdForDBObject(final DBObject dbObject, 
             final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
     {
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd);
+        Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
         Object id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, cmd, null, false, fm);
 
-        StoreManager storeMgr = ec.getStoreManager();
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(id, 
             new FieldValues()
@@ -720,7 +728,6 @@ public class MongoDBUtils
             // Set the version on the retrieved object
             ObjectProvider op = ec.findObjectProvider(pc);
             Object version = null;
-            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
             {
@@ -757,7 +764,7 @@ public class MongoDBUtils
             idKey = dbObject.get(table.getDatastoreIdColumn().getName());
         }
 
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd);
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
         Object oid = ec.getNucleusContext().getIdentityManager().getDatastoreId(cmd.getFullClassName(), idKey);
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(oid, 
@@ -802,8 +809,9 @@ public class MongoDBUtils
     public static Object getObjectUsingNondurableIdForDBObject(final DBObject dbObject, 
             final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
     {
+        Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         SCOID oid = new SCOID(cmd.getFullClassName());
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd);
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(oid, 
             new FieldValues()
@@ -827,8 +835,6 @@ public class MongoDBUtils
         {
             // Set the version on the retrieved object
             ObjectProvider sm = ec.findObjectProvider(pc);
-            StoreManager storeMgr = ec.getStoreManager();
-            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)

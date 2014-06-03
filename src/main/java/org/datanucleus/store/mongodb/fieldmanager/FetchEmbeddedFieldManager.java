@@ -17,17 +17,21 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb.fieldmanager;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.Table;
+import org.datanucleus.util.NucleusLogger;
 
 import com.mongodb.DBObject;
 
@@ -38,109 +42,96 @@ import com.mongodb.DBObject;
  */
 public class FetchEmbeddedFieldManager extends FetchFieldManager
 {
-    private final AbstractMemberMetaData ownerMmd;
+    /** Metadata for the embedded member (maybe nested) that this FieldManager represents). */
+    protected List<AbstractMemberMetaData> mmds;
 
-    public FetchEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, AbstractMemberMetaData ownerMmd)
+    public FetchEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, List<AbstractMemberMetaData> mmds, Table table)
     {
-        super(op, dbObject);
-        this.ownerMmd = ownerMmd;
+        super(op, dbObject, table);
+        this.mmds = mmds;
+    }
+
+    protected MemberColumnMapping getColumnMapping(int fieldNumber)
+    {
+        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+        embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+        return table.getMemberColumnMappingForEmbeddedMember(embMmds);
     }
 
     protected String getFieldName(int fieldNumber)
     {
-        return MongoDBUtils.getFieldName(ownerMmd, fieldNumber);
+        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+        embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+        return table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName();
     }
 
     @Override
     public Object fetchObjectField(int fieldNumber)
     {
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
-        AbstractMemberMetaData embMmd = ownerMmd.getEmbeddedMetaData().getMemberMetaData()[fieldNumber];
-        RelationType relationType = embMmd.getRelationType(clr);
-        if (RelationType.isRelationSingleValued(relationType) && embMmd.isEmbedded())
+        AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
+        EmbeddedMetaData embmd = mmds.get(0).getEmbeddedMetaData();
+        if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
-            // Persistable object embedded into table of this object
-            AbstractClassMetaData embcmd = ec.getMetaDataManager().getMetaDataForClass(embMmd.getType(), clr);
-            if (embcmd == null)
-            {
-                throw new NucleusUserException("Field " + ownerMmd.getFullFieldName() +
-                    " marked as embedded but no such metadata");
-            }
+            // Special case of this being a link back to the owner. TODO Repeat this for nested and their owners
+            ObjectProvider[] ownerOps = op.getEmbeddedOwners();
+            return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
+        }
 
-            if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.MANY_TO_ONE_BI)
+        RelationType relationType = mmd.getRelationType(clr);
+        if (relationType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, null))
+        {
+            // Embedded field
+            if (RelationType.isRelationSingleValued(relationType))
             {
-                if ((ownerMmd.getMappedBy() != null && embMmd.getName().equals(ownerMmd.getMappedBy())) ||
-                    (embMmd.getMappedBy() != null && ownerMmd.getName().equals(embMmd.getMappedBy())))
+                /*if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.MANY_TO_ONE_BI)
                 {
-                    // Other side of owner bidirectional, so return the owner
-                    ObjectProvider[] ownerSms = op.getEmbeddedOwners();
-                    if (ownerSms == null)
+                    if ((ownerMmd.getMappedBy() != null && embMmd.getName().equals(ownerMmd.getMappedBy())) ||
+                        (embMmd.getMappedBy() != null && ownerMmd.getName().equals(embMmd.getMappedBy())))
                     {
-                        throw new NucleusException("Processing of " + embMmd.getFullFieldName() + " cannot set value to owner since owner ObjectProvider not set");
+                        // Other side of owner bidirectional, so return the owner
+                        ObjectProvider[] ownerSms = op.getEmbeddedOwners();
+                        if (ownerSms == null)
+                        {
+                            throw new NucleusException("Processing of " + embMmd.getFullFieldName() + " cannot set value to owner since owner ObjectProvider not set");
+                        }
+                        return ownerSms[0].getObject();
                     }
-                    return ownerSms[0].getObject();
-                }
-            }
+                }*/
 
-            // Check for null value (currently need all columns to return null)
-            // TODO Cater for null using embmd.getNullIndicatorColumn etc
-            EmbeddedMetaData embmd = ownerMmd.getEmbeddedMetaData();
-            AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-            boolean isNull = true;
-            for (int i=0;i<embmmds.length;i++)
-            {
-                String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
-                if (dbObject.containsField(embFieldName))
+                // Check for null value (currently need all columns to return null)
+                // TODO Cater for null using embmd.getNullIndicatorColumn etc
+                AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
+                boolean isNull = true;
+                for (int i=0;i<embmmds.length;i++)
                 {
-                    isNull = false;
-                    break;
+                    String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
+                    if (dbObject.containsField(embFieldName))
+                    {
+                        isNull = false;
+                        break;
+                    }
                 }
-            }
-            if (isNull)
-            {
-                return null;
-            }
+                if (isNull)
+                {
+                    return null;
+                }
 
-            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
-            FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmd);
-            embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
-            return embOP.getObject();
+                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+                embMmds.add(mmd);
+                AbstractClassMetaData embCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
+                ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embCmd, op, fieldNumber);
+                FieldManager fetchEmbFM = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);
+                embOP.replaceFields(embCmd.getAllMemberPositions(), fetchEmbFM);
+                return embOP.getObject();
+            }
+            else if (RelationType.isRelationMultiValued(relationType))
+            {
+                NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded flat into the owning object");
+            }
+            return null; // Remove this when we support embedded
         }
 
-        String fieldName = MongoDBUtils.getFieldName(ownerMmd, fieldNumber);
-        if (!dbObject.containsField(fieldName))
-        {
-            return null;
-        }
-
-        Object value = dbObject.get(fieldName);
-        if (embMmd.isSerialized())
-        {
-            // TODO Allow other types of serialisation
-            Object returnValue = MongoDBUtils.getFieldValueForJavaSerialisedField(embMmd, value);
-            if (op != null)
-            {
-                // Wrap if SCO
-                returnValue = op.wrapSCOField(embMmd.getAbsoluteFieldNumber(), returnValue, false, false, true);
-            }
-            return returnValue;
-        }
-        if (RelationType.isRelationSingleValued(relationType))
-        {
-            return getValueForSingleRelationField(embMmd, value, clr);
-        }
-        else if (RelationType.isRelationMultiValued(relationType))
-        {
-            return getValueForContainerRelationField(embMmd, value, clr);
-        }
-        else
-        {
-            ColumnMetaData colmd = null;
-            if (embMmd.getColumnMetaData() != null)
-            {
-                colmd = embMmd.getColumnMetaData()[0];
-            }
-            return getValueForContainerNonRelationField(embMmd, value, colmd);
-        }
+        return fetchNonEmbeddedObjectField(mmd, relationType, clr);
     }
 }

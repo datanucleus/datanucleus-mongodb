@@ -27,13 +27,14 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldRole;
+import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.compiler.CompilationComponent;
 import org.datanucleus.query.compiler.QueryCompilation;
@@ -836,8 +837,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             return mongoExpr;
         }
 
-        NucleusLogger.QUERY.debug(">> Dont currently support method invocation in MongoDB datastore queries : method=" + operation + 
-            " args=" + StringUtils.collectionToString(args));
+        NucleusLogger.QUERY.debug(">> Dont currently support method invocation in MongoDB datastore queries : method=" + operation + " args=" + StringUtils.collectionToString(args));
         return super.processInExpression(invokedExpr);
     }
 
@@ -857,114 +857,86 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
 
         AbstractClassMetaData cmd = candidateCmd;
+        Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         AbstractMemberMetaData embMmd = null;
         boolean embeddedFlat = false;
         String embeddedNestedField = null;
 
+        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
         boolean firstTuple = true;
         Iterator<String> iter = tuples.iterator();
+        ClassLoaderResolver clr = ec.getClassLoaderResolver();
         while (iter.hasNext())
         {
             String name = iter.next();
             if (firstTuple && name.equals(candidateAlias))
             {
                 cmd = candidateCmd;
-            } 
+            }
             else
             {
-                Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(name);
-                RelationType relationType = mmd.getRelationType(ec.getClassLoaderResolver());
+                RelationType relationType = mmd.getRelationType(clr);
+
                 if (relationType == RelationType.NONE)
                 {
                     if (iter.hasNext())
                     {
-                        throw new NucleusUserException("Query has reference to " +
-                            StringUtils.collectionToString(tuples) + " yet " + name + " is a non-relation field!");
+                        throw new NucleusUserException("Query has reference to " + StringUtils.collectionToString(tuples) + " yet " + name + " is a non-relation field!");
                     }
+
                     if (embMmd != null)
                     {
                         if (embeddedFlat)
                         {
-                            return new MongoFieldExpression(MongoDBUtils.getFieldName(embMmd, mmd.getAbsoluteFieldNumber()), mmd);
+                            embMmds.add(mmd);
+                            return new MongoFieldExpression(table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
                         } 
                         else
                         {
+                            // TODO Use table to get column name
                             return new MongoFieldExpression(
                                 embeddedNestedField + "." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
                         }
                     }
                     return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
                 }
-                else
+                else if (RelationType.isRelationSingleValued(relationType))
                 {
-                    boolean embedded = mmd.isEmbedded();
-                    if (!embedded)
-                    {
-                        // Not explicitly marked as embedded but check whether it is defined in JDO embedded metadata
-                        EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
-                        if (embmd == null && embMmd != null)
-                        {
-                            embmd = embMmd.getEmbeddedMetaData();
-                        }
-                        if (embmd != null)
-                        {
-                            AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-                            if (embmmds != null)
-                            {
-                                for (int i=0;i<embmmds.length;i++)
-                                {
-                                    if (embmmds[i].getName().equals(mmd.getName()))
-                                    {
-                                        embedded = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    boolean embedded = MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, 
+                        embMmds.isEmpty() ? null : embMmds.get(embMmds.size()-1));
 
                     if (embedded)
                     {
-                        if (RelationType.isRelationSingleValued(relationType))
-                        {
-                            boolean nested = true;
-                            String nestedStr = mmd.getValueForExtension("nested");
-                            if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
-                            {
-                                nested = false;
-                            }
+                        boolean nested = MongoDBUtils.isMemberNested(mmd);
 
-                            cmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), ec.getClassLoaderResolver());
-                            embMmd = mmd;
-                            if (nested)
+                        cmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), ec.getClassLoaderResolver());
+                        embMmd = mmd;
+                        if (nested)
+                        {
+                            if (embeddedNestedField == null)
                             {
-                                if (embeddedNestedField == null)
-                                {
-                                    embeddedNestedField = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
-                                }
-                                else
-                                {
-                                    embeddedNestedField += ("." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN));
-                                }
+                                embeddedNestedField = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
                             }
                             else
                             {
-                                // Embedded PC, with fields flat in the document of the owner
-                                if (!embeddedFlat)
-                                {
-                                    embeddedFlat = true;
-                                }
+                                embeddedNestedField += ("." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN));
                             }
                         }
-                        else if (RelationType.isRelationMultiValued(relationType))
+                        else
                         {
-                            throw new NucleusUserException("Dont currently support querying of embedded collection fields at " + mmd.getFullFieldName());
+                            // Embedded PC, with fields flat in the document of the owner
+                            embMmds.add(embMmd);
+                            if (!embeddedFlat)
+                            {
+                                embeddedFlat = true;
+                            }
                         }
                     }
                     else
                     {
                         // Not embedded
+                        embMmds.clear();
                         // TODO Understand this logic (was included in some patch for NUCMONGODB-65)
                         // Makes little sense to me - the only thing I would understand is if iter.hasNext() is true
                         // then abort since we can't join to some other object
@@ -1015,6 +987,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         }
                     }
                 }
+                else if (RelationType.isRelationMultiValued(relationType))
+                {
+                    throw new NucleusUserException("Dont currently support querying of embedded collection fields at " + mmd.getFullFieldName());
+                }
+
                 firstTuple = false;
             }
         }

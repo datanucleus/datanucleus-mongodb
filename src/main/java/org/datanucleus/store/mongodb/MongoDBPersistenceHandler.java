@@ -629,7 +629,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
             }
 
-            FetchFieldManager fieldManager = new FetchFieldManager(op, dbObject);
+            FetchFieldManager fieldManager = new FetchFieldManager(op, dbObject, table);
             op.replaceFields(fieldNumbers, fieldManager);
 
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
