@@ -63,6 +63,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         this.dbObject = dbObject;
     }
 
+    protected String getFieldName(int fieldNumber)
+    {
+        // TODO Change this to use Table
+        return op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(
+            cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber), ColumnType.COLUMN);
+    }
+
     @Override
     public void storeBooleanField(int fieldNumber, boolean value)
     {
@@ -174,12 +181,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
 
         dbObject.put(fieldName, value);
-    }
-
-    protected String getFieldName(int fieldNumber)
-    {
-        return op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(
-            cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber), ColumnType.COLUMN);
     }
 
     @Override

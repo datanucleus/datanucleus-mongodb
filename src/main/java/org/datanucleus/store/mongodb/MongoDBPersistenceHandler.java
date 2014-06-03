@@ -53,7 +53,7 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.fieldmanager.DeleteFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.StoreFieldManager;
-import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -100,91 +100,95 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
         }
 
-        // Separate the objects to be persisted into groups, for the "table" in question
-        Map<String, Set<ObjectProvider>> opsByTable = new HashMap();
-        for (int i=0;i<ops.length;i++)
+        ExecutionContext ec = ops[0].getExecutionContext();
+        ManagedConnection mconn = storeMgr.getConnection(ec);
+        try
         {
-            AbstractClassMetaData cmd = ops[i].getClassMetaData();
-            if (!cmd.pkIsDatastoreAttributed(storeMgr))
-            {
-                String tableName = storeMgr.getNamingFactory().getTableName(cmd);
-                Set<ObjectProvider> opsForTable = opsByTable.get(tableName);
-                if (opsForTable == null)
-                {
-                    opsForTable = new HashSet<ObjectProvider>();
-                    opsByTable.put(tableName, opsForTable);
-                }
-                opsForTable.add(ops[i]);
-            }
-        }
+            DB db = (DB)mconn.getConnection();
 
-        for (Map.Entry<String, Set<ObjectProvider>> opsEntry : opsByTable.entrySet())
-        {
-            String tableName = opsEntry.getKey();
-            Set<ObjectProvider> opsForTable = opsEntry.getValue();
-            ExecutionContext ec = ops[0].getExecutionContext();
-            ManagedConnection mconn = storeMgr.getConnection(ec);
-            try
+            // Separate the objects to be persisted into groups, for the "table" in question
+            Map<String, Set<ObjectProvider>> opsByTable = new HashMap();
+            for (int i=0;i<ops.length;i++)
             {
-                DB db = (DB)mconn.getConnection();
-                long startTime = System.currentTimeMillis();
-
-                DBCollection collection = db.getCollection(tableName);
-                DBObject[] dbObjects = new DBObject[opsForTable.size()];
-                int i=0;
-                for (ObjectProvider op : opsForTable)
+                AbstractClassMetaData cmd = ops[i].getClassMetaData();
+                if (!cmd.pkIsDatastoreAttributed(storeMgr))
                 {
-                    assertReadOnlyForUpdateOfObject(op);
-                    AbstractClassMetaData cmd = op.getClassMetaData();
                     if (!storeMgr.managesClass(cmd.getFullClassName()))
                     {
-                        // Make sure schema exists (using this connection)
-                        ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, op.getExecutionContext().getClassLoaderResolver(), db);
+                        // Make sure schema exists, using this connection
+                        ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                    }
+                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                    String tableName = table.getName();
+                    Set<ObjectProvider> opsForTable = opsByTable.get(tableName);
+                    if (opsForTable == null)
+                    {
+                        opsForTable = new HashSet<ObjectProvider>();
+                        opsByTable.put(tableName, opsForTable);
+                    }
+                    opsForTable.add(ops[i]);
+                }
+            }
+
+            for (Map.Entry<String, Set<ObjectProvider>> opsEntry : opsByTable.entrySet())
+            {
+                String tableName = opsEntry.getKey();
+                Set<ObjectProvider> opsForTable = opsEntry.getValue();
+                try
+                {
+                    long startTime = System.currentTimeMillis();
+
+                    DBCollection collection = db.getCollection(tableName);
+                    DBObject[] dbObjects = new DBObject[opsForTable.size()];
+                    int i=0;
+                    for (ObjectProvider op : opsForTable)
+                    {
+                        assertReadOnlyForUpdateOfObject(op);
+
+                        if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
+                        }
+
+                        dbObjects[i] = getDBObjectForObjectProviderToInsert(op, true);
+
+                        if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersisted", op.getObjectAsPrintable(), op.getInternalObjectId()));
+                        }
+
+                        i++;
+                    }
+
+                    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
+                    {
+                        NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects as " + StringUtils.objectArrayToString(dbObjects));
+                    }
+                    collection.insert(dbObjects, new WriteConcern(1));
+                    if (ec.getStatistics() != null)
+                    {
+                        ec.getStatistics().incrementNumWrites();
+                        for (int j=0;j<dbObjects.length;j++)
+                        {
+                            ec.getStatistics().incrementInsertCount();
+                        }
                     }
 
                     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
-                    }
-
-                    dbObjects[i] = getDBObjectForObjectProviderToInsert(op, true);
-
-                    if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
-                    {
-                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.ObjectPersisted", op.getObjectAsPrintable(), op.getInternalObjectId()));
-                    }
-
-                    i++;
-                }
-
-                if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
-                {
-                    NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects as " + StringUtils.objectArrayToString(dbObjects));
-                }
-                collection.insert(dbObjects, new WriteConcern(1));
-                if (ec.getStatistics() != null)
-                {
-                    ec.getStatistics().incrementNumWrites();
-                    for (int j=0;j<dbObjects.length;j++)
-                    {
-                        ec.getStatistics().incrementInsertCount();
+                        NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
                     }
                 }
-
-                if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
+                catch (MongoException me)
                 {
-                    NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.ExecutionTime", (System.currentTimeMillis() - startTime)));
+                    NucleusLogger.PERSISTENCE.error("Exception inserting objects", me);
+                    throw new NucleusDataStoreException("Exception inserting objects", me);
                 }
             }
-            catch (MongoException me)
-            {
-                NucleusLogger.PERSISTENCE.error("Exception inserting objects", me);
-                throw new NucleusDataStoreException("Exception inserting objects", me);
-            }
-            finally
-            {
-                mconn.release();
-            }
+        }
+        finally
+        {
+            mconn.release();
         }
     }
 
@@ -204,6 +208,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 // Make sure schema exists, using this connection
                 ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
             }
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
 
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
@@ -211,7 +216,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
-            DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+            DBCollection collection = db.getCollection(table.getName());
             DBObject dbObject = getDBObjectForObjectProviderToInsert(op, !cmd.pkIsDatastoreAttributed(storeMgr));
 
             NucleusLogger.DATASTORE_NATIVE.debug("Persisting object " + op + " as " + dbObject);
@@ -309,11 +314,12 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     {
         DBObject dbObject = new BasicDBObject();
         AbstractClassMetaData cmd = op.getClassMetaData();
+        Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
 
         if (cmd.getIdentityType() == IdentityType.DATASTORE && !storeMgr.isStrategyDatastoreAttributed(cmd, -1))
         {
             // Add surrogate datastore identity field (if using identity then just uses "_id" MongoDB special)
-            String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DATASTOREID_COLUMN);
+            String fieldName = table.getDatastoreIdColumn().getName();
             Object key = IdentityUtils.getTargetKeyForDatastoreIdentity(op.getInternalObjectId());
             dbObject.put(fieldName, key);
         }
@@ -322,7 +328,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         {
             // Add discriminator field
             DiscriminatorMetaData discmd = cmd.getDiscriminatorMetaData();
-            String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.DISCRIMINATOR_COLUMN);
+            String fieldName = table.getDiscriminatorColumn().getName();
             Object discVal = null;
             if (cmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
             {
@@ -344,7 +350,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
             else
             {
-                String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.MULTITENANCY_COLUMN);
+                String fieldName = table.getMultitenancyColumn().getName();
                 dbObject.put(fieldName, storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID));
             }
         }
@@ -366,7 +372,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
             else
             {
-                String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
+                String fieldName = table.getVersionColumn().getName();
                 dbObject.put(fieldName, (Long)versionValue);
             }
             op.setTransactionalVersion(versionValue);
@@ -396,6 +402,12 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
             long startTime = System.currentTimeMillis();
             AbstractClassMetaData cmd = op.getClassMetaData();
+            if (!storeMgr.managesClass(cmd.getFullClassName()))
+            {
+                // Make sure schema exists, using this connection
+                ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+            }
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
                 StringBuilder fieldStr = new StringBuilder();
@@ -411,7 +423,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     op.getObjectAsPrintable(), op.getInternalObjectId(), fieldStr.toString()));
             }
 
-            DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+            DBCollection collection = db.getCollection(table.getName());
             DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, true, true);
             if (dbObject == null)
             {
@@ -460,7 +472,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 else
                 {
                     // Update the stored surrogate value
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
+                    String fieldName = table.getVersionColumn().getName();
                     dbObject.put(fieldName, nextVersion);
                 }
             }
@@ -510,6 +522,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         assertReadOnlyForUpdateOfObject(op);
 
         AbstractClassMetaData cmd = op.getClassMetaData();
+        Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
         ExecutionContext ec = op.getExecutionContext();
         ManagedConnection mconn = storeMgr.getConnection(ec);
         try
@@ -521,7 +534,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Delete.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
-            DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+            DBCollection collection = db.getCollection(table.getName());
             DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, true, false);
             if (dbObject == null)
             {
@@ -604,10 +617,11 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 NucleusLogger.DATASTORE_RETRIEVE.debug(Localiser.msg("MongoDB.Fetch.Start", op.getObjectAsPrintable(), op.getInternalObjectId()));
             }
 
+            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             DBObject dbObject = (DBObject) op.getAssociatedValue(OP_DB_OBJECT);
             if (dbObject == null)
             {
-                DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+                DBCollection collection = db.getCollection(table.getName());
                 dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, false, false);
                 if (dbObject == null)
                 {
@@ -631,7 +645,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 else
                 {
                     // Surrogate version
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.VERSION_COLUMN);
+                    String fieldName = table.getVersionColumn().getName();
                     Object datastoreVersion = dbObject.get(fieldName);
                     op.setVersion(datastoreVersion);
                 }
@@ -677,7 +691,13 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             try
             {
                 DB db = (DB)mconn.getConnection();
-                DBCollection collection = db.getCollection(storeMgr.getNamingFactory().getTableName(cmd));
+                if (!storeMgr.managesClass(cmd.getFullClassName()))
+                {
+                    // Make sure schema exists, using this connection
+                    ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                }
+                Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                DBCollection collection = db.getCollection(table.getName());
                 DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, false, false);
                 if (dbObject == null)
                 {

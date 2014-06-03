@@ -239,18 +239,14 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         String[] filteredClassNames = getNucleusContext().getTypeManager().filterOutSupportedSecondClassNames(classNames);
 
         // Find the ClassMetaData for these classes and all referenced by these classes
+        Set<String> clsNameSet = new HashSet<String>();
         Iterator iter = getMetaDataManager().getReferencedClasses(filteredClassNames, clr).iterator();
         // TODO Change this to use schemaHandler.createSchemaForClasses in single call
         while (iter.hasNext())
         {
             ClassMetaData cmd = (ClassMetaData)iter.next();
-            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isEmbeddedOnly())
+            if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isEmbeddedOnly() && !cmd.isAbstract())
             {
-                if (cmd.isAbstract())
-                {
-                    continue;
-                }
-
                 if (!storeDataMgr.managesClass(cmd.getFullClassName()))
                 {
                     StoreData sd = storeDataMgr.get(cmd.getFullClassName());
@@ -262,13 +258,13 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                         registerStoreData(sd);
                     }
 
-                    // Create schema for class
-                    Set<String> clsNames = new HashSet<String>();
-                    clsNames.add(cmd.getFullClassName());
-                    schemaHandler.createSchemaForClasses(clsNames, null, db);
+                    clsNameSet.add(cmd.getFullClassName());
                 }
             }
         }
+
+        // Create schema for classes
+        schemaHandler.createSchemaForClasses(clsNameSet, null, db);
     }
 
     public void createSchema(String schemaName, Properties props)
