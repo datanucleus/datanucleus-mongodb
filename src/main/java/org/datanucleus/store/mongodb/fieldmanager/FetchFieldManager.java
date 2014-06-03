@@ -294,14 +294,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     throw new NucleusUserException("Field " + mmd.getFullFieldName() + " marked as embedded but no such metadata");
                 }
 
-                boolean nested = true;
-                String nestedStr = mmd.getValueForExtension("nested");
-                if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
-                {
-                    nested = false;
-                }
-
-                if (nested)
+                if (MongoDBUtils.isMemberNested(mmd))
                 {
                     // Nested embedding, as nested document
                     if (ownerMmd != null)

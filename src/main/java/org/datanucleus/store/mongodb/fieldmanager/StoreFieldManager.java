@@ -261,7 +261,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     }
                     else
                     {
-                        // TODO Delete any fields for the embedded object
+                        // TODO Delete any fields for the embedded object (see Cassandra for example)
                         return;
                     }
                 }
@@ -274,35 +274,41 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
 
                 ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
+                DBObject embeddedObject = dbObject;
+                if (nested)
+                {
+                    // Nested, so create nested object that we will store the embedded object in
+                    embeddedObject = new BasicDBObject();
+                }
+
+                if (embcmd.hasDiscriminatorStrategy())
+                {
+                    // Discriminator for embedded object
+                    String discPropName = null;
+                    if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                    {
+                        discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                    }
+                    else
+                    {
+                        discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                    }
+                    DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
+                    String discVal = null;
+                    if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                    {
+                        discVal = embcmd.getFullClassName();
+                    }
+                    else
+                    {
+                        discVal = discmd.getValue();
+                    }
+                    embeddedObject.put(discPropName, discVal);
+                }
+
                 if (nested)
                 {
                     // Nested embedding, as nested document
-                    BasicDBObject embeddedObject = new BasicDBObject();
-                    if (embcmd.hasDiscriminatorStrategy())
-                    {
-                        // Discriminator for embedded object
-                        String discPropName = null;
-                        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
-                        {
-                            discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
-                        }
-                        else
-                        {
-                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                        }
-                        DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                        String discVal = null;
-                        if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                        {
-                            discVal = embcmd.getFullClassName();
-                        }
-                        else
-                        {
-                            discVal = discmd.getValue();
-                        }
-                        embeddedObject.put(discPropName, discVal);
-                    }
-
                     StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, table); // TODO Change to use StoreEmbeddedFieldManager
                     sfm.ownerMmd = mmd;
                     embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
@@ -312,35 +318,9 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else
                 {
-                    // Flat embedding as fields of the owning document
+                    // Flat embedding as field(s) of the owning document
                     List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
                     embMmds.add(mmd);
-
-                    if (embcmd.hasDiscriminatorStrategy())
-                    {
-                        // Discriminator for embedded object
-                        String discPropName = null;
-                        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
-                        {
-                            discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
-                        }
-                        else
-                        {
-                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
-                        }
-                        DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                        String discVal = null;
-                        if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                        {
-                            discVal = embcmd.getFullClassName();
-                        }
-                        else
-                        {
-                            discVal = discmd.getValue();
-                        }
-                        dbObject.put(discPropName, discVal);
-                    }
-
                     FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
                     embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
                     return;
