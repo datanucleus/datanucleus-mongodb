@@ -52,6 +52,7 @@ import org.datanucleus.store.mongodb.query.expression.MongoLiteral;
 import org.datanucleus.store.mongodb.query.expression.MongoOperator;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
@@ -871,6 +872,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             } 
             else
             {
+                Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(name);
                 RelationType relationType = mmd.getRelationType(ec.getClassLoaderResolver());
                 if (relationType == RelationType.NONE)
@@ -892,8 +894,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                                 embeddedNestedField + "." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
                         }
                     }
-                    return new MongoFieldExpression(
-                        ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
+                    return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
                 }
                 else
                 {
