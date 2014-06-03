@@ -27,6 +27,7 @@ import java.util.Set;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PersistenceNucleusContext;
+import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.SCOID;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -63,6 +64,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     public MongoDBStoreManager(ClassLoaderResolver clr, PersistenceNucleusContext nucleusCtx, Map<String, Object> props)
     {
         super("mongodb", clr, nucleusCtx, props);
+
+        // Default to nested embedded PC objects
+        nucleusCtx.getConfiguration().setProperty(PropertyNames.PROPERTY_METADATA_EMBEDDED_PC_FLAT, "false");
 
         schemaHandler = new MongoDBSchemaHandler(this);
         persistenceHandler = new MongoDBPersistenceHandler(this);
