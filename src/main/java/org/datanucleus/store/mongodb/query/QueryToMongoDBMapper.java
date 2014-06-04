@@ -893,9 +893,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         {
                             embMmds.add(mmd);
                             return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
-                            // TODO Use table to get column name
-//                            return new MongoFieldExpression(
-//                                embeddedNestedField + "." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
                         }
                     }
                     return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
@@ -961,7 +958,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                                     {
                                         throw new NucleusException("Cast not supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
                                     }
-                                    return new MongoFieldExpression(name, mmd);
+                                    return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName() ?
                                 }
                             }
                         }

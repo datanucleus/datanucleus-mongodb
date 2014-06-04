@@ -506,13 +506,7 @@ public class MongoDBUtils
                     RelationType relationType = mmd.getRelationType(clr);
                     if (mmd.isEmbedded() && RelationType.isRelationSingleValued(relationType))
                     {
-                        boolean nested = true;
-                        String nestedStr = mmd.getValueForExtension("nested");
-                        if (nestedStr != null && nestedStr.equalsIgnoreCase("false"))
-                        {
-                            nested = false;
-                        }
-
+                        boolean nested = MongoDBUtils.isMemberNested(mmd);
                         if (nested)
                         {
                             // Nested Embedded field, so include field
