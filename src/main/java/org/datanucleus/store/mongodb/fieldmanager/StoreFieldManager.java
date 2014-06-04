@@ -48,8 +48,6 @@ import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
-import org.datanucleus.store.types.TypeManager;
-import org.datanucleus.store.types.converters.TypeConverter;
 
 /**
  * Field Manager for putting values into MongoDB.
@@ -512,13 +510,16 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         int fieldNumber = mmd.getAbsoluteFieldNumber();
         ExecutionContext ec = op.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName(); // TODO Support multicol members
 
         if (value == null)
         {
-            if (dbObject.containsField(fieldName))
+            for (int i=0;i<mapping.getNumberOfColumns();i++)
             {
-                dbObject.removeField(fieldName);
+                String colName = mapping.getColumn(i).getName();
+                if (dbObject.containsField(colName))
+                {
+                    dbObject.removeField(colName);
+                }
             }
             return;
         }
@@ -527,32 +528,43 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             // TODO Allow other types of serialisation
             byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
-            dbObject.put(fieldName, bytes);
+            dbObject.put(mapping.getColumn(0).getName(), bytes);
             op.wrapSCOField(fieldNumber, value, false, false, true);
         }
         else if (RelationType.isRelationSingleValued(relationType))
         {
             // PC object, so make sure it is persisted
-            processSingleRelationField(value, ec, fieldName);
+            processSingleRelationField(value, ec, mapping.getColumn(0).getName());
         }
         else if (RelationType.isRelationMultiValued(relationType))
         {
             // Collection/Map/Array
-            processContainerRelationField(mmd, value, ec, fieldName);
+            processContainerRelationField(mmd, value, ec, mapping.getColumn(0).getName());
             op.wrapSCOField(fieldNumber, value, false, false, true);
         }
         else
         {
-            if (mmd.getTypeConverterName() != null)
+            if (mapping.getTypeConverter() != null)
             {
-                // User-defined type converter
-                TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
-                TypeConverter conv = typeMgr.getTypeConverterForName(mmd.getTypeConverterName());
-                dbObject.put(fieldName, conv.toDatastoreType(value));
+                // Persist using the provided converter
+                Object datastoreValue = mapping.getTypeConverter().toDatastoreType(value);
+                if (mapping.getNumberOfColumns() > 1)
+                {
+                    for (int i=0;i<mapping.getNumberOfColumns();i++)
+                    {
+                        // TODO Persist as the correct column type since the typeConverter type may not be directly persistable
+                        Object colValue = Array.get(datastoreValue, i);
+                        dbObject.put(mapping.getColumn(i).getName(), colValue);
+                    }
+                }
+                else
+                {
+                    dbObject.put(mapping.getColumn(0).getName(), datastoreValue);
+                }
             }
             else
             {
-                processContainerNonRelationField(fieldName, ec, value, dbObject, mmd, FieldRole.ROLE_FIELD);
+                processContainerNonRelationField(mapping.getColumn(0).getName(), ec, value, dbObject, mmd, FieldRole.ROLE_FIELD);
             }
             op.wrapSCOField(fieldNumber, value, false, false, true);
         }

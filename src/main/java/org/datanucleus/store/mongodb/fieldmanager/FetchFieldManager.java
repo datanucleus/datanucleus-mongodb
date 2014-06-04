@@ -35,7 +35,6 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.FieldRole;
@@ -51,6 +50,7 @@ import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
+import org.datanucleus.store.types.converters.MultiColumnConverter;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
 
@@ -651,13 +651,13 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     {
         int fieldNumber = mmd.getAbsoluteFieldNumber();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName(); // TODO Support multicol members
-        if (!dbObject.containsField(fieldName))
+
+        if (mapping.getNumberOfColumns() == 1 && !dbObject.containsField(mapping.getColumn(0).getName()))
         {
             return null;
         }
 
-        Object value = dbObject.get(fieldName);
+        Object value = dbObject.get(mapping.getColumn(0).getName());
         if (mmd.isSerialized())
         {
             // TODO Allow other types of serialisation
@@ -679,6 +679,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             }
             return obj;
         }
+
         if (RelationType.isRelationSingleValued(relationType))
         {
             return getValueForSingleRelationField(mmd, value, clr);
@@ -687,21 +688,85 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         {
             return getValueForContainerRelationField(mmd, value, clr);
         }
+
+        Object val = null;
+        if (mapping.getTypeConverter() != null)
+        {
+            TypeConverter conv = ec.getNucleusContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
+            if (mapping.getNumberOfColumns() > 1)
+            {
+                boolean isNull = true;
+                Object valuesArr = null;
+                Class[] colTypes = ((MultiColumnConverter)conv).getDatastoreColumnTypes();
+                if (colTypes[0] == int.class)
+                {
+                    valuesArr = new int[mapping.getNumberOfColumns()];
+                }
+                else if (colTypes[0] == long.class)
+                {
+                    valuesArr = new long[mapping.getNumberOfColumns()];
+                }
+                else if (colTypes[0] == double.class)
+                {
+                    valuesArr = new double[mapping.getNumberOfColumns()];
+                }
+                else if (colTypes[0] == float.class)
+                {
+                    valuesArr = new double[mapping.getNumberOfColumns()];
+                }
+                else if (colTypes[0] == String.class)
+                {
+                    valuesArr = new String[mapping.getNumberOfColumns()];
+                }
+                // TODO Support other types
+                else
+                {
+                    valuesArr = new Object[mapping.getNumberOfColumns()];
+                }
+
+                for (int i=0;i<mapping.getNumberOfColumns();i++)
+                {
+                    String colName = mapping.getColumn(i).getName();
+                    if (dbObject.containsField(colName))
+                    {
+                        isNull = false;
+                        Array.set(valuesArr, i, dbObject.get(colName));
+                    }
+                    else
+                    {
+                        Array.set(valuesArr, i, null);
+                    }
+                }
+
+                if (isNull)
+                {
+                    return null;
+                }
+
+                val = conv.toMemberType(valuesArr);
+            }
+            else
+            {
+                String colName = mapping.getColumn(0).getName();
+                if (!dbObject.containsField(colName))
+                {
+                    return null;
+                }
+                Object propVal = dbObject.get(colName);
+                val = conv.toMemberType(propVal);
+            }
+        }
         else
         {
-            ColumnMetaData colmd = null;
-            if (mmd.getColumnMetaData() != null && mmd.getColumnMetaData().length > 0)
-            {
-                colmd = mmd.getColumnMetaData()[0];
-            }
-            Object val = getValueForContainerNonRelationField(mmd, value, colmd);
-            if (op != null)
-            {
-                // Wrap if SCO
-                return op.wrapSCOField(mmd.getAbsoluteFieldNumber(), val, false, false, true);
-            }
-            return val;
+            val = MongoDBUtils.getFieldValueFromStored(ec, mmd, value, FieldRole.ROLE_FIELD);
         }
+
+        if (op != null)
+        {
+            // Wrap if SCO
+            return op.wrapSCOField(mmd.getAbsoluteFieldNumber(), val, false, false, true);
+        }
+        return val;
     }
 
     protected Object getValueForSingleRelationField(AbstractMemberMetaData mmd, Object value, ClassLoaderResolver clr)
@@ -986,24 +1051,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         {
             return value;
         }
-    }
-
-    protected Object getValueForContainerNonRelationField(AbstractMemberMetaData mmd, Object value, ColumnMetaData colmd)
-    {
-        if (mmd.getTypeConverterName() != null)
-        {
-            // User-defined type converter
-            TypeConverter conv = ec.getNucleusContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
-            return conv.toMemberType(value);
-        }
-
-        Object fieldValue = MongoDBUtils.getFieldValueFromStored(ec, mmd, value, FieldRole.ROLE_FIELD);
-        if (op != null)
-        {
-            // Wrap if SCO
-            return op.wrapSCOField(mmd.getAbsoluteFieldNumber(), fieldValue, false, false, true);
-        }
-        return fieldValue;
     }
 
     private Object getMapKeyForReturnValue(AbstractMemberMetaData mmd, Object value)
