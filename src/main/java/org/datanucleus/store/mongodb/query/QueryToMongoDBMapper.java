@@ -52,7 +52,6 @@ import org.datanucleus.store.mongodb.query.expression.MongoFieldExpression;
 import org.datanucleus.store.mongodb.query.expression.MongoLiteral;
 import org.datanucleus.store.mongodb.query.expression.MongoOperator;
 import org.datanucleus.store.query.Query;
-import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.converters.TypeConverter;
@@ -489,8 +488,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 {
                     resultComplete = false;
                 }
-                NucleusLogger.QUERY.debug(">> Primary " + expr +
-                    " is not stored in this document, so unexecutable in datastore");
+                NucleusLogger.QUERY.debug(">> Primary " + expr + " is not stored in this document, so unexecutable in datastore");
             }
             else
             {
@@ -877,7 +875,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             {
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(name);
                 RelationType relationType = mmd.getRelationType(clr);
-
                 if (relationType == RelationType.NONE)
                 {
                     if (iter.hasNext())
@@ -894,9 +891,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         } 
                         else
                         {
+                            embMmds.add(mmd);
+                            return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
                             // TODO Use table to get column name
-                            return new MongoFieldExpression(
-                                embeddedNestedField + "." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
+//                            return new MongoFieldExpression(
+//                                embeddedNestedField + "." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), mmd);
                         }
                     }
                     return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
@@ -912,21 +911,21 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
                         cmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), ec.getClassLoaderResolver());
                         embMmd = mmd;
+                        embMmds.add(embMmd);
                         if (nested)
                         {
                             if (embeddedNestedField == null)
                             {
-                                embeddedNestedField = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                                embeddedNestedField = table.getMemberColumnMappingForMember(mmd).getColumn(0).getName();
                             }
                             else
                             {
-                                embeddedNestedField += ("." + ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN));
+                                embeddedNestedField += ("." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName());
                             }
                         }
                         else
                         {
                             // Embedded PC, with fields flat in the document of the owner
-                            embMmds.add(embMmd);
                             if (!embeddedFlat)
                             {
                                 embeddedFlat = true;

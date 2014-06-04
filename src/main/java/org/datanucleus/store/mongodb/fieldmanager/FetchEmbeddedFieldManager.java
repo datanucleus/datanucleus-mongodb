@@ -58,13 +58,6 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
         return table.getMemberColumnMappingForEmbeddedMember(embMmds);
     }
 
-    protected String getFieldName(int fieldNumber)
-    {
-        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-        embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
-        return table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName();
-    }
-
     @Override
     public Object fetchObjectField(int fieldNumber)
     {

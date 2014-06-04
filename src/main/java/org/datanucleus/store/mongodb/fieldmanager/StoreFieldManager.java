@@ -75,13 +75,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         return table.getMemberColumnMappingForMember(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
     }
 
-    // TODO Drop this and use getColumnMapping so we can support multicolumn fields (see Cassandra for an example)
-    protected String getFieldName(int fieldNumber)
-    {
-        AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
-        return op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
-    }
-
     @Override
     public void storeBooleanField(int fieldNumber, boolean value)
     {
@@ -89,8 +82,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Boolean.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Boolean.valueOf(value));
     }
 
     @Override
@@ -100,8 +93,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, "" + value);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), "" + value);
     }
 
     @Override
@@ -111,8 +104,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Byte.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Byte.valueOf(value));
     }
 
     @Override
@@ -122,8 +115,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Short.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Short.valueOf(value));
     }
 
     @Override
@@ -133,8 +126,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Integer.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Integer.valueOf(value));
     }
 
     @Override
@@ -144,8 +137,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Long.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Long.valueOf(value));
     }
 
     @Override
@@ -155,8 +148,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Float.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Float.valueOf(value));
     }
 
     @Override
@@ -166,8 +159,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        String fieldName = getFieldName(fieldNumber);
-        dbObject.put(fieldName, Double.valueOf(value));
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        dbObject.put(mapping.getColumn(0).getName(), Double.valueOf(value));
     }
 
     @Override
@@ -185,7 +178,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (value == null)
         {
             dbObject.removeField(fieldName);
@@ -205,7 +199,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
 
         ExecutionContext ec = op.getExecutionContext();
-        String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
         StoreManager storeMgr = ec.getStoreManager();
@@ -256,7 +251,10 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 {
                     if (nested)
                     {
-                        dbObject.removeField(fieldName);
+                        for (int i=0;i<mapping.getNumberOfColumns();i++)
+                        {
+                            dbObject.removeField(mapping.getColumn(i).getName());
+                        }
                         return;
                     }
                     else
@@ -291,7 +289,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     }
                     else
                     {
-                        discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                        discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                     }
                     DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                     String discVal = null;
@@ -306,32 +304,28 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     embeddedObject.put(discPropName, discVal);
                 }
 
+                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                embMmds.add(mmd);
+
+                FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
+                embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
+
                 if (nested)
                 {
                     // Nested embedding, as nested document
-                    StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, table); // TODO Change to use StoreEmbeddedFieldManager
-                    sfm.ownerMmd = mmd;
-                    embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
-
-                    dbObject.put(fieldName, embeddedObject);
-                    return;
+                    dbObject.put(mapping.getColumn(0).getName(), embeddedObject);
                 }
-                else
-                {
-                    // Flat embedding as field(s) of the owning document
-                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
-                    embMmds.add(mmd);
-                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
-                    embOP.provideFields(embcmd.getAllMemberPositions(), ffm);
-                    return;
-                }
+                return;
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
                 // Embedded collection/map/array - stored nested
                 if (value == null)
                 {
-                    dbObject.removeField(fieldName);
+                    for (int i=0;i<mapping.getNumberOfColumns();i++)
+                    {
+                        dbObject.removeField(mapping.getColumn(i).getName());
+                    }
                     return;
                 }
 
@@ -361,7 +355,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
                             else
                             {
-                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
                             DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                             String discVal = null;
@@ -384,12 +378,12 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             storeMgr.manageClasses(clr, embClassName);
                         }
                         Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable); // TODO Does Table handle this?
+                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
                         coll.add(embeddedObject);
                     }
-                    dbObject.put(fieldName, coll); // Store as List<DBObject>
+                    dbObject.put(mapping.getColumn(0).getName(), coll); // Store as List<DBObject>
                     return;
                 }
                 else if (mmd.hasArray())
@@ -416,7 +410,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
                             else
                             {
-                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
                             DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
                             String discVal = null;
@@ -439,12 +433,12 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             storeMgr.manageClasses(clr, embClassName);
                         }
                         Table elemTable = op.getStoreManager().getStoreDataForClass(embClassName).getTable();
-                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable); // TODO Does Table handle this?
+                        StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
                         array[i] = embeddedObject;
                     }
-                    dbObject.put(fieldName, array); // Store as DBObject[]
+                    dbObject.put(mapping.getColumn(0).getName(), array); // Store as DBObject[]
                     return;
                 }
                 else
@@ -476,7 +470,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                                 storeMgr.manageClasses(clr, keyClassName);
                             }
                             Table keyTable = op.getStoreManager().getStoreDataForClass(keyClassName).getTable();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert, keyTable); // TODO Does Table handle this?
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert, keyTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(keyCmd.getAllMemberPositions(), sfm);
                             entryObj.append("key", embeddedKey);
@@ -497,14 +491,14 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                                 storeMgr.manageClasses(clr, valClassName);
                             }
                             Table valTable = op.getStoreManager().getStoreDataForClass(valClassName).getTable();
-                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert, valTable); // TODO Does Table handle this?
+                            StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert, valTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(valCmd.getAllMemberPositions(), sfm);
                             entryObj.append("value", embeddedVal);
                         }
                         entryList.add(entryObj);
                     }
-                    dbObject.put(fieldName, entryList);
+                    dbObject.put(mapping.getColumn(0).getName(), entryList);
                     return;
                 }
             }
@@ -517,7 +511,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     {
         int fieldNumber = mmd.getAbsoluteFieldNumber();
         ExecutionContext ec = op.getExecutionContext();
-        String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName(); // TODO Support multicol members
 
         if (value == null)
         {
@@ -571,8 +566,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
     }
 
-    protected void processContainerRelationField(AbstractMemberMetaData mmd, Object value, ExecutionContext ec,
-            String fieldName)
+    protected void processContainerRelationField(AbstractMemberMetaData mmd, Object value, ExecutionContext ec, String fieldName)
     {
         // Collection/Map/Array
         if (mmd.hasCollection())

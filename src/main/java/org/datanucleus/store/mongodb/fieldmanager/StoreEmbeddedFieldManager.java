@@ -30,9 +30,11 @@ import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 
 /**
@@ -55,13 +57,6 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
         embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
         return table.getMemberColumnMappingForEmbeddedMember(embMmds);
-    }
-
-    protected String getFieldName(int fieldNumber)
-    {
-        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-        embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
-        return table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName();
     }
 
     @Override
@@ -102,31 +97,58 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                         " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
                 }
 
-                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-                embMmds.add(mmd);
+                // Embedded PC object - can be stored nested in the BSON doc (default), or flat
+                boolean nested = MongoDBUtils.isMemberNested(mmd);
+
+                if (RelationType.isBidirectional(relationType))
+                {
+                    // TODO Add logic for bidirectional relations so we know when to stop embedding
+                }
 
                 if (value == null)
                 {
-                    // TODO Delete any fields for the embedded object
-                    return;
+                    if (nested)
+                    {
+                        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                        for (int i=0;i<mapping.getNumberOfColumns();i++)
+                        {
+                            dbObject.removeField(mapping.getColumn(i).getName());
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        // TODO Delete any fields for the embedded object (see Cassandra for example)
+                        return;
+                    }
                 }
                 else
                 {
-                    /*if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.MANY_TO_ONE_BI)
-                    {
-                        if ((ownerMmd.getMappedBy() != null && embMmd.getName().equals(ownerMmd.getMappedBy())) ||
-                            (embMmd.getMappedBy() != null && ownerMmd.getName().equals(embMmd.getMappedBy())))
-                        {
-                            // Other side of owner bidirectional, so omit
-                            return;
-                        }
-                    }*/
+                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+                    embMmds.add(mmd);
 
-                    // Process all fields of the embedded object
-                    ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
-                    embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
-                    return;
+                    if (nested)
+                    {
+                        // Store sub-embedded object in own DBObject, nested
+                        DBObject embeddedObject = new BasicDBObject();
+
+                        // Process all fields of the embedded object
+                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
+                        FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
+                        embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
+
+                        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                        dbObject.put(mapping.getColumn(0).getName(), embeddedObject);
+                        return;
+                    }
+                    else
+                    {
+                        // Process all fields of the embedded object
+                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
+                        FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
+                        embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
+                        return;
+                    }
                 }
             }
         }

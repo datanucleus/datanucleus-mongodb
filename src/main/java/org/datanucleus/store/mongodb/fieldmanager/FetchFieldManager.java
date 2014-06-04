@@ -91,16 +91,11 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         return table.getMemberColumnMappingForMember(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
     }
 
-    protected String getFieldName(int fieldNumber)
-    {
-        return ec.getStoreManager().getNamingFactory().getColumnName(
-            cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber), ColumnType.COLUMN);
-    }
-
     @Override
     public boolean fetchBooleanField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -119,7 +114,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public byte fetchByteField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -138,7 +134,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public char fetchCharField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -157,7 +154,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public double fetchDoubleField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -176,7 +174,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public float fetchFloatField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -195,7 +194,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public int fetchIntField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -214,7 +214,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public long fetchLongField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -233,7 +234,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public short fetchShortField(int fieldNumber)
     {
-        String fieldName = getFieldName(fieldNumber);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -259,7 +261,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             Object id = dbObject.get("_id");
             return (String)(id.toString());
         }
-        String fieldName = getFieldName(fieldNumber);
+
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName();
         if (dbObject.containsField(fieldName))
         {
             return (String)(dbObject.get(fieldName));
@@ -334,7 +338,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                     }
 
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    String fieldName = mapping.getColumn(0).getName();
                     if (!dbObject.containsField(fieldName))
                     {
                         return null;
@@ -351,7 +356,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                         else
                         {
-                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                         }
                         String discVal = (String)embeddedValue.get(discPropName);
                         String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, embcmd.getDiscriminatorMetaData());
@@ -361,10 +366,11 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                     }
 
+                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                    embMmds.add(mmd);
+
                     ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
-                    FetchFieldManager ffm = new FetchFieldManager(embOP, embeddedValue, table);
-                    ffm.ownerMmd = mmd;
-                    ffm.embedded = true;
+                    FetchFieldManager ffm = new FetchEmbeddedFieldManager(embOP, embeddedValue, embMmds, table);
                     embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
                     return embOP.getObject();
                 }
@@ -381,7 +387,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                         else
                         {
-                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN);
+                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                         }
                         String discVal = (String)dbObject.get(discPropName);
                         String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, embcmd.getDiscriminatorMetaData());
@@ -421,8 +427,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             {
                 if (mmd.hasCollection())
                 {
-                    // Embedded Collection<PC>
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                    // Embedded Collection<PC>, stored nested
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    String fieldName = mapping.getColumn(0).getName();
                     if (!dbObject.containsField(fieldName))
                     {
                         return null;
@@ -456,7 +463,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                             else
                             {
-                                discPropName = storeMgr.getNamingFactory().getColumnName(elementCmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(elementCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
                             String discVal = (String)elementObj.get(discPropName);
                             String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, elementCmd.getDiscriminatorMetaData());
@@ -490,8 +497,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
                 else if (mmd.hasArray())
                 {
-                    // Embedded [PC]
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                    // Embedded [PC], stored nested
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    String fieldName = mapping.getColumn(0).getName();
                     if (!dbObject.containsField(fieldName))
                     {
                         return null;
@@ -514,7 +522,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                             else
                             {
-                                discPropName = storeMgr.getNamingFactory().getColumnName(elementCmd, ColumnType.DISCRIMINATOR_COLUMN);
+                                discPropName = storeMgr.getNamingFactory().getColumnName(elementCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
                             String discVal = (String)elementObj.get(discPropName);
                             String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, elementCmd.getDiscriminatorMetaData());
@@ -544,9 +552,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
                 else
                 {
-                    // Embedded Map<NonPC,PC>, Map<PC,NonPC>, Map<PC,PC>
+                    // Embedded Map<NonPC,PC>, Map<PC,NonPC>, Map<PC,PC>, stored nested
                     // TODO Allow for inherited keys/values and discriminator
-                    String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    String fieldName = mapping.getColumn(0).getName();
                     if (!dbObject.containsField(fieldName))
                     {
                         return null;
@@ -641,7 +650,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     protected Object fetchNonEmbeddedObjectField(AbstractMemberMetaData mmd, RelationType relationType, ClassLoaderResolver clr)
     {
         int fieldNumber = mmd.getAbsoluteFieldNumber();
-        String fieldName = ec.getStoreManager().getNamingFactory().getColumnName(mmd, ColumnType.COLUMN);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        String fieldName = mapping.getColumn(0).getName(); // TODO Support multicol members
         if (!dbObject.containsField(fieldName))
         {
             return null;
