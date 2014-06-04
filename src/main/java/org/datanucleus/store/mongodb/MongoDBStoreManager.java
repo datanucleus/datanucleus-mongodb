@@ -245,7 +245,6 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         // Find the ClassMetaData for these classes and all referenced by these classes
         Set<String> clsNameSet = new HashSet<String>();
         Iterator iter = getMetaDataManager().getReferencedClasses(filteredClassNames, clr).iterator();
-        // TODO Change this to use schemaHandler.createSchemaForClasses in single call
         while (iter.hasNext())
         {
             ClassMetaData cmd = (ClassMetaData)iter.next();
