@@ -106,41 +106,41 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                     String serverName = "localhost";
                     if (firstServer)
                     {
-                    	// Set dbName
+                        // Set dbName
                         int dbNameSepPos = token.indexOf("/");
-                    	if (dbNameSepPos >= 0)
-                    	{
-                    		if (dbNameSepPos < token.length())
-                    		{
-                    			String dbNameStr = token.substring(dbNameSepPos+1);
-                    			if (dbNameStr.length() > 0)
-                    			{
-                    				dbName = dbNameStr;
-                    			}
-                    			else
-                    			{
-                    				// Use default ("DataNucleus")
-                    			}
-                    		}
-                    		if (dbNameSepPos > 0)
-                    		{
-                    			// Server name is not empty so use it
-                    			serverName = token.substring(0, dbNameSepPos);
-                    		}
-                    	}
-                    	else
-                    	{
-                    		if (token.length() > 0)
-                    		{
-                        		// No "/" specified so just take all of token
-                    		    serverName = token;
-                    		}
-                    	}
+                        if (dbNameSepPos >= 0)
+                        {
+                            if (dbNameSepPos < token.length())
+                            {
+                                String dbNameStr = token.substring(dbNameSepPos + 1);
+                                if (dbNameStr.length() > 0)
+                                {
+                                    dbName = dbNameStr;
+                                }
+                                else
+                                {
+                                    // Use default ("DataNucleus")
+                                }
+                            }
+                            if (dbNameSepPos > 0)
+                            {
+                                // Server name is not empty so use it
+                                serverName = token.substring(0, dbNameSepPos);
+                            }
+                        }
+                        else
+                        {
+                            if (token.length() > 0)
+                            {
+                                // No "/" specified so just take all of token
+                                serverName = token;
+                            }
+                        }
                     }
                     else
                     {
-                    	// Subsequent replica-set so use full token as server name
-                    	serverName = token;
+                        // Subsequent replica-set so use full token as server name
+                        serverName = token;
                     }
 
                     // Create a ServerAddress for this specification
@@ -149,7 +149,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                     if (portSeparatorPos > 0)
                     {
                         addr = new ServerAddress(serverName.substring(0, portSeparatorPos), 
-                            Integer.valueOf(serverName.substring(portSeparatorPos+1)).intValue());
+                            Integer.valueOf(serverName.substring(portSeparatorPos + 1)).intValue());
                     }
                     else
                     {
@@ -164,8 +164,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             // Create the Mongo connection pool
             if (NucleusLogger.CONNECTION.isDebugEnabled())
             {
-                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(),
-                    StringUtils.collectionToString(serverAddrs)));
+                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(), StringUtils.collectionToString(serverAddrs)));
             }
 
             if (serverAddrs.size() == 1)
@@ -210,8 +209,8 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     }
 
     /**
-     * Obtain a connection from the Factory. The connection will be enlisted within the transaction
-     * associated to the ExecutionContext
+     * Obtain a connection from the Factory. The connection will be enlisted within the transaction associated
+     * to the ExecutionContext
      * @param ec the pool that is bound the connection during its lifecycle (or null)
      * @param options Options for creating the connection
      * @return the {@link org.datanucleus.store.connection.ManagedConnection}
@@ -224,13 +223,15 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     public class ManagedConnectionImpl extends AbstractManagedConnection
     {
         boolean startRequested = false;
+
         XAResource xaRes = null;
 
         public ManagedConnectionImpl()
         {
         }
 
-        /* (non-Javadoc)
+        /*
+         * (non-Javadoc)
          * @see org.datanucleus.store.connection.AbstractManagedConnection#closeAfterTransactionEnd()
          */
         @Override
@@ -261,26 +262,25 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 if (!StringUtils.isWhitespace(userName))
                 {
                     boolean authenticated = false;
-                    if (!((DB)conn).isAuthenticated())
+                    if (!((DB) conn).isAuthenticated())
                     {
-                        authenticated = ((DB)conn).authenticate(userName, password.toCharArray());
+                        authenticated = ((DB) conn).authenticate(userName, password.toCharArray());
                         if (!authenticated)
                         {
-                            throw new NucleusDataStoreException("Authentication of the connection failed for datastore " +
-                                    dbName + " with user " + userName);
+                            throw new NucleusDataStoreException("Authentication of the connection failed for datastore " + dbName + " with user " + userName);
                         }
                     }
                 }
                 if (storeMgr.getBooleanProperty("datanucleus.readOnlyDatastore", false))
                 {
-                    ((DB)conn).setReadOnly(Boolean.TRUE);
+                    ((DB) conn).setReadOnly(Boolean.TRUE);
                 }
             }
 
             if (!startRequested)
             {
                 // Start the "transaction"
-                ((DB)conn).requestStart();
+                ((DB) conn).requestStart();
                 startRequested = true;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is starting");
             }
@@ -291,7 +291,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (commitOnRelease)
             {
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
-                ((DB)conn).requestDone();
+                ((DB) conn).requestDone();
                 startRequested = false;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
             }
@@ -306,24 +306,24 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             }
 
             // Notify anything using this connection to use it now
-            for (int i=0; i<listeners.size(); i++)
+            for (int i = 0; i < listeners.size(); i++)
             {
-                ((ManagedConnectionResourceListener)listeners.get(i)).managedConnectionPreClose();
+                ((ManagedConnectionResourceListener) listeners.get(i)).managedConnectionPreClose();
             }
 
             if (startRequested)
             {
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
                 // End the current request
-                ((DB)conn).requestDone();
+                ((DB) conn).requestDone();
                 startRequested = false;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
             }
 
             // Removes the connection from pooling
-            for (int i=0; i<listeners.size(); i++)
+            for (int i = 0; i < listeners.size(); i++)
             {
-                ((ManagedConnectionResourceListener)listeners.get(i)).managedConnectionPostClose();
+                ((ManagedConnectionResourceListener) listeners.get(i)).managedConnectionPostClose();
             }
 
             this.conn = null;
@@ -338,7 +338,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 {
                     obtainNewConnection();
                 }
-                xaRes = new EmulatedXAResource(this, (DB)conn);
+                xaRes = new EmulatedXAResource(this, (DB) conn);
             }
             return xaRes;
         }
@@ -361,14 +361,14 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         {
             super.commit(xid, onePhase);
             db.requestDone();
-            ((ManagedConnectionImpl)mconn).startRequested = false;
+            ((ManagedConnectionImpl) mconn).startRequested = false;
         }
 
         public void rollback(Xid xid) throws XAException
         {
             super.rollback(xid);
             db.requestDone();
-            ((ManagedConnectionImpl)mconn).startRequested = false;
+            ((ManagedConnectionImpl) mconn).startRequested = false;
         }
     }
 }

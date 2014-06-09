@@ -99,7 +99,7 @@ public class LazyLoadQueryResult extends AbstractQueryResult implements Serializ
         }
     }
 
-    private class CandidateClassResult
+    private static class CandidateClassResult
     {
         AbstractClassMetaData cmd;
         DBCursor cursor;

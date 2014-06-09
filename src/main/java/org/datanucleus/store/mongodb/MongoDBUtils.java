@@ -86,6 +86,8 @@ import javax.imageio.ImageIO;
  */
 public class MongoDBUtils
 {
+    private MongoDBUtils() {}
+
     public static List<Long> performMongoCount(DB db, BasicDBObject filterObject, Class candidateClass, boolean subclasses, ExecutionContext ec)
     throws MongoException 
     {

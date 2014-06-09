@@ -94,8 +94,10 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         return set;
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractStoreManager#getClassNameForObjectID(java.lang.Object, org.datanucleus.ClassLoaderResolver, org.datanucleus.store.ExecutionContext)
+    /*
+     * (non-Javadoc)
+     * @see org.datanucleus.store.AbstractStoreManager#getClassNameForObjectID(java.lang.Object,
+     * org.datanucleus.ClassLoaderResolver, org.datanucleus.store.ExecutionContext)
      */
     @Override
     public String getClassNameForObjectID(Object id, ClassLoaderResolver clr, ExecutionContext ec)
@@ -125,8 +127,8 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     }
 
     /**
-     * Accessor for whether this value strategy is supported.
-     * Overrides the superclass to allow for "IDENTITY" since we support it and no entry in plugins for it.
+     * Accessor for whether this value strategy is supported. Overrides the superclass to allow for "IDENTITY"
+     * since we support it and no entry in plugins for it.
      * @param strategy The strategy
      * @return Whether it is supported.
      */
@@ -145,12 +147,14 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         return false;
     }
 
-    /* (non-Javadoc)
-	 * @see org.datanucleus.store.AbstractStoreManager#getStrategyForNative(org.datanucleus.metadata.AbstractClassMetaData, int)
-	 */
-	@Override
+    /*
+     * (non-Javadoc)
+     * @see org.datanucleus.store.AbstractStoreManager#getStrategyForNative(org.datanucleus.metadata.
+     * AbstractClassMetaData, int)
+     */
+    @Override
     public String getStrategyForNative(AbstractClassMetaData cmd, int absFieldNumber)
-	{
+    {
         if (absFieldNumber >= 0)
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(absFieldNumber);
@@ -166,8 +170,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                     return "uuid-hex";
                 }
             }
-            else if (type == Long.class || type == Integer.class || type == Short.class || 
-                type == long.class || type == int.class || type == short.class)
+            else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
             {
                 if (supportsValueStrategy("sequence") && mmd.getSequence() != null)
                 {
@@ -206,10 +209,12 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             }
             throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for class " + cmd.getFullClassName());
         }
-	}
+    }
 
-	/* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractStoreManager#manageClasses(org.datanucleus.ClassLoaderResolver, java.lang.String[])
+    /*
+     * (non-Javadoc)
+     * @see org.datanucleus.store.AbstractStoreManager#manageClasses(org.datanucleus.ClassLoaderResolver,
+     * java.lang.String[])
      */
     @Override
     public void manageClasses(ClassLoaderResolver clr, String... classNames)
@@ -222,7 +227,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         ManagedConnection mconn = getConnection(-1);
         try
         {
-            DB db = (DB)mconn.getConnection();
+            DB db = (DB) mconn.getConnection();
 
             manageClasses(classNames, clr, db);
         }
@@ -247,7 +252,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         Iterator iter = getMetaDataManager().getReferencedClasses(filteredClassNames, clr).iterator();
         while (iter.hasNext())
         {
-            ClassMetaData cmd = (ClassMetaData)iter.next();
+            ClassMetaData cmd = (ClassMetaData) iter.next();
             if (cmd.getPersistenceModifier() == ClassPersistenceModifier.PERSISTENCE_CAPABLE && !cmd.isAbstract())
             {
                 if (!storeDataMgr.managesClass(cmd.getFullClassName()))

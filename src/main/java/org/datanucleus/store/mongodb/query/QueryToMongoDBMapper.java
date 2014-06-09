@@ -90,7 +90,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /** The filter expression. If no filter is required then this will be null. */
     MongoBooleanExpression filterExpr;
-    
+
     /** The ordering object. If no ordering is requested then this will be null. */
     BasicDBObject orderingObject;
 
@@ -105,8 +105,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     /** Stack of mongo expressions, used for compilation of the query into MongoDB objects. */
     Deque<MongoExpression> stack = new ArrayDeque<MongoExpression>();
 
-    public QueryToMongoDBMapper(QueryCompilation compilation, Map parameters, AbstractClassMetaData cmd,
-            ExecutionContext ec, Query q)
+    public QueryToMongoDBMapper(QueryCompilation compilation, Map parameters, AbstractClassMetaData cmd, ExecutionContext ec, Query q)
     {
         this.ec = ec;
         this.query = q;
@@ -204,7 +203,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
             // Select any result expressions
             Expression[] resultExprs = compilation.getExprResult();
-            for (Expression expr :  resultExprs)
+            for (Expression expr : resultExprs)
             {
                 if (expr instanceof InvokeExpression)
                 {
@@ -214,12 +213,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else
                     {
-                        
+
                     }
                 }
                 else
                 {
-                    
+
                 }
             }
         }
@@ -254,11 +253,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         {
             // Apply any having to the statement
             compileComponent = CompilationComponent.HAVING;
-            /*Expression havingExpr = */compilation.getExprHaving();
+            /* Expression havingExpr = */compilation.getExprHaving();
             // TODO Compile having
             compileComponent = null;
         }
     }
+
     /**
      * Method to compile the ordering clause of the query
      */
@@ -281,8 +281,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processAndExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processAndExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processAndExpression(Expression expr)
@@ -294,8 +297,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return andExpr;
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processOrExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processOrExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processOrExpression(Expression expr)
@@ -307,8 +313,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return andExpr;
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processEqExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processEqExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processEqExpression(Expression expr)
@@ -317,15 +326,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_EQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_EQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -334,8 +341,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processEqExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processNoteqExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processNoteqExpression(org.datanucleus.
+     * query.expression.Expression)
      */
     @Override
     protected Object processNoteqExpression(Expression expr)
@@ -344,15 +354,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_NOTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_NOTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -361,8 +369,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processNoteqExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGtExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGtExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processGtExpression(Expression expr)
@@ -371,15 +382,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_LTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_LTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_GT);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_GT);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -388,8 +397,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processGtExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLtExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLtExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processLtExpression(Expression expr)
@@ -398,15 +410,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_GTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_GTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_LT);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_LT);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -415,8 +425,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processLtExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGteqExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGteqExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processGteqExpression(Expression expr)
@@ -425,15 +438,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_LT);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_LT);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_GTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_GTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -442,8 +453,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processGteqExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLteqExpression(org.datanucleus.query.expression.Expression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLteqExpression(org.datanucleus.query
+     * .expression.Expression)
      */
     @Override
     protected Object processLteqExpression(Expression expr)
@@ -452,15 +466,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)right, (MongoLiteral)left, MongoOperator.OP_GT);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_GT);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MongoExpression mongoExpr =
-                new MongoBooleanExpression((MongoFieldExpression)left, (MongoLiteral)right, MongoOperator.OP_LTEQ);
+            MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_LTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
@@ -468,9 +480,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         // TODO Auto-generated method stub
         return super.processLteqExpression(expr);
     }
-    
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processPrimaryExpression(org.datanucleus.query.expression.PrimaryExpression)
+
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processPrimaryExpression(org.datanucleus
+     * .query.expression.PrimaryExpression)
      */
     @Override
     protected Object processPrimaryExpression(PrimaryExpression expr)
@@ -502,8 +517,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processPrimaryExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processParameterExpression(org.datanucleus.query.expression.ParameterExpression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processParameterExpression(org.datanucleus
+     * .query.expression.ParameterExpression)
      */
     @Override
     protected Object processParameterExpression(ParameterExpression expr)
@@ -538,7 +556,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 {
                     paramValue = parameters.get(Integer.valueOf(position));
                     paramValueSet = true;
-                    positionalParamNumber = position+1;
+                    positionalParamNumber = position + 1;
                 }
             }
         }
@@ -588,7 +606,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 Class paramType = paramValue.getClass();
                 if (paramValue instanceof SCO)
                 {
-                    paramType = ((SCO)paramValue).getValue().getClass();
+                    paramType = ((SCO) paramValue).getValue().getClass();
                 }
                 TypeConverter strConv = ec.getTypeManager().getTypeConverterForType(paramType, String.class);
                 TypeConverter longConv = ec.getTypeManager().getTypeConverterForType(paramType, Long.class);
@@ -629,7 +647,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 precompilable = false;
                 return lit;
             }
-            else if (ec.getApiAdapter().isPersistable(paramValue)) 
+            else if (ec.getApiAdapter().isPersistable(paramValue))
             {
                 MongoLiteral lit = new MongoLiteral(String.valueOf(ec.getApiAdapter().getIdForObject(paramValue)));
                 stack.push(lit);
@@ -658,8 +676,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processParameterExpression(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLiteral(org.datanucleus.query.expression.Literal)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLiteral(org.datanucleus.query.expression
+     * .Literal)
      */
     @Override
     protected Object processLiteral(Literal expr)
@@ -668,7 +689,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         if (litValue instanceof BigDecimal)
         {
             // MongoDB can't cope with BigDecimal, so give it a Double
-            MongoLiteral lit = new MongoLiteral(((BigDecimal)litValue).doubleValue());
+            MongoLiteral lit = new MongoLiteral(((BigDecimal) litValue).doubleValue());
             stack.push(lit);
             return lit;
         }
@@ -707,8 +728,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processLiteral(expr);
     }
 
-    /* (non-Javadoc)
-     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processInvokeExpression(org.datanucleus.query.expression.InvokeExpression)
+    /*
+     * (non-Javadoc)
+     * @see
+     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processInvokeExpression(org.datanucleus
+     * .query.expression.InvokeExpression)
      */
     @Override
     protected Object processInvokeExpression(InvokeExpression expr)
@@ -797,13 +821,13 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else if ("startsWith".equals(operation))
                     {
-                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral("^" + Pattern.quote(invokedExprArg.getValue()
-                            .toString())), MongoOperator.REGEX);
+                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral("^" + Pattern.quote(invokedExprArg.getValue().toString())),
+                                MongoOperator.REGEX);
                     }
                     else if ("endsWith".equals(operation))
                     {
-                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral(Pattern.quote(invokedExprArg.getValue()
-                            .toString()) + "$"), MongoOperator.REGEX);
+                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral(Pattern.quote(invokedExprArg.getValue().toString()) + "$"),
+                                MongoOperator.REGEX);
                     }
                 }
                 else if (invokedFieldExpr.getMemberMetaData().hasCollection())
@@ -841,9 +865,8 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     }
 
     /**
-     * Convenience method to return the "field name" in candidate document for this primary.
-     * Allows for simple relation fields, and (nested) embedded PC fields - i.e all fields that are present
-     * in the document.
+     * Convenience method to return the "field name" in candidate document for this primary. Allows for simple
+     * relation fields, and (nested) embedded PC fields - i.e all fields that are present in the document.
      * @param expr The expression
      * @return The document field name for this primary (or null if not resolvable in this document)
      */
@@ -889,7 +912,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         {
                             embMmds.add(mmd);
                             return new MongoFieldExpression(table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
-                        } 
+                        }
                         else
                         {
                             embMmds.add(mmd);
@@ -900,8 +923,8 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 }
                 else if (RelationType.isRelationSingleValued(relationType))
                 {
-                    boolean embedded = MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, 
-                        embMmds.isEmpty() ? null : embMmds.get(embMmds.size()-1));
+                    boolean embedded = MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType,
+                        embMmds.isEmpty() ? null : embMmds.get(embMmds.size() - 1));
 
                     if (embedded)
                     {
@@ -935,31 +958,36 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         // Not embedded
                         embMmds.clear();
                         // TODO Understand this logic (was included in some patch for NUCMONGODB-65)
-                        // Makes little sense to me - the only thing I would understand is if iter.hasNext() is true
+                        // Makes little sense to me - the only thing I would understand is if iter.hasNext()
+                        // is true
                         // then abort since we can't join to some other object
-                        if (relationType == RelationType.ONE_TO_MANY_UNI || relationType == RelationType.ONE_TO_MANY_BI ||
+                        if (relationType == RelationType.ONE_TO_MANY_UNI || relationType == RelationType.ONE_TO_MANY_BI || 
                             relationType == RelationType.MANY_TO_ONE_UNI || relationType == RelationType.MANY_TO_ONE_BI)
                         {
                             if (mmd.getMappedBy() != null)
                             {
                                 // FK on the other side -- requires a join, not natively supported by mongo
-                                throw new NucleusException("Querying of relationships from the non-owning side not currently supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
-                            } 
+                                throw new NucleusException("Querying of relationships from the non-owning side not currently supported (for name: " + name + " in " + 
+                                        StringUtils.collectionToString(tuples));
+                            }
                             else
                             {
-                                // FK is at this side, so only join if further component provided, or if forcing...
+                                // FK is at this side, so only join if further component provided, or if
+                                // forcing...
                                 if (iter.hasNext())
                                 {
                                     // ... native joins not supported by mongo, so bail
-                                    throw new NucleusException("Querying of joined attributes not supported by data store (for name: " + name + " in " + StringUtils.collectionToString(tuples));
-                                } 
+                                    throw new NucleusException(
+                                            "Querying of joined attributes not supported by data store (for name: " + name + " in " + StringUtils
+                                                    .collectionToString(tuples));
+                                }
                                 else
                                 {
                                     if (expr.getParent() != null && expr.getParent().getOperator() == Expression.OP_CAST)
                                     {
                                         throw new NucleusException("Cast not supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
                                     }
-                                    return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName() ?
+                                    return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName()?
                                 }
                             }
                         }
@@ -968,7 +996,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                             if (compileComponent == CompilationComponent.FILTER)
                             {
                                 filterComplete = false;
-                            } 
+                            }
                             else
                             {
                                 if (compileComponent == CompilationComponent.RESULT)
@@ -977,9 +1005,8 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                                 }
                             }
 
-                            NucleusLogger.QUERY.debug("Query has reference to " + 
-                                    StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() +
-                                    " is not persisted into this document, so unexecutable in the datastore");
+                            NucleusLogger.QUERY.debug("Query has reference to " + StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() + 
+                                " is not persisted into this document, so unexecutable in the datastore");
                             return null;
                         }
                     }
