@@ -48,6 +48,7 @@ import org.datanucleus.util.NucleusLogger;
  */
 public class JPQLQuery extends AbstractJPQLQuery
 {
+    private static final long serialVersionUID = 7034826767990733282L;
     /** The compilation of the query for this datastore. Not applicable if totally in-memory. */
     protected transient MongoDBQueryCompilation datastoreCompilation = null;
 

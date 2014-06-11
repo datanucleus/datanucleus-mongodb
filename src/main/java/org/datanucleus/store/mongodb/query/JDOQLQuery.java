@@ -49,6 +49,7 @@ import com.mongodb.DB;
  */
 public class JDOQLQuery extends AbstractJDOQLQuery
 {
+    private static final long serialVersionUID = -8591715136438523983L;
     /** The compilation of the query for this datastore. Not applicable if totally in-memory. */
     protected transient MongoDBQueryCompilation datastoreCompilation = null;
 
