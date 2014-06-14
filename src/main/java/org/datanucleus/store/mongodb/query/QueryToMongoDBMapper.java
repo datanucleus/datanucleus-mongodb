@@ -564,7 +564,14 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         // TODO Change this to use MongoDBUtils.getStoredValueForField
         if (paramValueSet)
         {
-            if (paramValue instanceof Number)
+            if (paramValue == null)
+            {
+                MongoLiteral lit = new MongoLiteral(null);
+                stack.push(lit);
+                precompilable = false;
+                return lit;
+            }
+            else if (paramValue instanceof Number)
             {
                 MongoLiteral lit = new MongoLiteral(paramValue);
                 stack.push(lit);
@@ -650,13 +657,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             else if (ec.getApiAdapter().isPersistable(paramValue))
             {
                 MongoLiteral lit = new MongoLiteral(String.valueOf(ec.getApiAdapter().getIdForObject(paramValue)));
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue == null)
-            {
-                MongoLiteral lit = new MongoLiteral(null);
                 stack.push(lit);
                 precompilable = false;
                 return lit;

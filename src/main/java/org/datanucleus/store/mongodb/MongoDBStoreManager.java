@@ -199,7 +199,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             {
                 return "identity";
             }
-            else if (supportsValueStrategy("sequence") && idmd.getSequence() != null)
+            else if (supportsValueStrategy("sequence") && idmd != null && idmd.getSequence() != null)
             {
                 return "sequence";
             }

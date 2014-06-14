@@ -94,20 +94,23 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
 
                 // Check for null value (currently need all columns to return null)
                 // TODO Cater for null using embmd.getNullIndicatorColumn etc
-                AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-                boolean isNull = true;
-                for (int i=0;i<embmmds.length;i++)
+                if (embmd != null)
                 {
-                    String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
-                    if (dbObject.containsField(embFieldName))
+                    AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
+                    boolean isNull = true;
+                    for (int i=0;i<embmmds.length;i++)
                     {
-                        isNull = false;
-                        break;
+                        String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
+                        if (dbObject.containsField(embFieldName))
+                        {
+                            isNull = false;
+                            break;
+                        }
                     }
-                }
-                if (isNull)
-                {
-                    return null;
+                    if (isNull)
+                    {
+                        return null;
+                    }
                 }
 
                 List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
