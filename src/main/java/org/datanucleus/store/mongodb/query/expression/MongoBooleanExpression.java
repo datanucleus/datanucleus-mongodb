@@ -114,10 +114,8 @@ public class MongoBooleanExpression extends MongoExpression
         {
             return value.ordinal();
         }
-        else
-        {
-            return value.toString();
-        }
+
+        return value.toString();
     }
 
 

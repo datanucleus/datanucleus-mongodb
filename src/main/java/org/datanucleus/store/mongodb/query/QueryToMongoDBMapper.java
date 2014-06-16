@@ -913,11 +913,9 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                             embMmds.add(mmd);
                             return new MongoFieldExpression(table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
                         }
-                        else
-                        {
-                            embMmds.add(mmd);
-                            return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
-                        }
+
+                        embMmds.add(mmd);
+                        return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
                     }
                     return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
                 }
@@ -970,45 +968,35 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                                 throw new NucleusException("Querying of relationships from the non-owning side not currently supported (for name: " + name + " in " + 
                                         StringUtils.collectionToString(tuples));
                             }
-                            else
+
+                            // FK is at this side, so only join if further component provided, or if forcing...
+                            if (iter.hasNext())
                             {
-                                // FK is at this side, so only join if further component provided, or if
-                                // forcing...
-                                if (iter.hasNext())
-                                {
-                                    // ... native joins not supported by mongo, so bail
-                                    throw new NucleusException(
-                                            "Querying of joined attributes not supported by data store (for name: " + name + " in " + StringUtils
-                                                    .collectionToString(tuples));
-                                }
-                                else
-                                {
-                                    if (expr.getParent() != null && expr.getParent().getOperator() == Expression.OP_CAST)
-                                    {
-                                        throw new NucleusException("Cast not supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
-                                    }
-                                    return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName()?
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (compileComponent == CompilationComponent.FILTER)
-                            {
-                                filterComplete = false;
-                            }
-                            else
-                            {
-                                if (compileComponent == CompilationComponent.RESULT)
-                                {
-                                    resultComplete = false;
-                                }
+                                // ... native joins not supported by mongo, so bail
+                                throw new NucleusException(
+                                    "Querying of joined attributes not supported by data store (for name: " + name + " in " + StringUtils
+                                    .collectionToString(tuples));
                             }
 
-                            NucleusLogger.QUERY.debug("Query has reference to " + StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() + 
-                                " is not persisted into this document, so unexecutable in the datastore");
-                            return null;
+                            if (expr.getParent() != null && expr.getParent().getOperator() == Expression.OP_CAST)
+                            {
+                                throw new NucleusException("Cast not supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
+                            }
+                            return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName()?
                         }
+
+                        if (compileComponent == CompilationComponent.FILTER)
+                        {
+                            filterComplete = false;
+                        }
+                        else if (compileComponent == CompilationComponent.RESULT)
+                        {
+                            resultComplete = false;
+                        }
+
+                        NucleusLogger.QUERY.debug("Query has reference to " + StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() + 
+                                " is not persisted into this document, so unexecutable in the datastore");
+                        return null;
                     }
                 }
                 else if (RelationType.isRelationMultiValued(relationType))

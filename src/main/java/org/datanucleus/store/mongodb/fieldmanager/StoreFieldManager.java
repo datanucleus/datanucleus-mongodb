@@ -255,11 +255,9 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         return;
                     }
-                    else
-                    {
-                        // TODO Delete any fields for the embedded object (see Cassandra for example)
-                        return;
-                    }
+
+                    // TODO Delete any fields for the embedded object (see Cassandra for example)
+                    return;
                 }
 
                 AbstractClassMetaData embcmd = ec.getMetaDataManager().getMetaDataForClass(value.getClass(), clr);

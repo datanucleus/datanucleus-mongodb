@@ -165,10 +165,8 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                 {
                     return "identity";
                 }
-                else
-                {
-                    return "uuid-hex";
-                }
+
+                return "uuid-hex";
             }
             else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
             {
@@ -187,28 +185,26 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                 throw new NucleusUserException("This datastore provider doesn't support native strategy for field of type " + type.getName());
             }
         }
-        else
-        {
-            IdentityMetaData idmd = cmd.getBaseIdentityMetaData();
-            if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
-            {
-                return "uuid-hex";
-            }
 
-            if (supportsValueStrategy("identity"))
-            {
-                return "identity";
-            }
-            else if (supportsValueStrategy("sequence") && idmd != null && idmd.getSequence() != null)
-            {
-                return "sequence";
-            }
-            else if (supportsValueStrategy("increment"))
-            {
-                return "increment";
-            }
-            throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for class " + cmd.getFullClassName());
+        IdentityMetaData idmd = cmd.getBaseIdentityMetaData();
+        if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
+        {
+            return "uuid-hex";
         }
+
+        if (supportsValueStrategy("identity"))
+        {
+            return "identity";
+        }
+        else if (supportsValueStrategy("sequence") && idmd != null && idmd.getSequence() != null)
+        {
+            return "sequence";
+        }
+        else if (supportsValueStrategy("increment"))
+        {
+            return "increment";
+        }
+        throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for class " + cmd.getFullClassName());
     }
 
     /*

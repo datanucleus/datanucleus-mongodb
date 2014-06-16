@@ -36,7 +36,6 @@ import org.datanucleus.store.connection.AbstractConnectionFactory;
 import org.datanucleus.store.connection.AbstractEmulatedXAResource;
 import org.datanucleus.store.connection.AbstractManagedConnection;
 import org.datanucleus.store.connection.ManagedConnection;
-import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -308,7 +307,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             // Notify anything using this connection to use it now
             for (int i = 0; i < listeners.size(); i++)
             {
-                ((ManagedConnectionResourceListener) listeners.get(i)).managedConnectionPreClose();
+                listeners.get(i).managedConnectionPreClose();
             }
 
             if (startRequested)
@@ -323,7 +322,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             // Removes the connection from pooling
             for (int i = 0; i < listeners.size(); i++)
             {
-                ((ManagedConnectionResourceListener) listeners.get(i)).managedConnectionPostClose();
+                listeners.get(i).managedConnectionPostClose();
             }
 
             this.conn = null;

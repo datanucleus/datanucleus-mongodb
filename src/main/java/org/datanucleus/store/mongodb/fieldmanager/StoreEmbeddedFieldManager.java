@@ -116,40 +116,34 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                         }
                         return;
                     }
-                    else
-                    {
-                        // TODO Delete any fields for the embedded object (see Cassandra for example)
-                        return;
-                    }
+
+                    // TODO Delete any fields for the embedded object (see Cassandra for example)
+                    return;
                 }
-                else
+
+                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+                embMmds.add(mmd);
+
+                if (nested)
                 {
-                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-                    embMmds.add(mmd);
+                    // Store sub-embedded object in own DBObject, nested
+                    DBObject embeddedObject = new BasicDBObject();
 
-                    if (nested)
-                    {
-                        // Store sub-embedded object in own DBObject, nested
-                        DBObject embeddedObject = new BasicDBObject();
+                    // Process all fields of the embedded object
+                    ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
+                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
+                    embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
 
-                        // Process all fields of the embedded object
-                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                        FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
-                        embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
-
-                        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-                        dbObject.put(mapping.getColumn(0).getName(), embeddedObject);
-                        return;
-                    }
-                    else
-                    {
-                        // Process all fields of the embedded object
-                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                        FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
-                        embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
-                        return;
-                    }
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    dbObject.put(mapping.getColumn(0).getName(), embeddedObject);
+                    return;
                 }
+
+                // Process all fields of the embedded object
+                ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
+                FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
+                embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
+                return;
             }
         }
 

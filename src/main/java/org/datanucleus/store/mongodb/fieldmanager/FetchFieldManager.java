@@ -259,7 +259,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         {
             // Return the "_id" value since not using this field as such
             Object id = dbObject.get("_id");
-            return (String)(id.toString());
+            return id.toString();
         }
 
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
@@ -268,10 +268,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         {
             return (String)(dbObject.get(fieldName));
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
 
     @Override
@@ -374,54 +372,52 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
                     return embOP.getObject();
                 }
-                else
+
+                // Flat embedding as fields of the owning document
+                if (embcmd.hasDiscriminatorStrategy())
                 {
-                    // Flat embedding as fields of the owning document
-                    if (embcmd.hasDiscriminatorStrategy())
+                    // Set embcmd based on the discriminator value of this element
+                    String discPropName = null;
+                    if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
                     {
-                        // Set embcmd based on the discriminator value of this element
-                        String discPropName = null;
-                        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
-                        {
-                            discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
-                        }
-                        else
-                        {
-                            discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
-                        }
-                        String discVal = (String)dbObject.get(discPropName);
-                        String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, embcmd.getDiscriminatorMetaData());
-                        if (!elemClassName.equals(embcmd.getFullClassName()))
-                        {
-                            embcmd = ec.getMetaDataManager().getMetaDataForClass(elemClassName, clr);
-                        }
+                        discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
                     }
-
-                    // TODO Cater for null (use embmd.getNullIndicatorColumn/Value)
-                    EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
-                    AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-                    boolean isNull = true;
-                    for (int i=0;i<embmmds.length;i++)
+                    else
                     {
-                        String embFieldName = MongoDBUtils.getFieldName(mmd, i);
-                        if (dbObject.containsField(embFieldName))
-                        {
-                            isNull = false;
-                            break;
-                        }
+                        discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                     }
-                    if (isNull)
+                    String discVal = (String)dbObject.get(discPropName);
+                    String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, embcmd.getDiscriminatorMetaData());
+                    if (!elemClassName.equals(embcmd.getFullClassName()))
                     {
-                        return null;
+                        embcmd = ec.getMetaDataManager().getMetaDataForClass(elemClassName, clr);
                     }
-
-                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
-                    embMmds.add(mmd);
-                    ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
-                    FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);
-                    embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
-                    return embOP.getObject();
                 }
+
+                // TODO Cater for null (use embmd.getNullIndicatorColumn/Value)
+                EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
+                AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
+                boolean isNull = true;
+                for (int i=0;i<embmmds.length;i++)
+                {
+                    String embFieldName = MongoDBUtils.getFieldName(mmd, i);
+                    if (dbObject.containsField(embFieldName))
+                    {
+                        isNull = false;
+                        break;
+                    }
+                }
+                if (isNull)
+                {
+                    return null;
+                }
+
+                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                embMmds.add(mmd);
+                ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
+                FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);
+                embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
+                return embOP.getObject();
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {

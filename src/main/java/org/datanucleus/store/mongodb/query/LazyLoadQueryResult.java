@@ -256,20 +256,18 @@ public class LazyLoadQueryResult extends AbstractQueryResult implements Serializ
         {
             return itemsByIndex.get(index);
         }
-        else
+
+        // Load next object continually until we find it
+        while (true)
         {
-            // Load next object continually until we find it
-            while (true)
+            Object nextPojo = getNextObject();
+            if (itemsByIndex.size() == (index+1))
             {
-                Object nextPojo = getNextObject();
-                if (itemsByIndex.size() == (index+1))
-                {
-                    return nextPojo;
-                }
-                if (candidateResults.isEmpty())
-                {
-                    throw new IndexOutOfBoundsException("Beyond size of the results (" + itemsByIndex.size() + ")");
-                }
+                return nextPojo;
+            }
+            if (candidateResults.isEmpty())
+            {
+                throw new IndexOutOfBoundsException("Beyond size of the results (" + itemsByIndex.size() + ")");
             }
         }
     }

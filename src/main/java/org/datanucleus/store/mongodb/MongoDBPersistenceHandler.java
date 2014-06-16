@@ -373,7 +373,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             else
             {
                 String fieldName = table.getVersionColumn().getName();
-                dbObject.put(fieldName, (Long)versionValue);
+                dbObject.put(fieldName, versionValue);
             }
             op.setTransactionalVersion(versionValue);
         }
@@ -432,10 +432,8 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     throw new NucleusOptimisticException("Object with id " + op.getInternalObjectId() + 
                         " and version " + op.getTransactionalVersion() + " no longer present");
                 }
-                else
-                {
-                    throw new NucleusDataStoreException("Could not find object with id " + op.getInternalObjectId());
-                }
+
+                throw new NucleusDataStoreException("Could not find object with id " + op.getInternalObjectId());
             }
 
             int[] updatedFieldNums = fieldNumbers;
@@ -543,10 +541,8 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     throw new NucleusOptimisticException("Object with id " + op.getInternalObjectId() + 
                         " and version " + op.getTransactionalVersion() + " no longer present");
                 }
-                else
-                {
-                    throw new NucleusDataStoreException("Could not find object with id " + op.getInternalObjectId());
-                }
+
+                throw new NucleusDataStoreException("Could not find object with id " + op.getInternalObjectId());
             }
             // Save the dbObject in case we need to load fields during the deletion
             op.setAssociatedValue(OP_DB_OBJECT, dbObject);

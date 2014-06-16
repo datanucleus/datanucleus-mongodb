@@ -106,21 +106,19 @@ public class JPQLQuery extends AbstractJPQLQuery
             // Don't need datastore compilation here since evaluating in-memory
             return compilation != null;
         }
-        else
+
+        // Need both to be present to say "compiled"
+        if (compilation == null || datastoreCompilation == null)
         {
-            // Need both to be present to say "compiled"
-            if (compilation == null || datastoreCompilation == null)
-            {
-                return false;
-            }
-            if (!datastoreCompilation.isPrecompilable())
-            {
-                NucleusLogger.GENERAL.info("Query compiled but not precompilable so ditching datastore compilation");
-                datastoreCompilation = null;
-                return false;
-            }
-            return true;
+            return false;
         }
+        if (!datastoreCompilation.isPrecompilable())
+        {
+            NucleusLogger.GENERAL.info("Query compiled but not precompilable so ditching datastore compilation");
+            datastoreCompilation = null;
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -262,39 +260,37 @@ public class JPQLQuery extends AbstractJPQLQuery
                 {
                     return MongoDBUtils.performMongoCount(db, filterObject, candidateClass, subclasses, ec);
                 } 
-                else 
+
+                Map<String, Object> options = new HashMap();
+                if (getBooleanExtensionProperty("slave-ok", false))
                 {
-                    Map<String, Object> options = new HashMap();
-                    if (getBooleanExtensionProperty("slave-ok", false))
-                    {
-                        options.put("slave-ok", true);
-                    }
+                    options.put("slave-ok", true);
+                }
 
-                    if (filter == null || datastoreCompilation.isFilterComplete())
-                    {
-                        filterInMemory = false;
-                    }
+                if (filter == null || datastoreCompilation.isFilterComplete())
+                {
+                    filterInMemory = false;
+                }
 
-                    if (filterInMemory || result != null || resultClass != null)
+                if (filterInMemory || result != null || resultClass != null)
+                {
+                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, options);
+                }
+                else
+                {
+                    // Execute as much as possible in the datastore
+                    BasicDBObject orderingObject = datastoreCompilation.getOrdering();
+                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
+                        (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
+                    if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
                     {
-                        candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, options);
+                        // Order processed when getting candidates
+                        orderInMemory = false;
                     }
-                    else
+                    if (rangeInMemory && ((LazyLoadQueryResult)candidates).getRangeProcessed())
                     {
-                        // Execute as much as possible in the datastore
-                        BasicDBObject orderingObject = datastoreCompilation.getOrdering();
-                        candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
-                            (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
-                        if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
-                        {
-                            // Order processed when getting candidates
-                            orderInMemory = false;
-                        }
-                        if (rangeInMemory && ((LazyLoadQueryResult)candidates).getRangeProcessed())
-                        {
-                            // Range processed when getting candidates
-                            rangeInMemory = false;
-                        }
+                        // Range processed when getting candidates
+                        rangeInMemory = false;
                     }
                 }
             }

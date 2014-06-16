@@ -394,11 +394,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         NucleusLogger.DATASTORE_SCHEMA.error(msg);
                         continue;
                     }
-                    else
-                    {
-                        String msg = "Table for class="+cmd.getFullClassName() + " with name="+tableName + " validated";
-                        NucleusLogger.DATASTORE_SCHEMA.info(msg);
-                    }
+
+                    String msg = "Table for class="+cmd.getFullClassName() + " with name="+tableName + " validated";
+                    NucleusLogger.DATASTORE_SCHEMA.info(msg);
 
                     DBCollection dbColl = db.getCollection(tableName);
                     List<DBObject> indices = new ArrayList(dbColl.getIndexInfo());
@@ -413,13 +411,13 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                String msg = "Index for class="+cmd.getFullClassName() + " with name="+idxmds[i].getName() + " validated";
+                                msg = "Index for class="+cmd.getFullClassName() + " with name="+idxmds[i].getName() + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                String msg = "Index missing for class="+cmd.getFullClassName() + " name="+idxmds[i].getName() + " key="+idxObj;
+                                msg = "Index missing for class="+cmd.getFullClassName() + " name="+idxmds[i].getName() + " key="+idxObj;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
@@ -435,13 +433,13 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                String msg = "Unique index for class="+cmd.getFullClassName() + " with name="+unimds[i].getName() + " validated";
+                                msg = "Unique index for class="+cmd.getFullClassName() + " with name="+unimds[i].getName() + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                String msg = "Unique index missing for class="+cmd.getFullClassName() + " name="+unimds[i].getName() + " key="+uniObj;
+                                msg = "Unique index missing for class="+cmd.getFullClassName() + " name="+unimds[i].getName() + " key="+uniObj;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
@@ -465,13 +463,13 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         if (indexObj != null)
                         {
                             indices.remove(indexObj);
-                            String msg = "Index for application-identity with name="+pkName + " validated";
+                            msg = "Index for application-identity with name="+pkName + " validated";
                             NucleusLogger.DATASTORE_SCHEMA.info(msg);
                         }
                         else
                         {
                             success = false;
-                            String msg = "Index missing for application id name="+pkName + " key="+query;
+                            msg = "Index missing for application id name="+pkName + " key="+query;
                             System.out.println(msg);
                             NucleusLogger.DATASTORE_SCHEMA.error(msg);
                         }
@@ -492,13 +490,13 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                String msg = "Index for datastore-identity with name=" + pkName + " validated";
+                                msg = "Index for datastore-identity with name=" + pkName + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                String  msg = "Index missing for datastore id name=" + pkName + " key=" + query;
+                                msg = "Index missing for datastore id name=" + pkName + " key=" + query;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
@@ -519,14 +517,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                                 DBObject indexObj = getIndexObjectForIndex(indices, idxmd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    String msg = "Index for field=" + mmds[i].getFullFieldName() + " with name=" + idxmd.getName() + " validated";
+                                    msg = "Index for field=" + mmds[i].getFullFieldName() + " with name=" + idxmd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    String msg = "Index missing for field="+mmds[i].getFullFieldName() + " name=" + idxmd.getName() + " key=" + query;
+                                    msg = "Index missing for field="+mmds[i].getFullFieldName() + " name=" + idxmd.getName() + " key=" + query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }
@@ -540,14 +538,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                                 DBObject indexObj = getIndexObjectForIndex(indices, unimd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    String msg = "Unique index for field=" + mmds[i].getFullFieldName() + " with name=" + unimd.getName() + " validated";
+                                    msg = "Unique index for field=" + mmds[i].getFullFieldName() + " with name=" + unimd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    String msg = "Unique index missing for field=" + mmds[i].getFullFieldName() + " name=" + unimd.getName() + " key="+query;
+                                    msg = "Unique index missing for field=" + mmds[i].getFullFieldName() + " name=" + unimd.getName() + " key="+query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }

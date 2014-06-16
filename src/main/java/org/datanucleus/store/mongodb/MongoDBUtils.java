@@ -278,20 +278,16 @@ public class MongoDBUtils
                         // Only one candidate so return it
                         return classNames.iterator().next();
                     }
-                    else
+
+                    if (rootCmd.hasDiscriminatorStrategy())
                     {
-                        if (rootCmd.hasDiscriminatorStrategy())
-                        {
-                            String disPropName = rootTable.getDiscriminatorColumn().getName();
-                            String discValue = (String)foundObj.get(disPropName);
-                            return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
-                        }
-                        else
-                        {
-                            // Fallback to the root class since no discriminator
-                            return rootCmd.getFullClassName();
-                        }
+                        String disPropName = rootTable.getDiscriminatorColumn().getName();
+                        String discValue = (String)foundObj.get(disPropName);
+                        return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
                     }
+
+                    // Fallback to the root class since no discriminator
+                    return rootCmd.getFullClassName();
                 }
             }
         }
@@ -1146,10 +1142,8 @@ public class MongoDBUtils
             {
                 return type.getEnumConstants()[((Number)value).intValue()];
             }
-            else
-            {
-                return Enum.valueOf(type, (String)value);
-            }
+
+            return Enum.valueOf(type, (String)value);
         }
         else if (java.sql.Date.class.isAssignableFrom(type) && value instanceof Date)
         {
