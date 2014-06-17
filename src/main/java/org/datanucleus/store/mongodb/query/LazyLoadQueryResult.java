@@ -18,7 +18,6 @@ Contributors:
 package org.datanucleus.store.mongodb.query;
 
 import java.io.ObjectStreamException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -46,7 +45,7 @@ import com.mongodb.DBObject;
  * QueryResult for MongoDB queries that tries to lazy load results from the provided DBCursor(s)
  * so to avoid problems with memory.
  */
-public class LazyLoadQueryResult extends AbstractQueryResult implements Serializable
+public class LazyLoadQueryResult extends AbstractQueryResult
 {
     protected ExecutionContext ec;
 
