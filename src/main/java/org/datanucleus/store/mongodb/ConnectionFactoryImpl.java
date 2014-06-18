@@ -51,8 +51,9 @@ import com.mongodb.ServerAddress;
  * Implementation of a ConnectionFactory for MongoDB.
  * Accepts a URL of the form 
  * <pre>mongodb:[{server1}][/{dbName}][,{server2}[,{server3}]]</pre>
- * Defaults to a server of "localhost" if nothing specified
- * Defaults to a DB name of "DataNucleus" if nothing specified
+ * Defaults to a server of "localhost" if nothing specified.
+ * Defaults to a DB name of "DataNucleus" if nothing specified.
+ * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
@@ -174,6 +175,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             {
                 mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
             }
+            NucleusLogger.CONNECTION.debug("Created MongoClient object");
         }
         catch (UnknownHostException e)
         {
@@ -203,6 +205,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
     public void close()
     {
+        NucleusLogger.CONNECTION.debug("Closing MongoClient object");
         mongo.close();
         super.close();
     }
@@ -256,6 +259,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             {
                 // Create new connection
                 conn = mongo.getDB(dbName);
+                NucleusLogger.CONNECTION.debug("Created DB from MongoClient");
                 String userName = storeMgr.getConnectionUserName();
                 String password = storeMgr.getConnectionPassword();
                 if (!StringUtils.isWhitespace(userName))
