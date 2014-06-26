@@ -42,12 +42,15 @@ import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.StoreManager;
+import org.datanucleus.store.exceptions.ReachableObjectNotCascadedException;
 import org.datanucleus.store.fieldmanager.AbstractStoreFieldManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
+import org.datanucleus.util.Localiser;
+import org.datanucleus.util.NucleusLogger;
 
 /**
  * Field Manager for putting values into MongoDB.
@@ -207,6 +210,19 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             // Embedded field
             if (RelationType.isRelationSingleValued(relationType))
             {
+                if ((insert && !mmd.isCascadePersist()) || (!insert && !mmd.isCascadeUpdate()))
+                {
+                    if (!ec.getApiAdapter().isDetached(value) && !ec.getApiAdapter().isPersistent(value))
+                    {
+                        // Related PC object not persistent, but cant do cascade-persist so throw exception
+                        if (NucleusLogger.PERSISTENCE.isDebugEnabled())
+                        {
+                            NucleusLogger.PERSISTENCE.debug(Localiser.msg("007006", mmd.getFullFieldName()));
+                        }
+                        throw new ReachableObjectNotCascadedException(mmd.getFullFieldName(), value);
+                    }
+                }
+
                 // Embedded PC object - can be stored nested in the BSON doc (default), or flat
                 boolean nested = MongoDBUtils.isMemberNested(mmd);
 
@@ -532,6 +548,19 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         else if (RelationType.isRelationSingleValued(relationType))
         {
             // PC object, so make sure it is persisted
+            if ((insert && !mmd.isCascadePersist()) || (!insert && !mmd.isCascadeUpdate()))
+            {
+                if (!ec.getApiAdapter().isDetached(value) && !ec.getApiAdapter().isPersistent(value))
+                {
+                    // Related PC object not persistent, but cant do cascade-persist so throw exception
+                    if (NucleusLogger.PERSISTENCE.isDebugEnabled())
+                    {
+                        NucleusLogger.PERSISTENCE.debug(Localiser.msg("007006", mmd.getFullFieldName()));
+                    }
+                    throw new ReachableObjectNotCascadedException(mmd.getFullFieldName(), value);
+                }
+            }
+
             processSingleRelationField(value, ec, mapping.getColumn(0).getName());
         }
         else if (RelationType.isRelationMultiValued(relationType))
@@ -581,8 +610,27 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         // Collection/Map/Array
         if (mmd.hasCollection())
         {
-            Collection collIds = new ArrayList();
             Collection coll = (Collection)value;
+            if ((insert && !mmd.isCascadePersist()) || (!insert && !mmd.isCascadeUpdate()))
+            {
+                // Field doesnt support cascade-persist so no reachability
+                if (NucleusLogger.PERSISTENCE.isDebugEnabled())
+                {
+                    NucleusLogger.PERSISTENCE.debug(Localiser.msg("007006", mmd.getFullFieldName()));
+                }
+
+                // Check for any persistable elements that aren't persistent
+                for (Object element : coll)
+                {
+                    if (!ec.getApiAdapter().isDetached(element) && !ec.getApiAdapter().isPersistent(element))
+                    {
+                        // Element is not persistent so throw exception
+                        throw new ReachableObjectNotCascadedException(mmd.getFullFieldName(), element);
+                    }
+                }
+            }
+
+            Collection collIds = new ArrayList();
             Iterator collIter = coll.iterator();
             while (collIter.hasNext())
             {
