@@ -27,14 +27,18 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ClassMetaData;
+import org.datanucleus.metadata.ClassPersistenceModifier;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.IndexMetaData;
 import org.datanucleus.metadata.UniqueMetaData;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.schema.AbstractStoreSchemaHandler;
 import org.datanucleus.store.schema.naming.NamingFactory;
 import org.datanucleus.store.schema.table.Column;
+import org.datanucleus.store.schema.table.CompleteClassTable;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
@@ -94,10 +98,31 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
 
     protected void createSchemaForClass(AbstractClassMetaData cmd, DB db)
     {
-        Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+        if (cmd.isEmbeddedOnly() || cmd.getPersistenceModifier() != ClassPersistenceModifier.PERSISTENCE_CAPABLE)
+        {
+            // No table required here
+            return;
+        }
+        if (cmd instanceof ClassMetaData && ((ClassMetaData) cmd).isAbstract())
+        {
+            // No table required here
+            return;
+        }
+
+        StoreData storeData = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+        Table table = null;
+        if (storeData != null)
+        {
+            table = storeData.getTable();
+        }
+        else
+        {
+            table = new CompleteClassTable(storeMgr, cmd, null);
+        }
+
         String collectionName = table.getName();
         DBCollection collection = null;
-        if (isAutoCreateTables())
+        if (isAutoCreateTables() && !db.collectionExists(collectionName))
         {
             // Create collection (if not existing)
             if (cmd.hasExtension(MongoDBStoreManager.CAPPED_SIZE_EXTENSION_NAME))
@@ -110,16 +135,30 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     options.put("capped", "true");
                     Long size = Long.valueOf(cmd.getValueForExtension(MongoDBStoreManager.CAPPED_SIZE_EXTENSION_NAME));
                     options.put("size", size);
+                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    {
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClass", cmd.getFullClassName(), collectionName));
+                    }
                     db.createCollection(collectionName, options);
                 }
                 else
                 {
-                    collection = db.getCollection(collectionName);
+                    DBObject options = new BasicDBObject();
+                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    {
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClass", cmd.getFullClassName(), collectionName));
+                    }
+                    collection = db.createCollection(collectionName, options);
                 }
             }
             else
             {
-                collection = db.getCollection(collectionName);
+                DBObject options = new BasicDBObject();
+                if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                {
+                    NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClass", cmd.getFullClassName(), collectionName));
+                }
+                collection = db.createCollection(collectionName, options);
             }
         }
 
@@ -342,9 +381,22 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
-                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                    StoreData storeData = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                    Table table = null;
+                    if (storeData != null)
+                    {
+                        table = storeData.getTable();
+                    }
+                    else
+                    {
+                        table = new CompleteClassTable(storeMgr, cmd, null);
+                    }
                     DBCollection collection = db.getCollection(table.getName());
                     collection.dropIndexes();
+                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    {
+                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.SchemaDelete.Class", cmd.getFullClassName(), table.getName()));
+                    }
                     collection.drop();
                 }
             }
@@ -384,12 +436,22 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 if (cmd != null)
                 {
                     // Validate the schema for the class
-                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                    StoreData storeData = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                    Table table = null;
+                    if (storeData != null)
+                    {
+                        table = storeData.getTable();
+                    }
+                    else
+                    {
+                        table = new CompleteClassTable(storeMgr, cmd, null);
+                    }
+
                     String tableName = table.getName();
                     if (!db.collectionExists(tableName))
                     {
                         success = false;
-                        String msg = "Table doesn't exist for " + cmd.getFullClassName() + " - should have name="+ tableName;
+                        String msg = Localiser.msg("MongoDB.SchemaValidate.Class", cmd.getFullClassName(), tableName);
                         System.out.println(msg);
                         NucleusLogger.DATASTORE_SCHEMA.error(msg);
                         continue;
