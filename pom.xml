@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>datanucleus-mongodb</artifactId>
-	<version>4.0.2</version>
+	<version>4.0.3-SNAPSHOT</version>
 
     <name>DataNucleus MongoDB plugin</name>
     <description>
