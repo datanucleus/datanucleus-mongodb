@@ -279,7 +279,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 {
                     BasicDBObject query = new BasicDBObject();
                     query.append(column.getName(), 1);
-                    String idxName = namingFactory.getConstraintName(mapping.getMemberMetaData(), idxmd);
+                    String idxName = namingFactory.getConstraintName(null, mapping.getMemberMetaData(), idxmd);
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, query));
