@@ -147,10 +147,20 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     public void compile()
     {
+        if (compilation.getExprFrom() != null)
+        {
+            NucleusLogger.QUERY.warn("FROM clause will be ignored. Not supported for this datastore (MongoDB doesn't do 'joins')");
+        }
         compileFilter();
         compileResult();
-        compileGrouping();
-        compileHaving();
+        if (compilation.getExprGrouping() != null)
+        {
+            NucleusLogger.QUERY.warn("GROUPING clause will be ignored. Not supported for this datastore");
+        }
+        if (compilation.getExprHaving() != null)
+        {
+            NucleusLogger.QUERY.warn("HAVING clause will be ignored. Not supported for this datastore");
+        }
         compileOrdering();
     }
 
@@ -224,39 +234,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
         // TODO Handle distinct
         compileComponent = null;
-    }
-
-    /**
-     * Method to compile the grouping clause of the query
-     */
-    protected void compileGrouping()
-    {
-        if (compilation.getExprGrouping() != null)
-        {
-            // Apply any grouping to the statement
-            compileComponent = CompilationComponent.GROUPING;
-            Expression[] groupExprs = compilation.getExprGrouping();
-            for (int i = 0; i < groupExprs.length; i++)
-            {
-                // TODO Compile grouping
-            }
-            compileComponent = null;
-        }
-    }
-
-    /**
-     * Method to compile the having clause of the query
-     */
-    protected void compileHaving()
-    {
-        if (compilation.getExprHaving() != null)
-        {
-            // Apply any having to the statement
-            compileComponent = CompilationComponent.HAVING;
-            /* Expression havingExpr = */compilation.getExprHaving();
-            // TODO Compile having
-            compileComponent = null;
-        }
     }
 
     /**
