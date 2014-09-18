@@ -767,6 +767,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
     protected Object getValueForSingleRelationField(AbstractMemberMetaData mmd, Object value, ClassLoaderResolver clr)
     {
+        // TODO Cater for DBRef
         String idStr = (String)value;
         if (value == null)
         {
