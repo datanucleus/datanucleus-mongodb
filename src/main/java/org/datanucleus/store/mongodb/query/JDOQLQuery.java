@@ -196,6 +196,10 @@ public class JDOQLQuery extends AbstractJDOQLQuery
 
         datastoreCompilation = new MongoDBQueryCompilation();
         AbstractClassMetaData cmd = getCandidateClassMetaData();
+
+        // TODO Remove this and when class is registered, use listener to manage it
+        storeMgr.manageClasses(clr, cmd.getFullClassName());
+
         synchronized (datastoreCompilation)
         {
             if (inMemory)
