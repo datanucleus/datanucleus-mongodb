@@ -73,7 +73,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         super(op);
         this.table = table;
         this.dbObject = dbObject;
-        if (op.getEmbeddedOwners() != null)
+        if (ec.getOwnersForEmbeddedObjectProvider(op) != null)
         {
             embedded = true;
         }
@@ -307,7 +307,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
                             {
                                 // Other side of owner bidirectional, so return the owner
-                                ObjectProvider[] ownerOps = op.getEmbeddedOwners();
+                                ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
                                 return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
                             }
                         }
@@ -321,7 +321,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                         ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                                 {
                                     // This is the owner-field linking back to the owning object so return the owner
-                                    ObjectProvider[] ownerOps = op.getEmbeddedOwners();
+                                    ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
                                     return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
                                 }
                             }
@@ -330,7 +330,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                             {
                                 // This is the owner-field linking back to the owning object so return the owner
-                                ObjectProvider[] ownerOps = op.getEmbeddedOwners();
+                                ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
                                 return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
                             }
                         }
