@@ -544,7 +544,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             // TODO Allow other types of serialisation
             byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
             dbObject.put(mapping.getColumn(0).getName(), bytes);
-            SCOUtils.wrapSCOField(op, fieldNumber, value, false, false, true);
+            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
         else if (RelationType.isRelationSingleValued(relationType))
         {
@@ -568,7 +568,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             // Collection/Map/Array
             processContainerRelationField(mmd, value, ec, mapping.getColumn(0).getName());
-            SCOUtils.wrapSCOField(op, fieldNumber, value, false, false, true);
+            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
         else
         {
@@ -594,7 +594,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             {
                 processContainerNonRelationField(mapping.getColumn(0).getName(), ec, value, dbObject, mmd, FieldRole.ROLE_FIELD);
             }
-            SCOUtils.wrapSCOField(op, fieldNumber, value, false, false, true);
+            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
     }
 
