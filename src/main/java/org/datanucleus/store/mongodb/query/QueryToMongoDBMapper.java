@@ -798,13 +798,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else if ("startsWith".equals(operation))
                     {
-                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral("^" + Pattern.quote(invokedExprArg.getValue().toString())),
-                                MongoOperator.REGEX);
+                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral("^" + Pattern.quote(invokedExprArg.getValue().toString())), MongoOperator.REGEX);
                     }
                     else if ("endsWith".equals(operation))
                     {
-                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral(Pattern.quote(invokedExprArg.getValue().toString()) + "$"),
-                                MongoOperator.REGEX);
+                        mongoExpr = new MongoBooleanExpression(invokedFieldExpr, new MongoLiteral(Pattern.quote(invokedExprArg.getValue().toString()) + "$"), MongoOperator.REGEX);
                     }
                 }
                 else if (invokedFieldExpr.getMemberMetaData().hasCollection())
@@ -898,8 +896,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 }
                 else if (RelationType.isRelationSingleValued(relationType))
                 {
-                    boolean embedded = MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType,
-                        embMmds.isEmpty() ? null : embMmds.get(embMmds.size() - 1));
+                    boolean embedded = MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, embMmds.isEmpty() ? null : embMmds.get(embMmds.size() - 1));
 
                     if (embedded)
                     {
@@ -930,37 +927,16 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else
                     {
-                        // Not embedded
-                        embMmds.clear();
-                        // TODO Understand this logic (was included in some patch for NUCMONGODB-65)
-                        // Makes little sense to me - the only thing I would understand is if iter.hasNext()
-                        // is true
-                        // then abort since we can't join to some other object
-                        if (relationType == RelationType.ONE_TO_MANY_UNI || relationType == RelationType.ONE_TO_MANY_BI || 
-                            relationType == RelationType.MANY_TO_ONE_UNI || relationType == RelationType.MANY_TO_ONE_BI)
+                        // 1-1/N-1 not embedded
+                        if (embMmds.isEmpty() && !iter.hasNext())
                         {
-                            if (mmd.getMappedBy() != null)
-                            {
-                                // FK on the other side -- requires a join, not natively supported by mongo
-                                throw new NucleusException("Querying of relationships from the non-owning side not currently supported (for name: " + name + " in " + 
-                                        StringUtils.collectionToString(tuples));
-                            }
-
-                            // FK is at this side, so only join if further component provided, or if forcing...
-                            if (iter.hasNext())
-                            {
-                                // ... native joins not supported by mongo, so bail
-                                throw new NucleusException(
-                                    "Querying of joined attributes not supported by data store (for name: " + name + " in " + StringUtils
-                                    .collectionToString(tuples));
-                            }
-
-                            if (expr.getParent() != null && expr.getParent().getOperator() == Expression.OP_CAST)
-                            {
-                                throw new NucleusException("Cast not supported (for name: " + name + " in " + StringUtils.collectionToString(tuples));
-                            }
-                            return new MongoFieldExpression(name, mmd); // TODO Is the first arg correct? pass through table.getMemberColumnMapping().getColumn().getName()?
+                            // Last tuple, and not part of an embedded chain
+                            String fieldName = table.getMemberColumnMappingForMember(mmd).getColumn(0).getName();
+                            return new MongoFieldExpression(fieldName, mmd);
                         }
+
+                        // Either a 1-1 with further components in the chain, or a 1-1 after an embedded. NOT SUPPORTED
+                        embMmds.clear();
 
                         if (compileComponent == CompilationComponent.FILTER)
                         {
@@ -978,7 +954,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 }
                 else if (RelationType.isRelationMultiValued(relationType))
                 {
-                    throw new NucleusUserException("Dont currently support querying of embedded collection fields at " + mmd.getFullFieldName());
+                    throw new NucleusUserException("Dont currently support querying of multi-valued fields at " + mmd.getFullFieldName());
                 }
 
                 firstTuple = false;
