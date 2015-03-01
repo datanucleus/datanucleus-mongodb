@@ -195,12 +195,12 @@ public class MongoDBUtils
         rootClassNames.add(rootCmd.getFullClassName());
         Table rootTable = storeMgr.getStoreDataForClass(rootCmd.getFullClassName()).getTable();
         classNamesByDbCollectionName.put(rootTable.getName(), rootClassNames);
-        String[] subclassNames = ec.getMetaDataManager().getSubclassesForClass(rootCmd.getFullClassName(), true);
-        if (subclassNames != null)
+        Collection<String> subclassNames = storeMgr.getSubClassesForClass(rootCmd.getFullClassName(), true, clr);
+        if (subclassNames != null && !subclassNames.isEmpty())
         {
-            for (int i=0;i<subclassNames.length;i++)
+            for (String subclassName : subclassNames)
             {
-                AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassNames[i], clr);
+                AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassName, clr);
                 Table subTable = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
                 String subTableName = subTable.getName();
                 Set<String> classNames = classNamesByDbCollectionName.get(subTableName);
