@@ -328,6 +328,7 @@ public class MongoDBUtils
                     // PK field not yet set, so return null (needs to be attributed in the datastore)
                     return null;
                 }
+
                 if (storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
                 {
                     query.put("_id", new ObjectId((String)value));
@@ -335,11 +336,14 @@ public class MongoDBUtils
                 else
                 {
                     MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
-                    Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, value, FieldRole.ROLE_FIELD);
+                    Object storeValue = value;
                     if (mapping.getTypeConverter() != null)
                     {
-                        // TODO Support multiple columns
                         storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                    }
+                    else
+                    {
+                        storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, value, FieldRole.ROLE_FIELD);
                     }
                     query.put(table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName(), storeValue);
                 }
@@ -853,8 +857,8 @@ public class MongoDBUtils
     }
 
     /**
-     * Convenience method to convert the raw value of an object field into the value that will be stored
-     * in MongoDB. Note that this does not cater for relation fields, just basic fields.
+     * Convenience method to convert the raw value of an object field into the value that will be stored in MongoDB. 
+     * Note that this does not cater for relation fields, just basic fields.
      * @param ec ExecutionContext
      * @param mmd Metadata for the field holding this value (if available)
      * @param value The raw value for the field
