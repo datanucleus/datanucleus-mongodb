@@ -114,16 +114,20 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         }
 
         String rootClassName = super.getClassNameForObjectID(id, clr, ec);
-        // TODO Allow for use of users-own PK class in multiple inheritance trees
-        String[] subclasses = getMetaDataManager().getSubclassesForClass(rootClassName, true);
-        if (subclasses == null || subclasses.length == 0)
+        if (rootClassName != null)
         {
-            // No subclasses so no need to go to the datastore
-            return rootClassName;
-        }
+            // TODO Allow for use of users-own PK class in multiple inheritance trees
+            String[] subclasses = getMetaDataManager().getSubclassesForClass(rootClassName, true);
+            if (subclasses == null || subclasses.length == 0)
+            {
+                // No subclasses so no need to go to the datastore
+                return rootClassName;
+            }
 
-        AbstractClassMetaData rootCmd = getMetaDataManager().getMetaDataForClass(rootClassName, clr);
-        return MongoDBUtils.getClassNameForIdentity(id, rootCmd, ec, clr);
+            AbstractClassMetaData rootCmd = getMetaDataManager().getMetaDataForClass(rootClassName, clr);
+            return MongoDBUtils.getClassNameForIdentity(id, rootCmd, ec, clr);
+        }
+        return null;
     }
 
     /**
