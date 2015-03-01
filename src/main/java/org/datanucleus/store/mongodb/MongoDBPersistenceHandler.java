@@ -43,6 +43,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
+import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.state.ObjectProvider;
@@ -625,25 +626,64 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
             }
 
-            FetchFieldManager fieldManager = new FetchFieldManager(op, dbObject, table);
-            op.replaceFields(fieldNumbers, fieldManager);
-
-            VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd != null && op.getTransactionalVersion() == null)
+            // Strip out any non-persistent fields
+            Set<Integer> nonpersistableFields = null;
+            for (int i = 0; i < fieldNumbers.length; i++)
             {
-                // No version set, so retrieve it (note we do this after the retrieval of fields in case just got version)
-                if (vermd.getFieldName() != null)
+                AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
+                if (mmd.getPersistenceModifier() != FieldPersistenceModifier.PERSISTENT)
                 {
-                    // Version stored in a field
-                    Object datastoreVersion = op.provideField(cmd.getAbsolutePositionOfMember(vermd.getFieldName()));
-                    op.setVersion(datastoreVersion);
+                    if (nonpersistableFields == null)
+                    {
+                        nonpersistableFields = new HashSet<Integer>();
+                    }
+                    nonpersistableFields.add(i);
                 }
-                else
+            }
+            if (nonpersistableFields != null)
+            {
+                // Just go through motions for non-persistable fields
+                for (Integer fieldNum : nonpersistableFields)
                 {
-                    // Surrogate version
-                    String fieldName = table.getVersionColumn().getName();
-                    Object datastoreVersion = dbObject.get(fieldName);
-                    op.setVersion(datastoreVersion);
+                    op.replaceField(fieldNum, op.provideField(fieldNum));
+                }
+            }
+            if (nonpersistableFields == null || nonpersistableFields.size() != fieldNumbers.length)
+            {
+                if (nonpersistableFields != null)
+                {
+                    // Strip out any nonpersistable fields
+                    int[] persistableFieldNums = new int[fieldNumbers.length - nonpersistableFields.size()];
+                    int pos = 0;
+                    for (int i = 0; i < fieldNumbers.length; i++)
+                    {
+                        if (!nonpersistableFields.contains(fieldNumbers[i]))
+                        {
+                            persistableFieldNums[pos++] = fieldNumbers[i];
+                        }
+                    }
+                    fieldNumbers = persistableFieldNums;
+                }
+                FetchFieldManager fieldManager = new FetchFieldManager(op, dbObject, table);
+                op.replaceFields(fieldNumbers, fieldManager);
+
+                VersionMetaData vermd = cmd.getVersionMetaDataForClass();
+                if (vermd != null && op.getTransactionalVersion() == null)
+                {
+                    // No version set, so retrieve it (note we do this after the retrieval of fields in case just got version)
+                    if (vermd.getFieldName() != null)
+                    {
+                        // Version stored in a field
+                        Object datastoreVersion = op.provideField(cmd.getAbsolutePositionOfMember(vermd.getFieldName()));
+                        op.setVersion(datastoreVersion);
+                    }
+                    else
+                    {
+                        // Surrogate version
+                        String fieldName = table.getVersionColumn().getName();
+                        Object datastoreVersion = dbObject.get(fieldName);
+                        op.setVersion(datastoreVersion);
+                    }
                 }
             }
 
