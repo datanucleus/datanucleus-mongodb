@@ -64,6 +64,7 @@ import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.query.LazyLoadQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.TypeConverter;
@@ -333,7 +334,13 @@ public class MongoDBUtils
                 }
                 else
                 {
+                    MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
                     Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, value, FieldRole.ROLE_FIELD);
+                    if (mapping.getTypeConverter() != null)
+                    {
+                        // TODO Support multiple columns
+                        storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                    }
                     query.put(table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName(), storeValue);
                 }
             }
