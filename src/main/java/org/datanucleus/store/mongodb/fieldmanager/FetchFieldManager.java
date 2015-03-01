@@ -52,7 +52,9 @@ import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.MultiColumnConverter;
 import org.datanucleus.store.types.converters.TypeConverter;
+import org.datanucleus.store.types.converters.TypeConverterHelper;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.TypeConversionHelper;
 
 /**
  * Field Manager for retrieving values from MongoDB.
@@ -688,7 +690,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         Object val = null;
         if (mapping.getTypeConverter() != null)
         {
-            TypeConverter conv = ec.getNucleusContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
+            TypeConverter conv = mapping.getTypeConverter();
             if (mapping.getNumberOfColumns() > 1)
             {
                 boolean isNull = true;
@@ -749,6 +751,20 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     return null;
                 }
                 Object propVal = dbObject.get(colName);
+                Class datastoreType = TypeConverterHelper.getDatastoreTypeForTypeConverter(conv, mmd.getType());
+                if (!datastoreType.isAssignableFrom(propVal.getClass()))
+                {
+                    // Need to do conversion to the correct type for the converter e.g datastore returned java.util.Date yet need java.sql.Timestamp
+                    if (datastoreType == java.sql.Timestamp.class)
+                    {
+                        propVal = TypeConversionHelper.convertTo(propVal, datastoreType);
+                    }
+                    else
+                    {
+                        NucleusLogger.PERSISTENCE.warn("Retrieved value for member " + mmd.getFullFieldName() + " needs to be converted to member type " + mmd.getTypeName() +
+                            " yet the converter needs type=" + datastoreType.getName() + " and datastore returned " + propVal.getClass().getName());
+                    }
+                }
                 val = conv.toMemberType(propVal);
             }
         }
