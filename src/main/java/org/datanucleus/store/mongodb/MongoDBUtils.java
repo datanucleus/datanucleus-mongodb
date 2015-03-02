@@ -531,8 +531,12 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        String fieldName = rootTable.getMemberColumnMappingForMember(mmd).getColumn(0).getName();
-                        fieldsSelection.append(fieldName, 1);
+                        MemberColumnMapping mapping = rootTable.getMemberColumnMappingForMember(mmd);
+                        for (int j=0;j<mapping.getNumberOfColumns();j++)
+                        {
+                            String fieldName = rootTable.getMemberColumnMappingForMember(mmd).getColumn(j).getName();
+                            fieldsSelection.append(fieldName, 1);
+                        }
                     }
                 }
             }
