@@ -53,6 +53,7 @@ import org.datanucleus.store.mongodb.query.expression.MongoFieldExpression;
 import org.datanucleus.store.mongodb.query.expression.MongoLiteral;
 import org.datanucleus.store.mongodb.query.expression.MongoOperator;
 import org.datanucleus.store.query.Query;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.converters.TypeConverter;
@@ -297,12 +298,24 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
+            MemberColumnMapping rightMapping = ((MongoFieldExpression)right).getMemberColumnMapping();
+            if (rightMapping.getTypeConverter() != null)
+            {
+                // Use converter on the literal comparison value
+                left = new MongoLiteral(rightMapping.getTypeConverter().toDatastoreType(((MongoLiteral)left).getValue()));
+            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
+            MemberColumnMapping leftMapping = ((MongoFieldExpression)left).getMemberColumnMapping();
+            if (leftMapping.getTypeConverter() != null)
+            {
+                // Use converter on the literal comparison value
+                right = new MongoLiteral(leftMapping.getTypeConverter().toDatastoreType(((MongoLiteral)right).getValue()));
+            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
@@ -323,12 +336,24 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
+            MemberColumnMapping rightMapping = ((MongoFieldExpression)right).getMemberColumnMapping();
+            if (rightMapping.getTypeConverter() != null)
+            {
+                // Use converter on the literal comparison value
+                left = new MongoLiteral(rightMapping.getTypeConverter().toDatastoreType(((MongoLiteral)left).getValue()));
+            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
+            MemberColumnMapping leftMapping = ((MongoFieldExpression)left).getMemberColumnMapping();
+            if (leftMapping.getTypeConverter() != null)
+            {
+                // Use converter on the literal comparison value
+                right = new MongoLiteral(leftMapping.getTypeConverter().toDatastoreType(((MongoLiteral)right).getValue()));
+            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
@@ -463,7 +488,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 {
                     resultComplete = false;
                 }
-                NucleusLogger.QUERY.debug(">> Primary " + expr + " is not stored in this document, so unexecutable in datastore");
+                NucleusLogger.QUERY.warn("Primary " + expr + " is not stored in this document, so unexecutable in datastore");
             }
             else
             {
@@ -518,7 +543,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             }
         }
 
-        // TODO What if this is compared to a field value that is persisted using a TypeConverter? need to apply the converter to this value
         // TODO Change this to use MongoDBUtils.getStoredValueForField
         if (paramValueSet)
         {
@@ -566,6 +590,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             }
             else if (paramValue instanceof java.sql.Time || paramValue instanceof java.sql.Date)
             {
+                // TODO Should we just put the value in here?
                 // java.sql.Time/Date are stored via converter
                 Object storedVal = paramValue;
                 Class paramType = paramValue.getClass();
@@ -621,7 +646,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             }
             else
             {
-                NucleusLogger.QUERY.info("Dont currently support parameter values of type " + paramValue.getClass().getName());
+                NucleusLogger.QUERY.warn("Dont currently support parameter values of type " + paramValue.getClass().getName());
                 // TODO Support other parameter value types
             }
         }
@@ -812,7 +837,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             return mongoExpr;
         }
 
-        NucleusLogger.QUERY.debug(">> Dont currently support method invocation in MongoDB datastore queries : method=" + operation + " args=" + StringUtils.collectionToString(args));
+        NucleusLogger.QUERY.warn("Dont currently support method invocation in MongoDB datastore queries : method=" + operation + " args=" + StringUtils.collectionToString(args));
         return super.processInExpression(invokedExpr);
     }
 
@@ -863,13 +888,16 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         if (embeddedFlat)
                         {
                             embMmds.add(mmd);
-                            return new MongoFieldExpression(table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
+                            MemberColumnMapping mapping = table.getMemberColumnMappingForEmbeddedMember(embMmds);
+                            return new MongoFieldExpression(mapping.getColumn(0).getName(), mmd, mapping);
                         }
 
                         embMmds.add(mmd);
-                        return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd);
+                        MemberColumnMapping mapping = table.getMemberColumnMappingForEmbeddedMember(embMmds);
+                        return new MongoFieldExpression(embeddedNestedField + "." + table.getMemberColumnMappingForEmbeddedMember(embMmds).getColumn(0).getName(), mmd, mapping);
                     }
-                    return new MongoFieldExpression(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), mmd);
+                    MemberColumnMapping mapping = table.getMemberColumnMappingForMember(mmd);
+                    return new MongoFieldExpression(mapping.getColumn(0).getName(), mmd, mapping);
                 }
                 else if (RelationType.isRelationSingleValued(relationType))
                 {
@@ -908,8 +936,9 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         if (embMmds.isEmpty() && !iter.hasNext())
                         {
                             // Last tuple, and not part of an embedded chain
-                            String fieldName = table.getMemberColumnMappingForMember(mmd).getColumn(0).getName();
-                            return new MongoFieldExpression(fieldName, mmd);
+                            MemberColumnMapping mapping = table.getMemberColumnMappingForMember(mmd);
+                            String fieldName = mapping.getColumn(0).getName();
+                            return new MongoFieldExpression(fieldName, mmd, mapping);
                         }
 
                         // Either a 1-1 with further components in the chain, or a 1-1 after an embedded. NOT SUPPORTED
@@ -924,7 +953,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                             resultComplete = false;
                         }
 
-                        NucleusLogger.QUERY.debug("Query has reference to " + StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() + 
+                        NucleusLogger.QUERY.warn("Query has reference to " + StringUtils.collectionToString(tuples) + " and " + mmd.getFullFieldName() + 
                                 " is not persisted into this document, so unexecutable in the datastore");
                         return null;
                     }

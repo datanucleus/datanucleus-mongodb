@@ -18,19 +18,27 @@ Contributors:
 package org.datanucleus.store.mongodb.query.expression;
 
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
 
 /**
  * Expression for a field in a MongoDB document.
  */
 public class MongoFieldExpression extends MongoExpression
 {
+    MemberColumnMapping mapping;
     AbstractMemberMetaData mmd;
     String propertyName;
 
-    public MongoFieldExpression(String propName, AbstractMemberMetaData mmd)
+    public MongoFieldExpression(String propName, AbstractMemberMetaData mmd, MemberColumnMapping mapping)
     {
         this.propertyName = propName;
         this.mmd = mmd;
+        this.mapping = mapping;
+    }
+
+    public MemberColumnMapping getMemberColumnMapping()
+    {
+        return mapping;
     }
 
     public AbstractMemberMetaData getMemberMetaData()
