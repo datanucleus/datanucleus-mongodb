@@ -69,6 +69,7 @@ import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.TypeConversionHelper;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
@@ -1081,6 +1082,7 @@ public class MongoDBUtils
             for (Object elem : rawColl)
             {
                 Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
+                storeElem = TypeConversionHelper.convertTo(storeElem, mmd.getType().getComponentType());
                 Array.set(array, i++, storeElem);
             }
             return array;
