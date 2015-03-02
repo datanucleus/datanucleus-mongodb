@@ -260,9 +260,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processAndExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processAndExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processAndExpression(Expression expr)
@@ -276,9 +274,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processOrExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processOrExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processOrExpression(Expression expr)
@@ -292,9 +288,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processEqExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processEqExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processEqExpression(Expression expr)
@@ -320,9 +314,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processNoteqExpression(org.datanucleus.
-     * query.expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processNoteqExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processNoteqExpression(Expression expr)
@@ -348,9 +340,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGtExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGtExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processGtExpression(Expression expr)
@@ -376,9 +366,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLtExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLtExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processLtExpression(Expression expr)
@@ -404,9 +392,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGteqExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processGteqExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processGteqExpression(Expression expr)
@@ -432,9 +418,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLteqExpression(org.datanucleus.query
-     * .expression.Expression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLteqExpression(org.datanucleus.query.expression.Expression)
      */
     @Override
     protected Object processLteqExpression(Expression expr)
@@ -460,9 +444,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processPrimaryExpression(org.datanucleus
-     * .query.expression.PrimaryExpression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processPrimaryExpression(org.datanucleus.query.expression.PrimaryExpression)
      */
     @Override
     protected Object processPrimaryExpression(PrimaryExpression expr)
@@ -496,9 +478,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processParameterExpression(org.datanucleus
-     * .query.expression.ParameterExpression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processParameterExpression(org.datanucleus.query.expression.ParameterExpression)
      */
     @Override
     protected Object processParameterExpression(ParameterExpression expr)
@@ -538,6 +518,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             }
         }
 
+        // TODO What if this is compared to a field value that is persisted using a TypeConverter? need to apply the converter to this value
         // TODO Change this to use MongoDBUtils.getStoredValueForField
         if (paramValueSet)
         {
@@ -655,9 +636,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLiteral(org.datanucleus.query.expression
-     * .Literal)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processLiteral(org.datanucleus.query.expression.Literal)
      */
     @Override
     protected Object processLiteral(Literal expr)
@@ -707,9 +686,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
 
     /*
      * (non-Javadoc)
-     * @see
-     * org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processInvokeExpression(org.datanucleus
-     * .query.expression.InvokeExpression)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processInvokeExpression(org.datanucleus.query.expression.InvokeExpression)
      */
     @Override
     protected Object processInvokeExpression(InvokeExpression expr)
