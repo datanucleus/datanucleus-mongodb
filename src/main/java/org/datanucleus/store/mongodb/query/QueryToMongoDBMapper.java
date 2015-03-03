@@ -34,7 +34,6 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.compiler.CompilationComponent;
@@ -191,7 +190,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 // Impossible to compile all to run in the datastore, so just exit
                 if (NucleusLogger.QUERY.isDebugEnabled())
                 {
-                    NucleusLogger.QUERY.debug("Compilation of filter to be evaluated completely in-datastore was impossible : " + e.getMessage());
+                    NucleusLogger.QUERY.debug("Compilation of filter to be evaluated completely in-datastore was impossible : ", e);
                 }
                 filterComplete = false;
             }
@@ -296,24 +295,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MemberColumnMapping rightMapping = ((MongoFieldExpression)right).getMemberColumnMapping();
-            if (rightMapping.getTypeConverter() != null)
-            {
-                // Use converter on the literal comparison value
-                left = new MongoLiteral(rightMapping.getTypeConverter().toDatastoreType(((MongoLiteral)left).getValue()));
-            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MemberColumnMapping leftMapping = ((MongoFieldExpression)left).getMemberColumnMapping();
-            if (leftMapping.getTypeConverter() != null)
-            {
-                // Use converter on the literal comparison value
-                right = new MongoLiteral(leftMapping.getTypeConverter().toDatastoreType(((MongoLiteral)right).getValue()));
-            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_EQ);
             stack.push(mongoExpr);
             return mongoExpr;
@@ -334,24 +321,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         Object left = stack.pop();
         if (left instanceof MongoLiteral && right instanceof MongoFieldExpression)
         {
-            MemberColumnMapping rightMapping = ((MongoFieldExpression)right).getMemberColumnMapping();
-            if (rightMapping.getTypeConverter() != null)
-            {
-                // Use converter on the literal comparison value
-                left = new MongoLiteral(rightMapping.getTypeConverter().toDatastoreType(((MongoLiteral)left).getValue()));
-            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) right, (MongoLiteral) left, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
         }
         else if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
         {
-            MemberColumnMapping leftMapping = ((MongoFieldExpression)left).getMemberColumnMapping();
-            if (leftMapping.getTypeConverter() != null)
-            {
-                // Use converter on the literal comparison value
-                right = new MongoLiteral(leftMapping.getTypeConverter().toDatastoreType(((MongoLiteral)right).getValue()));
-            }
             MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, (MongoLiteral) right, MongoOperator.OP_NOTEQ);
             stack.push(mongoExpr);
             return mongoExpr;
@@ -552,17 +527,9 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 return lit;
             }
             else if (paramValue instanceof Number || paramValue instanceof String || paramValue instanceof Character || paramValue instanceof Boolean || paramValue instanceof Enum ||
-                    paramValue instanceof Date || paramValue instanceof Collection)
+                    paramValue instanceof Date || paramValue instanceof Collection || paramValue instanceof java.util.Calendar)
             {
                 MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof java.util.Calendar)
-            {
-                Object storedVal = MongoDBUtils.getStoredValueForField(ec, null, paramValue, FieldRole.ROLE_FIELD);
-                MongoLiteral lit = new MongoLiteral(storedVal);
                 stack.push(lit);
                 precompilable = false;
                 return lit;

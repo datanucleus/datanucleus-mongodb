@@ -26,6 +26,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
+import org.datanucleus.store.schema.table.MemberColumnMapping;
 
 /**
  * Representation of a boolean expression in MongoDB queries.
@@ -45,7 +46,14 @@ public class MongoBooleanExpression extends MongoExpression
     {
         String propName = fieldExpr.getPropertyName();
         Object value = lit.getValue();
-        if (value instanceof Enum)
+
+        MemberColumnMapping fieldMapping = fieldExpr.getMemberColumnMapping();
+        if ((op == MongoOperator.OP_EQ || op == MongoOperator.OP_NOTEQ) && fieldMapping.getTypeConverter() != null)
+        {
+            // Field uses a TypeConverter and doing equality check, so convert the literal that we compare with using the same
+            value = fieldMapping.getTypeConverter().toDatastoreType(value);
+        }
+        else if (value instanceof Enum)
         {
             value = asEnumValue(fieldExpr, (Enum<?>) value);
         }
@@ -54,9 +62,12 @@ public class MongoBooleanExpression extends MongoExpression
             Collection<Object> collection = new ArrayList<Object>();
             for (Object obj : (Collection<?>) value)
             {
-                if (obj instanceof Enum) {
+                if (obj instanceof Enum)
+                {
                     collection.add(asEnumValue(fieldExpr, (Enum<?>) obj));
-                } else {
+                }
+                else
+                {
                     collection.add(obj);
                 }
             }
