@@ -944,14 +944,6 @@ public class MongoDBUtils
             boolean useNumeric = MetaDataUtils.persistColumnAsNumeric(colmd);
             return useNumeric ? ((Enum)value).ordinal() : ((Enum)value).name();
         }
-        else if (java.sql.Time.class.isAssignableFrom(type))
-        {
-            // Will be processed by type converters below
-        }
-        else if (java.sql.Date.class.isAssignableFrom(type))
-        {
-            // Will be processed by type converters below
-        }
         else if (Date.class.isAssignableFrom(type))
         {
             // store as-is

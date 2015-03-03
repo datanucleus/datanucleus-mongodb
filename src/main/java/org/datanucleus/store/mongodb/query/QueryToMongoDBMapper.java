@@ -55,8 +55,6 @@ import org.datanucleus.store.mongodb.query.expression.MongoOperator;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
-import org.datanucleus.store.types.SCO;
-import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
@@ -553,64 +551,10 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 precompilable = false;
                 return lit;
             }
-            else if (paramValue instanceof Number)
+            else if (paramValue instanceof Number || paramValue instanceof String || paramValue instanceof Character || paramValue instanceof Boolean || paramValue instanceof Enum ||
+                    paramValue instanceof Date || paramValue instanceof Collection)
             {
                 MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof String)
-            {
-                MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof Character)
-            {
-                MongoLiteral lit = new MongoLiteral("" + paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof Boolean)
-            {
-                MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof Enum)
-            {
-                MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof java.sql.Time || paramValue instanceof java.sql.Date)
-            {
-                // TODO Should we just put the value in here?
-                // java.sql.Time/Date are stored via converter
-                Object storedVal = paramValue;
-                Class paramType = paramValue.getClass();
-                if (paramValue instanceof SCO)
-                {
-                    paramType = ((SCO) paramValue).getValue().getClass();
-                }
-                TypeConverter strConv = ec.getTypeManager().getTypeConverterForType(paramType, String.class);
-                TypeConverter longConv = ec.getTypeManager().getTypeConverterForType(paramType, Long.class);
-                if (strConv != null)
-                {
-                    // store as a String
-                    storedVal = strConv.toDatastoreType(paramValue);
-                }
-                else if (longConv != null)
-                {
-                    // store as a Long
-                    storedVal = longConv.toDatastoreType(paramValue);
-                }
-                MongoLiteral lit = new MongoLiteral(storedVal);
                 stack.push(lit);
                 precompilable = false;
                 return lit;
@@ -619,20 +563,6 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             {
                 Object storedVal = MongoDBUtils.getStoredValueForField(ec, null, paramValue, FieldRole.ROLE_FIELD);
                 MongoLiteral lit = new MongoLiteral(storedVal);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof Date)
-            {
-                MongoLiteral lit = new MongoLiteral(paramValue);
-                stack.push(lit);
-                precompilable = false;
-                return lit;
-            }
-            else if (paramValue instanceof Collection)
-            {
-                MongoLiteral lit = new MongoLiteral(paramValue);
                 stack.push(lit);
                 precompilable = false;
                 return lit;
