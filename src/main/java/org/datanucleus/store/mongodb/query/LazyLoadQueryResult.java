@@ -19,6 +19,7 @@ package org.datanucleus.store.mongodb.query;
 
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -155,6 +156,14 @@ public class LazyLoadQueryResult extends AbstractQueryResult
             // Query connection closing message
             NucleusLogger.QUERY.info(Localiser.msg("052606", query.toString()));
 
+            loadRemainingResults();
+        }
+    }
+
+    private void loadRemainingResults()
+    {
+        if (isOpen() && !candidateResults.isEmpty())
+        {
             synchronized (this)
             {
                 if (currentCursorIterator != null)
@@ -164,8 +173,7 @@ public class LazyLoadQueryResult extends AbstractQueryResult
                     while (currentCursorIterator.hasNext())
                     {
                         DBObject dbObject = currentCursorIterator.next();
-                        Object pojo = MongoDBUtils.getPojoForDBObjectForCandidate(dbObject, ec, result.cmd,
-                            result.fpMembers, query.getIgnoreCache());
+                        Object pojo = MongoDBUtils.getPojoForDBObjectForCandidate(dbObject, ec, result.cmd, result.fpMembers, query.getIgnoreCache());
                         itemsByIndex.put(itemsByIndex.size(), pojo);
                     }
                     result.cursor.close();
@@ -182,8 +190,7 @@ public class LazyLoadQueryResult extends AbstractQueryResult
                     while (currentCursorIterator.hasNext())
                     {
                         DBObject dbObject = currentCursorIterator.next();
-                        Object pojo = MongoDBUtils.getPojoForDBObjectForCandidate(dbObject, ec, result.cmd,
-                            result.fpMembers, query.getIgnoreCache());
+                        Object pojo = MongoDBUtils.getPojoForDBObjectForCandidate(dbObject, ec, result.cmd, result.fpMembers, query.getIgnoreCache());
                         itemsByIndex.put(itemsByIndex.size(), pojo);
                     }
                     result.cursor.close();
@@ -349,6 +356,33 @@ public class LazyLoadQueryResult extends AbstractQueryResult
         }
 
         return pojo;
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.store.query.AbstractQueryResult#contains(java.lang.Object)
+     */
+    @Override
+    public boolean contains(Object o)
+    {
+        loadRemainingResults();
+        return itemsByIndex.containsValue(o);
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.store.query.AbstractQueryResult#containsAll(java.util.Collection)
+     */
+    @Override
+    public boolean containsAll(Collection c)
+    {
+        loadRemainingResults();
+        for (Object o : c)
+        {
+            if (!itemsByIndex.containsKey(o))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /* (non-Javadoc)
