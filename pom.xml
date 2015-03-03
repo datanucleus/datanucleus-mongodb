@@ -18,7 +18,7 @@
 
     <properties>
         <dn.core.version>4.1.0-m1</dn.core.version>
-        <mongodb.version>2.11.3</mongodb.version>
+        <mongodb.version>2.13.0</mongodb.version>
     </properties>
 
     <scm>
