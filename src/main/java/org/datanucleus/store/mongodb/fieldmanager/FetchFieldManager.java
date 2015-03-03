@@ -792,24 +792,56 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
         try
         {
-            Object obj = null;
             AbstractClassMetaData memberCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
-            if (memberCmd.usesSingleFieldIdentityClass() && idStr.indexOf(':') > 0)
+            if (memberCmd != null)
             {
-                // Uses persistent identity
-                obj = IdentityUtils.getObjectFromPersistableIdentity(idStr, memberCmd, ec);
-            }
-            else
-            {
+                // Persistable field
+                if (memberCmd.usesSingleFieldIdentityClass() && idStr.indexOf(':') > 0)
+                {
+                    // Uses persistent identity
+                    return IdentityUtils.getObjectFromPersistableIdentity(idStr, memberCmd, ec);
+                }
+
                 // Uses legacy identity
-                obj = IdentityUtils.getObjectFromIdString(idStr, memberCmd, ec, true);
+                return IdentityUtils.getObjectFromIdString(idStr, memberCmd, ec, true);
             }
-            return obj;
+
+            // Interface field
+            String[] implNames = MetaDataUtils.getInstance().getImplementationNamesForReferenceField(mmd, FieldRole.ROLE_FIELD, clr, ec.getMetaDataManager());
+            if (implNames != null && implNames.length == 1)
+            {
+                // Only one possible implementation, so use that
+                memberCmd = ec.getMetaDataManager().getMetaDataForClass(implNames[0], clr);
+                return IdentityUtils.getObjectFromPersistableIdentity(idStr, memberCmd, ec);
+            }
+            else if (implNames != null && implNames.length > 1)
+            {
+                // Multiple implementations, so try each implementation in turn (note we only need this if some impls have different "identity" type from each other)
+                for (String implName : implNames)
+                {
+                    try
+                    {
+                        memberCmd = ec.getMetaDataManager().getMetaDataForClass(implName, clr);
+                        return IdentityUtils.getObjectFromPersistableIdentity(idStr, memberCmd, ec);
+                    }
+                    catch (NucleusObjectNotFoundException nonfe)
+                    {
+                        // Object no longer present in the datastore, must have been deleted
+                        throw nonfe;
+                    }
+                    catch (Exception e)
+                    {
+                        // Not possible with this implementation
+                    }
+                }
+            }
+
+            throw new NucleusUserException(
+                "We do not currently support the field type of " + mmd.getFullFieldName() + " which has an interdeterminate type (e.g interface or Object element types)");
         }
         catch (NucleusObjectNotFoundException onfe)
         {
-            NucleusLogger.GENERAL.warn("Object=" + op + " field=" + mmd.getFullFieldName() + " has id=" + idStr +
-                " but could not instantiate object with that identity");
+            NucleusLogger.GENERAL.warn("Object=" + op + " field=" + mmd.getFullFieldName() + " has id=" + idStr + " but could not instantiate object with that identity");
             return null;
         }
     }
@@ -834,18 +866,19 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             if (elemCmd == null)
             {
                 // Try any listed implementations
-                String[] implNames = MetaDataUtils.getInstance().getImplementationNamesForReferenceField(mmd, 
-                    FieldRole.ROLE_COLLECTION_ELEMENT, clr, ec.getMetaDataManager());
-                if (implNames != null && implNames.length == 1)
+                String[] implNames = MetaDataUtils.getInstance().getImplementationNamesForReferenceField(mmd, FieldRole.ROLE_COLLECTION_ELEMENT, clr, ec.getMetaDataManager());
+                if (implNames != null && implNames.length > 0)
                 {
+                    // Just use first implementation TODO What if the impls have different id type?
                     elemCmd = ec.getMetaDataManager().getMetaDataForClass(implNames[0], clr);
                 }
                 if (elemCmd == null)
                 {
-                    throw new NucleusUserException("We do not currently support the field type of " + mmd.getFullFieldName() +
+                    throw new NucleusUserException("We do not currently support the field type of " + mmd.getFullFieldName() + 
                         " which has a collection of interdeterminate element type (e.g interface or Object element types)");
                 }
             }
+
             Collection collIds = (Collection)value;
             Iterator idIter = collIds.iterator();
             boolean changeDetected = false;
