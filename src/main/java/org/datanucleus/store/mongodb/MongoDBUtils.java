@@ -101,7 +101,8 @@ public class MongoDBUtils
             String collectionName = table.getName();
             count += db.getCollection(collectionName).count(filterObject);
         }
-        List<Long> results =  new LinkedList<Long>();
+
+        List<Long> results = new LinkedList<Long>();
         results.add(count);
         if (ec.getStatistics() != null)
         {
@@ -283,8 +284,7 @@ public class MongoDBUtils
 
                     if (rootCmd.hasDiscriminatorStrategy())
                     {
-                        String disPropName = rootTable.getDiscriminatorColumn().getName();
-                        String discValue = (String)foundObj.get(disPropName);
+                        String discValue = (String)foundObj.get(rootTable.getDiscriminatorColumn().getName());
                         return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
                     }
 
@@ -416,15 +416,12 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Version field in class
-                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                String fieldName = table.getMemberColumnMappingForMember(verMmd).getColumn(0).getName();
-                query.put(fieldName, currentVersion);
+                query.put(table.getMemberColumnMappingForMember(cmd.getMetaDataForMember(vermd.getFieldName())).getColumn(0).getName(), currentVersion);
             }
             else
             {
                 // Surrogate version field
-                String fieldName = table.getVersionColumn().getName();
-                query.put(fieldName, currentVersion);
+                query.put(table.getVersionColumn().getName(), currentVersion);
             }
         }
 
@@ -458,8 +455,7 @@ public class MongoDBUtils
      * @param limit Max number of records to return
      * @return List of all candidate objects (implements QueryResult)
      */
-    public static List getObjectsOfCandidateType(Query q, DB db, BasicDBObject filterObject, BasicDBObject orderingObject,
-            Map<String, Object> options, Integer skip, Integer limit)
+    public static List getObjectsOfCandidateType(Query q, DB db, BasicDBObject filterObject, BasicDBObject orderingObject, Map<String, Object> options, Integer skip, Integer limit)
     {
         LazyLoadQueryResult qr = new LazyLoadQueryResult(q);
 
@@ -520,8 +516,7 @@ public class MongoDBUtils
                         if (nested)
                         {
                             // Nested Embedded field, so include field
-                            String fieldName = storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN); // TODO Use Table
-                            fieldsSelection.append(fieldName, 1);
+                            fieldsSelection.append(storeMgr.getNamingFactory().getColumnName(mmd, ColumnType.COLUMN), 1); // TODO Use Table
                         }
                         else
                         {
@@ -534,8 +529,7 @@ public class MongoDBUtils
                         MemberColumnMapping mapping = rootTable.getMemberColumnMappingForMember(mmd);
                         for (int j=0;j<mapping.getNumberOfColumns();j++)
                         {
-                            String fieldName = rootTable.getMemberColumnMappingForMember(mmd).getColumn(j).getName();
-                            fieldsSelection.append(fieldName, 1);
+                            fieldsSelection.append(rootTable.getMemberColumnMappingForMember(mmd).getColumn(j).getName(), 1);
                         }
                     }
                 }
@@ -647,8 +641,7 @@ public class MongoDBUtils
     }
 
     /**
-     * Convenience method that takes the provided DBObject and the details of the candidate that it is an instance
-     * of, and converts it into the associated POJO.
+     * Convenience method that takes the provided DBObject and the details of the candidate that it is an instance of, and converts it into the associated POJO.
      * @param dbObject The DBObject
      * @param ec ExecutionContext
      * @param cmd Metadata for the candidate class
@@ -700,14 +693,12 @@ public class MongoDBUtils
             }
             else
             {
-                String embFieldName = MongoDBUtils.getFieldName(mmd, i);
-                fieldsSelection.append(embFieldName, 1);
+                fieldsSelection.append(MongoDBUtils.getFieldName(mmd, i), 1);
             }
         }
     }
 
-    public static Object getObjectUsingApplicationIdForDBObject(final DBObject dbObject, 
-            final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
+    public static Object getObjectUsingApplicationIdForDBObject(final DBObject dbObject, final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
     {
         Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
@@ -740,8 +731,7 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                version = op.provideField(verMmd.getAbsoluteFieldNumber());
+                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
@@ -753,8 +743,7 @@ public class MongoDBUtils
         return pc;
     }
 
-    public static Object getObjectUsingDatastoreIdForDBObject(final DBObject dbObject, 
-            final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
+    public static Object getObjectUsingDatastoreIdForDBObject(final DBObject dbObject, final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
     {
         Object idKey = null;
         StoreManager storeMgr = ec.getStoreManager();
@@ -802,8 +791,7 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                version = sm.provideField(verMmd.getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
@@ -814,8 +802,8 @@ public class MongoDBUtils
         }
         return pc;
     }
-    public static Object getObjectUsingNondurableIdForDBObject(final DBObject dbObject, 
-            final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
+
+    public static Object getObjectUsingNondurableIdForDBObject(final DBObject dbObject, final AbstractClassMetaData cmd, final ExecutionContext ec, boolean ignoreCache, final int[] fpMembers)
     {
         Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         SCOID oid = new SCOID(cmd.getFullClassName());
@@ -848,8 +836,7 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
-                version = sm.provideField(verMmd.getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
@@ -941,8 +928,7 @@ public class MongoDBUtils
             {
                 colmd = mmd.getColumnMetaData()[0];
             }
-            boolean useNumeric = MetaDataUtils.persistColumnAsNumeric(colmd);
-            return useNumeric ? ((Enum)value).ordinal() : ((Enum)value).name();
+            return MetaDataUtils.persistColumnAsNumeric(colmd) ? ((Enum)value).ordinal() : ((Enum)value).name();
         }
         else if (Date.class.isAssignableFrom(type))
         {
@@ -962,12 +948,7 @@ public class MongoDBUtils
                 return ((Calendar)value).getTime();
             }
         }
-        else if (Character.class.isAssignableFrom(type))
-        {
-            // store as String
-            return "" + value;
-        }
-        else if (char.class.isAssignableFrom(type))
+        else if (Character.class.isAssignableFrom(type) || char.class.isAssignableFrom(type))
         {
             // store as String
             return "" + value;
