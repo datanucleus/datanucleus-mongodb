@@ -285,10 +285,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 // Create new connection
                 conn = mongo.getDB(dbName);
                 NucleusLogger.CONNECTION.debug("Created DB from MongoClient");
-                if (storeMgr.getBooleanProperty("datanucleus.readOnlyDatastore", false))
-                {
-                    ((DB) conn).setReadOnly(Boolean.TRUE);
-                }
             }
 
             if (!startRequested)
