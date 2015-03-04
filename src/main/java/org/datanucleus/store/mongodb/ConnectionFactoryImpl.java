@@ -17,7 +17,6 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -202,13 +201,14 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             }
             NucleusLogger.CONNECTION.debug("Created MongoClient object");
         }
-        catch (UnknownHostException e)
-        {
-            throw new NucleusDataStoreException("Unable to connect to mongodb", e);
-        }
         catch (MongoException me)
         {
             throw new NucleusDataStoreException("Unable to connect to mongodb", me);
+        }
+        catch (Exception e)
+        {
+            // We catch this since with MongoDB 2.x driver ServerAddress(...) can throw UnknownHostException
+            throw new NucleusDataStoreException("Unable to connect to mongodb", e);
         }
     }
 
