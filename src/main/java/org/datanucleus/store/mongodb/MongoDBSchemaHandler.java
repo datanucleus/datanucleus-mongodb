@@ -194,7 +194,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         {
                             NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, idxObj));
                         }
-                        collection.ensureIndex(idxObj, idxName, idxmd.isUnique());
+                        collection.createIndex(idxObj, idxName, idxmd.isUnique());
                     }
                 }
 
@@ -210,7 +210,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         {
                             NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", uniName, collectionName, uniObj));
                         }
-                        collection.ensureIndex(uniObj, uniName, true);
+                        collection.createIndex(uniObj, uniName, true);
                     }
                 }
                 theCmd = theCmd.getSuperAbstractClassMetaData();
@@ -247,7 +247,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
                     }
-                    collection.ensureIndex(query, pkName, true);
+                    collection.createIndex(query, pkName, true);
                 }
             }
             else if (cmd.getIdentityType() == IdentityType.DATASTORE)
@@ -265,7 +265,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
                     }
-                    collection.ensureIndex(query, pkName, true);
+                    collection.createIndex(query, pkName, true);
                 }
             }
 
@@ -284,7 +284,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, query));
                     }
-                    collection.ensureIndex(query, idxName, idxmd.isUnique());
+                    collection.createIndex(query, idxName, idxmd.isUnique());
                 }
                 UniqueMetaData unimd = mapping.getMemberMetaData().getUniqueMetaData();
                 if (unimd != null)
@@ -295,7 +295,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", unimd.getName(), collectionName, query));
                     }
-                    collection.ensureIndex(query, unimd.getName(), true);
+                    collection.createIndex(query, unimd.getName(), true);
                 }
             }
         }

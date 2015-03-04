@@ -44,6 +44,7 @@ import com.mongodb.DB;
 import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
 import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
 
@@ -73,7 +74,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     {
         super(storeMgr, resourceType);
 
-        // "mongodb:[server]"
+        // "mongodb:[server]/database"
         String url = storeMgr.getConnectionURL();
         if (url == null)
         {
@@ -161,6 +162,16 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 }
             }
 
+            List<MongoCredential> credentials = null;
+            String userName = storeMgr.getConnectionUserName();
+            String password = storeMgr.getConnectionPassword();
+            if (!StringUtils.isWhitespace(userName))
+            {
+                MongoCredential credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
+                credentials = new ArrayList<MongoCredential>();
+                credentials.add(credential);
+            }
+
             // Create the Mongo connection pool
             if (NucleusLogger.CONNECTION.isDebugEnabled())
             {
@@ -169,11 +180,25 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
             if (serverAddrs.size() == 1)
             {
-                mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
+                if (credentials == null)
+                {
+                    mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
+                }
+                else
+                {
+                    mongo = new MongoClient(serverAddrs.get(0), credentials, getMongodbOptions(storeMgr));
+                }
             }
             else
             {
-                mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
+                if (credentials == null)
+                {
+                    mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
+                }
+                else
+                {
+                    mongo = new MongoClient(serverAddrs, credentials, getMongodbOptions(storeMgr));
+                }
             }
             NucleusLogger.CONNECTION.debug("Created MongoClient object");
         }
@@ -260,20 +285,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 // Create new connection
                 conn = mongo.getDB(dbName);
                 NucleusLogger.CONNECTION.debug("Created DB from MongoClient");
-                String userName = storeMgr.getConnectionUserName();
-                String password = storeMgr.getConnectionPassword();
-                if (!StringUtils.isWhitespace(userName))
-                {
-                    boolean authenticated = false;
-                    if (!((DB) conn).isAuthenticated())
-                    {
-                        authenticated = ((DB) conn).authenticate(userName, password.toCharArray());
-                        if (!authenticated)
-                        {
-                            throw new NucleusDataStoreException("Authentication of the connection failed for datastore " + dbName + " with user " + userName);
-                        }
-                    }
-                }
                 if (storeMgr.getBooleanProperty("datanucleus.readOnlyDatastore", false))
                 {
                     ((DB) conn).setReadOnly(Boolean.TRUE);
@@ -283,7 +294,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (!startRequested)
             {
                 // Start the "transaction"
-                ((DB) conn).requestStart();
                 startRequested = true;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is starting");
             }
@@ -294,7 +304,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (commitOnRelease)
             {
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
-                ((DB) conn).requestDone();
                 startRequested = false;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
             }
@@ -317,8 +326,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (startRequested)
             {
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
-                // End the current request
-                ((DB) conn).requestDone();
                 startRequested = false;
                 NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
             }
@@ -363,14 +370,12 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         public void commit(Xid xid, boolean onePhase) throws XAException
         {
             super.commit(xid, onePhase);
-            db.requestDone();
             ((ManagedConnectionImpl) mconn).startRequested = false;
         }
 
         public void rollback(Xid xid) throws XAException
         {
             super.rollback(xid);
-            db.requestDone();
             ((ManagedConnectionImpl) mconn).startRequested = false;
         }
     }
