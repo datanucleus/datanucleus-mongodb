@@ -274,18 +274,6 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             for (MemberColumnMapping mapping : mappings)
             {
                 Column column = mapping.getColumn(0);
-                IndexMetaData idxmd = mapping.getMemberMetaData().getIndexMetaData();
-                if (idxmd != null)
-                {
-                    BasicDBObject query = new BasicDBObject();
-                    query.append(column.getName(), 1);
-                    String idxName = namingFactory.getConstraintName(null, mapping.getMemberMetaData(), idxmd);
-                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
-                    {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, query));
-                    }
-                    collection.createIndex(query, idxName, idxmd.isUnique());
-                }
                 UniqueMetaData unimd = mapping.getMemberMetaData().getUniqueMetaData();
                 if (unimd != null)
                 {
@@ -295,7 +283,27 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     {
                         NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", unimd.getName(), collectionName, query));
                     }
-                    collection.createIndex(query, unimd.getName(), true);
+                    String idxName = unimd.getName();
+                    if (idxName == null)
+                    {
+                        idxName = namingFactory.getConstraintName(cmd.getName(), mapping.getMemberMetaData(), unimd);
+                    }
+                    collection.createIndex(query, idxName, true);
+                }
+                else
+                {
+                    IndexMetaData idxmd = mapping.getMemberMetaData().getIndexMetaData();
+                    if (idxmd != null)
+                    {
+                        BasicDBObject query = new BasicDBObject();
+                        query.append(column.getName(), 1);
+                        String idxName = namingFactory.getConstraintName(cmd.getName(), mapping.getMemberMetaData(), idxmd);
+                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, query));
+                        }
+                        collection.createIndex(query, idxName, idxmd.isUnique());
+                    }
                 }
             }
         }
