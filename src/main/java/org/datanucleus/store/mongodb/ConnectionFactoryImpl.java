@@ -40,7 +40,6 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import com.mongodb.DB;
-import com.mongodb.Mongo;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoCredential;
@@ -62,7 +61,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
     String dbName = "DataNucleus";
 
-    Mongo mongo;
+    MongoClient mongo;
 
     /**
      * Constructor.
@@ -282,7 +281,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         {
             if (conn == null)
             {
-                // Create new connection
+                // Create new connection TODO mongo-java-driver changes this to getDatabase in v3.1
                 conn = mongo.getDB(dbName);
                 NucleusLogger.CONNECTION.debug("Created DB from MongoClient");
             }
