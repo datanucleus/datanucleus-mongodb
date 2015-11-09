@@ -277,6 +277,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             return conn;
         }
 
+        @SuppressWarnings("deprecation")
         protected void obtainNewConnection()
         {
             if (conn == null)
