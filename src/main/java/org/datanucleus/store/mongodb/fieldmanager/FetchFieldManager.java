@@ -474,6 +474,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             storeMgr.manageClasses(clr, embClassName);
                         }
                         Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        // TODO Use FetchEmbeddedFieldManager
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
@@ -532,6 +533,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             storeMgr.manageClasses(clr, embClassName);
                         }
                         Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        // TODO Use FetchEmbeddedFieldManager
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
@@ -586,6 +588,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 storeMgr.manageClasses(clr, embClassName);
                             }
                             Table keyTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                            // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyTable);
                             ffm.ownerMmd = mmd;
                             embOP.replaceFields(keyCmd.getAllMemberPositions(), ffm);
@@ -610,6 +613,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 storeMgr.manageClasses(clr, embClassName);
                             }
                             Table valTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                            // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valTable);
                             ffm.ownerMmd = mmd;
                             embOP.replaceFields(valCmd.getAllMemberPositions(), ffm);

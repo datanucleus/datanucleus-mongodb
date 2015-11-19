@@ -36,8 +36,7 @@ import org.datanucleus.util.NucleusLogger;
 import com.mongodb.DBObject;
 
 /**
- * FieldManager for the retrieval of a related embedded object (1-1 relation).
- * This handles flat embedding of related embedded objects, where the field of the embedded object become a field in the owner document.
+ * FieldManager for the retrieval of a related embedded object.
  */
 public class FetchEmbeddedFieldManager extends FetchFieldManager
 {
@@ -74,7 +73,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
         RelationType relationType = mmd.getRelationType(clr);
         if (relationType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, null))
         {
-            // Embedded field
+            // (Nested) Embedded field
             if (RelationType.isRelationSingleValued(relationType))
             {
                 /*if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.MANY_TO_ONE_BI)
@@ -92,32 +91,41 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     }
                 }*/
 
+                MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                boolean nested = MongoDBUtils.isMemberNested(mmd);
+
                 // Check for null value (currently need all columns to return null)
-                // TODO Cater for null using embmd.getNullIndicatorColumn etc
-                if (embmd != null)
+                DBObject subObject = dbObject;
+                if (nested)
                 {
-                    AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-                    boolean isNull = true;
-                    for (int i=0;i<embmmds.length;i++)
-                    {
-                        String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
-                        if (dbObject.containsField(embFieldName))
-                        {
-                            isNull = false;
-                            break;
-                        }
-                    }
-                    if (isNull)
+                    subObject = (DBObject) dbObject.get(mapping.getColumn(0).getName());
+
+                    if (subObject == null)
                     {
                         return null;
                     }
                 }
-
-                DBObject subObject = dbObject;
-                if (MongoDBUtils.isMemberNested(mmd))
+                else
                 {
-                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-                    subObject = (DBObject) dbObject.get(mapping.getColumn(0).getName());
+                    // TODO Cater for null using embmd.getNullIndicatorColumn etc
+                    if (embmd != null)
+                    {
+                        AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
+                        boolean isNull = true;
+                        for (int i=0;i<embmmds.length;i++)
+                        {
+                            String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
+                            if (dbObject.containsField(embFieldName))
+                            {
+                                isNull = false;
+                                break;
+                            }
+                        }
+                        if (isNull)
+                        {
+                            return null;
+                        }
+                    }
                 }
 
                 List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
@@ -130,9 +138,9 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
-                NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded flat into the owning object");
+                NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded into the owning embedded object");
             }
-            return null; // Remove this when we support embedded
+            return null;
         }
 
         return fetchNonEmbeddedObjectField(mmd, relationType, clr);
