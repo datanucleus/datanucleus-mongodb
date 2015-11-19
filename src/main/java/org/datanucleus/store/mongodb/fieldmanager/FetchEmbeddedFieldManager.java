@@ -114,11 +114,18 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     }
                 }
 
+                DBObject subObject = dbObject;
+                if (MongoDBUtils.isMemberNested(mmd))
+                {
+                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+                    subObject = (DBObject) dbObject.get(mapping.getColumn(0).getName());
+                }
+
                 List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
                 embMmds.add(mmd);
                 AbstractClassMetaData embCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
                 ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embCmd, op, fieldNumber);
-                FieldManager fetchEmbFM = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);
+                FieldManager fetchEmbFM = new FetchEmbeddedFieldManager(embOP, subObject, embMmds, table);
                 embOP.replaceFields(embCmd.getAllMemberPositions(), fetchEmbFM);
                 return embOP.getObject();
             }
