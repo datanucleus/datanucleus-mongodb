@@ -48,6 +48,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
     public FetchEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, List<AbstractMemberMetaData> mmds, Table table)
     {
         super(op, dbObject, table);
+        this.ownerMmd = (mmds != null ? mmds.get(mmds.size()-1) : null);
         this.mmds = mmds;
     }
 
