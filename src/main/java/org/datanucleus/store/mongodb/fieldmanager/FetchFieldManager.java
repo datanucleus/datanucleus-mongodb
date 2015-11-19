@@ -65,8 +65,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
     protected DBObject dbObject;
 
-    protected boolean embedded = false;
-
     /** Metadata for the owner field if this is embedded. TODO Is this needed now that we have "mmds" in EmbeddedFetchFieldManager? */
     protected AbstractMemberMetaData ownerMmd = null;
 
@@ -75,10 +73,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         super(op);
         this.table = table;
         this.dbObject = dbObject;
-        if (ec.getOwnersForEmbeddedObjectProvider(op) != null)
-        {
-            embedded = true;
-        }
     }
 
     public FetchFieldManager(ExecutionContext ec, DBObject dbObject, AbstractClassMetaData cmd, Table table)
@@ -482,7 +476,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
-                        ffm.embedded = true;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
                         coll.add(embOP.getObject());
                     }
@@ -541,7 +534,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
-                        ffm.embedded = true;
                         embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
                         array[i] = embOP.getObject();
                     }
@@ -596,7 +588,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             Table keyTable = storeMgr.getStoreDataForClass(embClassName).getTable();
                             FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyTable);
                             ffm.ownerMmd = mmd;
-                            ffm.embedded = true;
                             embOP.replaceFields(keyCmd.getAllMemberPositions(), ffm);
                             mapKey = embOP.getObject();
                         }
@@ -621,7 +612,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             Table valTable = storeMgr.getStoreDataForClass(embClassName).getTable();
                             FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valTable);
                             ffm.ownerMmd = mmd;
-                            ffm.embedded = true;
                             embOP.replaceFields(valCmd.getAllMemberPositions(), ffm);
                             mapVal = embOP.getObject();
                         }

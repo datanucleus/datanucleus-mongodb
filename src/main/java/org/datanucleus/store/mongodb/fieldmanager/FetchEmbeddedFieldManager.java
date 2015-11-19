@@ -37,12 +37,11 @@ import com.mongodb.DBObject;
 
 /**
  * FieldManager for the retrieval of a related embedded object (1-1 relation).
- * This handles flat embedding of related embedded objects, where the field of the embedded object become
- * a field in the owner document.
+ * This handles flat embedding of related embedded objects, where the field of the embedded object become a field in the owner document.
  */
 public class FetchEmbeddedFieldManager extends FetchFieldManager
 {
-    /** Metadata for the embedded member (maybe nested) that this FieldManager represents). */
+    /** Metadata for the embedded member (maybe nested) that this FieldManager represents. */
     protected List<AbstractMemberMetaData> mmds;
 
     public FetchEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, List<AbstractMemberMetaData> mmds, Table table)

@@ -43,7 +43,7 @@ import com.mongodb.DBObject;
  */
 public class StoreEmbeddedFieldManager extends StoreFieldManager
 {
-    /** Metadata for the embedded member (maybe nested) that this FieldManager represents). */
+    /** Metadata for the embedded member (maybe nested) that this FieldManager represents. */
     protected List<AbstractMemberMetaData> mmds;
 
     public StoreEmbeddedFieldManager(ObjectProvider op, DBObject dbObject, boolean insert, List<AbstractMemberMetaData> mmds, Table table)
