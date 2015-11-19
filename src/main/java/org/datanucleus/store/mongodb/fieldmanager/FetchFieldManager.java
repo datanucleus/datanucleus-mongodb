@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.mongodb.DBObject;
+import com.mongodb.DBRef;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
@@ -777,7 +778,12 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
     protected Object getValueForSingleRelationField(AbstractMemberMetaData mmd, Object value, ClassLoaderResolver clr)
     {
-        // TODO Cater for DBRef
+        if (value instanceof DBRef)
+        {
+            // TODO Cater for DBRef
+            throw new NucleusUserException("Field " + mmd.getFullFieldName() + " has a DBRef stored in it. We do not currently support DBRef links. See the DataNucleus documentation");
+        }
+
         String idStr = (String)value;
         if (value == null)
         {
@@ -873,14 +879,21 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
             }
 
+            // TODO Support DBRef option rather than persistable id
             Collection collIds = (Collection)value;
             Iterator idIter = collIds.iterator();
             boolean changeDetected = false;
-            AbstractClassMetaData elementCmd = mmd.getCollection().getElementClassMetaData(
-                ec.getClassLoaderResolver(), ec.getMetaDataManager());
+            AbstractClassMetaData elementCmd = mmd.getCollection().getElementClassMetaData(ec.getClassLoaderResolver(), ec.getMetaDataManager());
             while (idIter.hasNext())
             {
-                String elementIdStr = (String)idIter.next();
+                Object idValue = idIter.next();
+                if (idValue instanceof DBRef)
+                {
+                    // TODO Cater for DBRef
+                    throw new NucleusUserException("Field " + mmd.getFullFieldName() + " has a DBRef stored in it. We do not currently support DBRef links. See the DataNucleus documentation");
+                }
+
+                String elementIdStr = (String)idValue;
                 if (elementIdStr.equals("NULL"))
                 {
                     coll.add(null);
@@ -935,6 +948,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 throw new NucleusDataStoreException(e.getMessage(), e);
             }
 
+            // TODO Support DBRef option rather than persistable id
             AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
             AbstractClassMetaData valueCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
             Collection<DBObject> collEntries = (Collection)value;
@@ -945,6 +959,12 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 DBObject entryObj = entryIter.next();
                 Object keyObj = entryObj.get("key");
                 Object valueObj = entryObj.get("value");
+
+                if (keyObj instanceof DBRef)
+                {
+                    // TODO Cater for DBRef
+                    throw new NucleusUserException("Field " + mmd.getFullFieldName() + " has a key with DBRef stored in it. We do not currently support DBRef links. See the DataNucleus documentation");
+                }
 
                 try
                 {
@@ -967,6 +987,12 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     else
                     {
                         mapKey = getMapKeyForReturnValue(mmd, keyObj);
+                    }
+
+                    if (valueObj instanceof DBRef)
+                    {
+                        // TODO Cater for DBRef
+                        throw new NucleusUserException("Field " + mmd.getFullFieldName() + " has a value with DBRef stored in it. We do not currently support DBRef links. See the DataNucleus documentation");
                     }
 
                     Object mapVal = null;
@@ -1037,8 +1063,16 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             boolean changeDetected = false;
             while (idIter.hasNext())
             {
+                Object idValue = idIter.next();
+
                 // TODO handle interface[]
-                String elementIdStr = (String)idIter.next();
+                if (idValue instanceof DBRef)
+                {
+                    // TODO Cater for DBRef
+                    throw new NucleusUserException("Field " + mmd.getFullFieldName() + " has an array with DBRef stored in it. We do not currently support DBRef links. See the DataNucleus documentation");
+                }
+
+                String elementIdStr = (String)idValue;
                 if (elementIdStr.equals("NULL"))
                 {
                     Array.set(array, i++, null);
@@ -1097,8 +1131,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     {
         String keyType = mmd.getMap().getKeyType();
         Class keyCls = ec.getClassLoaderResolver().classForName(keyType);
-        if (keyCls == Long.class || keyCls == Double.class || keyCls == Float.class ||
-            keyCls == Integer.class || keyCls == Short.class || keyCls == String.class)
+        if (keyCls == Long.class || keyCls == Double.class || keyCls == Float.class || keyCls == Integer.class || keyCls == Short.class || keyCls == String.class)
         {
             return value;
         }
@@ -1116,8 +1149,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     {
         String valueType = mmd.getMap().getValueType();
         Class valueCls = ec.getClassLoaderResolver().classForName(valueType);
-        if (valueCls == Long.class || valueCls == Double.class || valueCls == Float.class ||
-                valueCls == Integer.class || valueCls == Short.class || valueCls == String.class)
+        if (valueCls == Long.class || valueCls == Double.class || valueCls == Float.class || valueCls == Integer.class || valueCls == Short.class || valueCls == String.class)
         {
             return value;
         }
