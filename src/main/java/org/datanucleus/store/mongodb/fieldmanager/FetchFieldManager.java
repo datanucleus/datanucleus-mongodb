@@ -67,7 +67,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
     protected boolean embedded = false;
 
-    /** Metadata for the owner field if this is embedded. */
+    /** Metadata for the owner field if this is embedded. TODO Is this needed now that we have "mmds" in EmbeddedFetchFieldManager? */
     protected AbstractMemberMetaData ownerMmd = null;
 
     public FetchFieldManager(ObjectProvider op, DBObject dbObject, Table table)
