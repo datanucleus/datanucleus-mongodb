@@ -344,7 +344,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                     "" + (System.currentTimeMillis() - startTime)));
             }
 
-            if (type == BULK_DELETE)
+            if (type == QueryType.BULK_DELETE)
             {
                 if (results instanceof QueryResult)
                 {
@@ -355,7 +355,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                 ec.deleteObjects(results.toArray());
                 return Long.valueOf(results.size());
             }
-            else if (type == BULK_UPDATE)
+            else if (type == QueryType.BULK_UPDATE)
             {
                 throw new NucleusException("Bulk Update is not yet supported");
             }
