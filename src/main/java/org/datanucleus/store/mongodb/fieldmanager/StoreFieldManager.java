@@ -606,7 +606,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else
                 {
-                    dbObject.put(mapping.getColumn(0).getName(), datastoreValue);
+                    dbObject.put(mapping.getColumn(0).getName(), MongoDBUtils.getAcceptableDatastoreValue(datastoreValue));
                 }
             }
             else

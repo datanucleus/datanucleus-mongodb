@@ -761,8 +761,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 Class datastoreType = TypeConverterHelper.getDatastoreTypeForTypeConverter(conv, mmd.getType());
                 if (!datastoreType.isAssignableFrom(propVal.getClass()))
                 {
-                    // Need to do conversion to the correct type for the converter e.g datastore returned java.util.Date yet need java.sql.Timestamp
-                    if (datastoreType == java.sql.Timestamp.class)
+                    // Need to do conversion to the correct type for the converter e.g datastore returned java.util.Date yet need java.sql.Timestamp/Date/Time
+                    if (datastoreType == java.sql.Timestamp.class || datastoreType == java.sql.Date.class || datastoreType == java.sql.Time.class)
                     {
                         propVal = TypeConversionHelper.convertTo(propVal, datastoreType);
                     }

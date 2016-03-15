@@ -1245,6 +1245,27 @@ public class MongoDBUtils
         return value;
     }
 
+    public static Object getAcceptableDatastoreValue(Object value)
+    {
+        if (value == null)
+        {
+            return null;
+        }
+        if (value instanceof java.sql.Timestamp)
+        {
+            return new java.util.Date(((java.sql.Timestamp)value).getTime());
+        }
+        else if (value instanceof java.sql.Time)
+        {
+            return new java.util.Date(((java.sql.Time)value).getTime());
+        }
+        else if (value instanceof java.sql.Date)
+        {
+            return new java.util.Date(((java.sql.Date)value).getTime());
+        }
+        return value;
+    }
+
     /**
      * Method to return the value to store when using java serialisation.
      * @param mmd Metadata of the member
