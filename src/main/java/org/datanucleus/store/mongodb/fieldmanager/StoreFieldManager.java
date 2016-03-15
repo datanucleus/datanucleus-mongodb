@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -526,6 +527,24 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         ExecutionContext ec = op.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
+        if (value instanceof Optional)
+        {
+            if (relationType != RelationType.NONE)
+            {
+                relationType = RelationType.ONE_TO_ONE_UNI;
+            }
+
+            Optional opt = (Optional)value;
+            if (opt.isPresent())
+            {
+                value = opt.get();
+            }
+            else
+            {
+                value = null;
+            }
+        }
+
         if (value == null)
         {
             for (int i=0;i<mapping.getNumberOfColumns();i++)
@@ -638,8 +657,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 if (mmd.getCollection().isSerializedElement())
                 {
                     // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised collection elements at " +
-                        mmd.getFullFieldName() + " . Serialise the whole field");
+                    throw new NucleusUserException("Don't currently support serialised collection elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
                 }
 
                 Object element = collIter.next();
@@ -667,8 +685,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 if (mmd.getMap().isSerializedKey() || mmd.getMap().isSerializedValue())
                 {
                     // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised map keys/values at " +
-                        mmd.getFullFieldName() + " . Serialise the whole field");
+                    throw new NucleusUserException("Don't currently support serialised map keys/values at " + mmd.getFullFieldName() + " . Serialise the whole field");
                 }
 
                 Map.Entry entry = mapIter.next();
@@ -712,8 +729,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 if (mmd.getArray().isSerializedElement())
                 {
                     // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised array elements at " + 
-                        mmd.getFullFieldName() + " . Serialise the whole field");
+                    throw new NucleusUserException("Don't currently support serialised array elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
                 }
 
                 Object element = Array.get(value, i);
@@ -733,8 +749,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
     }
 
-    protected void processContainerNonRelationField(String fieldName, ExecutionContext ec, Object value, 
-            DBObject dbObject, AbstractMemberMetaData mmd, FieldRole fieldRole)
+    protected void processContainerNonRelationField(String fieldName, ExecutionContext ec, Object value, DBObject dbObject, AbstractMemberMetaData mmd, FieldRole fieldRole)
     {
         Object storeValue = MongoDBUtils.getStoredValueForField(ec, mmd, value, fieldRole);
         dbObject.put(fieldName, storeValue);

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.mongodb.DBObject;
 import com.mongodb.DBRef;
@@ -645,9 +646,19 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         int fieldNumber = mmd.getAbsoluteFieldNumber();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
+        boolean optional = false;
+        if (Optional.class.isAssignableFrom(mmd.getType()))
+        {
+            if (relationType != RelationType.NONE)
+            {
+                relationType = RelationType.ONE_TO_ONE_UNI;
+            }
+            optional = true;
+        }
+
         if (mapping.getNumberOfColumns() == 1 && !dbObject.containsField(mapping.getColumn(0).getName()))
         {
-            return null;
+            return optional ? Optional.empty() : null;
         }
 
         Object value = dbObject.get(mapping.getColumn(0).getName());
@@ -675,7 +686,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
         if (RelationType.isRelationSingleValued(relationType))
         {
-            return getValueForSingleRelationField(mmd, value, clr);
+            Object memberValue = getValueForSingleRelationField(mmd, value, clr);
+            return optional ? Optional.of(memberValue) : memberValue;
         }
         else if (RelationType.isRelationMultiValued(relationType))
         {
@@ -767,13 +779,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         {
             val = MongoDBUtils.getFieldValueFromStored(ec, mmd, value, FieldRole.ROLE_FIELD);
         }
+        val = optional ? Optional.of(val) : val;
 
-        if (op != null)
-        {
-            // Wrap if SCO
-            return SCOUtils.wrapSCOField(op, mmd.getAbsoluteFieldNumber(), val, true);
-        }
-        return val;
+        return (op!=null) ? SCOUtils.wrapSCOField(op, mmd.getAbsoluteFieldNumber(), val, true) : val;
     }
 
     protected Object getValueForSingleRelationField(AbstractMemberMetaData mmd, Object value, ClassLoaderResolver clr)
@@ -790,9 +798,14 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             return null;
         }
 
+        Class memberType = mmd.getType();
+        if (Optional.class.isAssignableFrom(mmd.getType()))
+        {
+            memberType = clr.classForName(mmd.getCollection().getElementType());
+        }
         try
         {
-            AbstractClassMetaData memberCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
+            AbstractClassMetaData memberCmd = ec.getMetaDataManager().getMetaDataForClass(memberType, clr);
             if (memberCmd != null)
             {
                 // Persistable field
