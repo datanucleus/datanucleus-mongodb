@@ -547,7 +547,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 else
                 {
                     // Embedded Map<NonPC,PC>, Map<PC,NonPC>, Map<PC,PC>, stored nested
-                    // TODO Allow for inherited keys/values and discriminator
                     MemberColumnMapping mapping = getColumnMapping(fieldNumber);
                     String fieldName = mapping.getColumn(0).getName();
                     if (!dbObject.containsField(fieldName))
