@@ -459,8 +459,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 {
                     AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
                     AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
-
-                    // TODO Allow for inherited keys/values and discriminator
                     Collection entryList = new ArrayList();
                     Map valueMap = (Map)value;
                     Iterator<Map.Entry> mapEntryIter = valueMap.entrySet().iterator();
@@ -478,6 +476,32 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getKey(), op, mmd);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
+
+                            if (keyCmd.hasDiscriminatorStrategy())
+                            {
+                                // Discriminator for embedded key
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = storeMgr.getNamingFactory().getColumnName(keyCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
+                                }
+                                DiscriminatorMetaData discmd = keyCmd.getDiscriminatorMetaData();
+                                String discVal = null;
+                                if (keyCmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                                {
+                                    discVal = embOP.getClassMetaData().getFullClassName();
+                                }
+                                else
+                                {
+                                    discVal = discmd.getValue();
+                                }
+                                embeddedKey.put(discPropName, discVal);
+                            }
+
                             String keyClassName = embOP.getClassMetaData().getFullClassName();
                             if (!storeMgr.managesClass(keyClassName))
                             {
@@ -486,7 +510,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             Table keyTable = op.getStoreManager().getStoreDataForClass(keyClassName).getTable();
                             StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert, keyTable);
                             sfm.ownerMmd = mmd;
-                            embOP.provideFields(keyCmd.getAllMemberPositions(), sfm);
+                            embOP.provideFields(embOP.getClassMetaData().getAllMemberPositions(), sfm);
                             entryObj.append("key", embeddedKey);
                         }
 
@@ -499,6 +523,32 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             ObjectProvider embOP = ec.findObjectProviderForEmbedded(entry.getValue(), op, mmd);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
+
+                            if (valCmd.hasDiscriminatorStrategy())
+                            {
+                                // Discriminator for embedded value
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = storeMgr.getNamingFactory().getColumnName(valCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
+                                }
+                                DiscriminatorMetaData discmd = valCmd.getDiscriminatorMetaData();
+                                String discVal = null;
+                                if (valCmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
+                                {
+                                    discVal = embOP.getClassMetaData().getFullClassName();
+                                }
+                                else
+                                {
+                                    discVal = discmd.getValue();
+                                }
+                                embeddedVal.put(discPropName, discVal);
+                            }
+
                             String valClassName = embOP.getClassMetaData().getFullClassName();
                             if (!storeMgr.managesClass(valClassName))
                             {
@@ -507,7 +557,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             Table valTable = op.getStoreManager().getStoreDataForClass(valClassName).getTable();
                             StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert, valTable);
                             sfm.ownerMmd = mmd;
-                            embOP.provideFields(valCmd.getAllMemberPositions(), sfm);
+                            embOP.provideFields(embOP.getClassMetaData().getAllMemberPositions(), sfm);
                             entryObj.append("value", embeddedVal);
                         }
                         entryList.add(entryObj);

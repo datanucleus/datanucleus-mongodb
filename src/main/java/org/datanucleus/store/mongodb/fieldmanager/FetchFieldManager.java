@@ -581,7 +581,29 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         {
                             // Key is embedded object
                             DBObject keyDbObj = (DBObject)keyObj;
-                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, keyCmd, op, fieldNumber);
+
+                            AbstractClassMetaData theKeyCmd = keyCmd;
+                            if (theKeyCmd.hasDiscriminatorStrategy())
+                            {
+                                // Set elementCmd based on the discriminator value of this element
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = storeMgr.getNamingFactory().getColumnName(theKeyCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
+                                }
+                                String discVal = (String)keyDbObj.get(discPropName);
+                                String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, theKeyCmd.getDiscriminatorMetaData());
+                                if (!elemClassName.equals(theKeyCmd.getFullClassName()))
+                                {
+                                    theKeyCmd = ec.getMetaDataManager().getMetaDataForClass(elemClassName, clr);
+                                }
+                            }
+
+                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theKeyCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
 
                             String embClassName = embOP.getClassMetaData().getFullClassName();
@@ -593,7 +615,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyTable);
                             ffm.ownerMmd = mmd;
-                            embOP.replaceFields(keyCmd.getAllMemberPositions(), ffm);
+                            embOP.replaceFields(theKeyCmd.getAllMemberPositions(), ffm);
                             mapKey = embOP.getObject();
                         }
                         else
@@ -606,7 +628,29 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         {
                             // Value is embedded object
                             DBObject valDbObj = (DBObject)valObj;
-                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, valCmd, op, fieldNumber);
+
+                            AbstractClassMetaData theValCmd = valCmd;
+                            if (theValCmd.hasDiscriminatorStrategy())
+                            {
+                                // Set elementCmd based on the discriminator value of this element
+                                String discPropName = null;
+                                if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getDiscriminatorMetaData() != null)
+                                {
+                                    discPropName = mmd.getEmbeddedMetaData().getDiscriminatorMetaData().getColumnName();
+                                }
+                                else
+                                {
+                                    discPropName = storeMgr.getNamingFactory().getColumnName(theValCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
+                                }
+                                String discVal = (String)valDbObj.get(discPropName);
+                                String elemClassName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discVal, theValCmd.getDiscriminatorMetaData());
+                                if (!elemClassName.equals(theValCmd.getFullClassName()))
+                                {
+                                    theValCmd = ec.getMetaDataManager().getMetaDataForClass(elemClassName, clr);
+                                }
+                            }
+
+                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theValCmd, op, fieldNumber);
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
 
                             String embClassName = embOP.getClassMetaData().getFullClassName();
@@ -618,7 +662,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valTable);
                             ffm.ownerMmd = mmd;
-                            embOP.replaceFields(valCmd.getAllMemberPositions(), ffm);
+                            embOP.replaceFields(theValCmd.getAllMemberPositions(), ffm);
                             mapVal = embOP.getObject();
                         }
                         else
