@@ -700,16 +700,16 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
             }
 
+            if (mmd.getCollection().isSerializedElement())
+            {
+                // TODO Support Serialised elements
+                throw new NucleusUserException("Don't currently support serialised collection elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
+            }
+
             Collection collIds = new ArrayList();
             Iterator collIter = coll.iterator();
             while (collIter.hasNext())
             {
-                if (mmd.getCollection().isSerializedElement())
-                {
-                    // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised collection elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
-                }
-
                 Object element = collIter.next();
                 if (element != null)
                 {
@@ -727,17 +727,17 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
         else if (mmd.hasMap())
         {
+            if (mmd.getMap().isSerializedKey() || mmd.getMap().isSerializedValue())
+            {
+                // TODO Support Serialised elements
+                throw new NucleusUserException("Don't currently support serialised map keys/values at " + mmd.getFullFieldName() + " . Serialise the whole field");
+            }
+
             Collection<DBObject> collEntries = new HashSet();
             Map map = (Map)value;
             Iterator<Map.Entry> mapIter = map.entrySet().iterator();
             while (mapIter.hasNext())
             {
-                if (mmd.getMap().isSerializedKey() || mmd.getMap().isSerializedValue())
-                {
-                    // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised map keys/values at " + mmd.getFullFieldName() + " . Serialise the whole field");
-                }
-
                 Map.Entry entry = mapIter.next();
                 Object mapKey = entry.getKey();
                 Object mapValue = entry.getValue();
@@ -773,15 +773,15 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
         else if (mmd.hasArray())
         {
+            if (mmd.getArray().isSerializedElement())
+            {
+                // TODO Support Serialised elements
+                throw new NucleusUserException("Don't currently support serialised array elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
+            }
+
             Collection<String> collIds = new ArrayList();
             for (int i=0;i<Array.getLength(value);i++)
             {
-                if (mmd.getArray().isSerializedElement())
-                {
-                    // TODO Support Serialised elements
-                    throw new NucleusUserException("Don't currently support serialised array elements at " + mmd.getFullFieldName() + " . Serialise the whole field");
-                }
-
                 Object element = Array.get(value, i);
                 if (element != null)
                 {
