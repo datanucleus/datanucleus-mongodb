@@ -608,14 +608,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        if (mmd.isSerialized())
-        {
-            // TODO Allow other types of serialisation
-            byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
-            dbObject.put(mapping.getColumn(0).getName(), bytes);
-            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
-        }
-        else if (RelationType.isRelationSingleValued(relationType))
+        if (RelationType.isRelationSingleValued(relationType))
         {
             // PC object, so make sure it is persisted
             if ((insert && !mmd.isCascadePersist()) || (!insert && !mmd.isCascadeUpdate()))
@@ -631,16 +624,56 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
             }
 
+            if (mmd.isSerialized())
+            {
+                // Assign an ObjectProvider to the serialised object if none present
+                ObjectProvider pcOP = ec.findObjectProvider(value);
+                if (pcOP == null || ec.getApiAdapter().getExecutionContext(value) == null)
+                {
+                    pcOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, value, false, op, fieldNumber);
+                }
+
+                if (pcOP != null)
+                {
+                    pcOP.setStoringPC();
+                }
+
+                byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
+                dbObject.put(mapping.getColumn(0).getName(), bytes);
+
+                if (pcOP != null)
+                {
+                    pcOP.unsetStoringPC();
+                }
+                return;
+            }
+
             processSingleRelationField(value, ec, mapping.getColumn(0).getName());
         }
         else if (RelationType.isRelationMultiValued(relationType))
         {
+            if (mmd.isSerialized())
+            {
+                byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
+                dbObject.put(mapping.getColumn(0).getName(), bytes);
+                SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+                return;
+            }
+
             // Collection/Map/Array
             processContainerRelationField(mmd, value, ec, mapping.getColumn(0).getName());
             SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
         else
         {
+            if (mmd.isSerialized())
+            {
+                byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
+                dbObject.put(mapping.getColumn(0).getName(), bytes);
+                SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+                return;
+            }
+
             if (mapping.getTypeConverter() != null)
             {
                 // Persist using the provided converter

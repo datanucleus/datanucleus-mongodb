@@ -707,7 +707,6 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         Object value = dbObject.get(mapping.getColumn(0).getName());
         if (mmd.isSerialized())
         {
-            // TODO Allow other types of serialisation
             Object obj = MongoDBUtils.getFieldValueForJavaSerialisedField(mmd, value);
             if (op != null)
             {
