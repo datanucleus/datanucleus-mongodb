@@ -73,8 +73,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         persistenceHandler = new MongoDBPersistenceHandler(this);
 
         // Disable BufferedReader default converter
-        // TODO Change this to BufferedImageByteArrayConverter
-        nucleusCtx.getTypeManager().setDefaultTypeConverterForType(BufferedImage.class, null);
+        nucleusCtx.getTypeManager().setDefaultTypeConverterForType(BufferedImage.class, "dn.bufferedimage-bytearray");
 
         logConfiguration();
     }

@@ -18,7 +18,6 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -83,8 +82,6 @@ import com.mongodb.MongoException;
 import com.mongodb.ReadPreference;
 
 import java.util.LinkedList;
-
-import javax.imageio.ImageIO;
 
 /**
  * Utilities for MongoDB.
@@ -1023,22 +1020,6 @@ public class MongoDBUtils
             // store as String
             return "" + value;
         }
-        else if (BufferedImage.class.isAssignableFrom(type))
-        {
-            // TODO This is now part of BufferedImageByteArrayConverter, so remove this
-            byte[] bytes = null;
-            try
-            {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream(8192);
-                ImageIO.write((BufferedImage) value, "jpg", baos);
-                bytes = baos.toByteArray();
-                baos.close();
-            }
-            catch (IOException e)
-            {
-            }
-            return bytes;
-        }
 
         // Fallback to built-in type converters
         // TODO Make use of default TypeConverter for a type before falling back to String/Long
@@ -1335,19 +1316,6 @@ public class MongoDBUtils
                 cal.setTime((Date)value);
                 return cal;
             }
-        }
-        else if (BufferedImage.class.isAssignableFrom(type))
-        {
-            // TODO This is now part of BufferedImageByteArrayConverter, so remove this
-            Object returnValue = null;
-            try
-            {
-                returnValue = ImageIO.read(new ByteArrayInputStream((byte[])value));
-            }
-            catch (IOException e)
-            {
-            }
-            return returnValue;
         }
 
         // TODO Make use of default TypeConverter for a type before falling back to String/Long
