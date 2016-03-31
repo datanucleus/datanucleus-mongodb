@@ -526,7 +526,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 precompilable = false;
                 return lit;
             }
-            else if (paramValue instanceof Number || paramValue instanceof String || paramValue instanceof Character || paramValue instanceof Boolean || paramValue instanceof Enum ||
+
+            // Make sure we only use a type that MongoDB accepts
+            paramValue = MongoDBUtils.getAcceptableDatastoreValue(paramValue);
+
+            if (paramValue instanceof Number || paramValue instanceof String || paramValue instanceof Character || paramValue instanceof Boolean || paramValue instanceof Enum ||
                     paramValue instanceof Date || paramValue instanceof Collection || paramValue instanceof java.util.Calendar)
             {
                 MongoLiteral lit = new MongoLiteral(paramValue);

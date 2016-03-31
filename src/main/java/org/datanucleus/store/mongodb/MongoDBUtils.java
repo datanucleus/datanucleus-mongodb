@@ -67,6 +67,7 @@ import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
+import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
@@ -892,10 +893,10 @@ public class MongoDBUtils
                 {
                     type = ec.getClassLoaderResolver().classForName(mmd.getMap().getValueType());
                 }
-                else
+                /*else
                 {
                     type = mmd.getType();
-                }
+                }*/
             }
         }
 
@@ -940,10 +941,14 @@ public class MongoDBUtils
             }
             return MetaDataUtils.persistColumnAsNumeric(colmd) ? ((Enum)value).ordinal() : ((Enum)value).name();
         }
+        else if (type == Date.class)
+        {
+            return value;
+        }
         else if (Date.class.isAssignableFrom(type))
         {
-            // store as-is
-            return value;
+            // Convert to java.util.Date
+            return new java.util.Date(((Date)value).getTime());
         }
         else if (Calendar.class.isAssignableFrom(type))
         {
@@ -1251,19 +1256,26 @@ public class MongoDBUtils
         {
             return null;
         }
-        if (value instanceof java.sql.Timestamp)
+
+        Object returnValue = value;
+        if (returnValue instanceof SCO)
         {
-            return new java.util.Date(((java.sql.Timestamp)value).getTime());
+            returnValue = ((SCO)returnValue).getValue();
         }
-        else if (value instanceof java.sql.Time)
+
+        if (returnValue instanceof java.sql.Timestamp)
         {
-            return new java.util.Date(((java.sql.Time)value).getTime());
+            return new java.util.Date(((java.sql.Timestamp)returnValue).getTime());
         }
-        else if (value instanceof java.sql.Date)
+        else if (returnValue instanceof java.sql.Time)
         {
-            return new java.util.Date(((java.sql.Date)value).getTime());
+            return new java.util.Date(((java.sql.Time)returnValue).getTime());
         }
-        return value;
+        else if (returnValue instanceof java.sql.Date)
+        {
+            return new java.util.Date(((java.sql.Date)returnValue).getTime());
+        }
+        return returnValue;
     }
 
     /**
