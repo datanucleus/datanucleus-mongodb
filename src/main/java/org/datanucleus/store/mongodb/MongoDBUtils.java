@@ -54,6 +54,7 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityType;
+import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.VersionMetaData;
@@ -868,6 +869,87 @@ public class MongoDBUtils
 
         boolean optional = (mmd != null ? Optional.class.isAssignableFrom(mmd.getType()) : false);
 
+        if (mmd != null)
+        {
+            if (mmd.hasCollection() && !optional)
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Collection coll = new ArrayList();
+                    Collection rawColl = (Collection)value;
+                    for (Object elem : rawColl)
+                    {
+                        Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
+                        coll.add(storeElem);
+                    }
+                    return coll;
+                }
+                else if (fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
+                {
+                    if (mmd.getElementMetaData() != null && mmd.getElementMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Element is using a converter
+                        TypeConverter elemConv = ec.getTypeManager().getTypeConverterForName(mmd.getElementMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return elemConv.toDatastoreType(value);
+                    }
+                }
+            }
+            else if (mmd.hasArray())
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Object[] array = new Object[Array.getLength(value)];
+                    for (int i=0;i<array.length;i++)
+                    {
+                        Object elem = Array.get(value, i);
+                        Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
+                        array[i] = storeElem;
+                    }
+                    return array;
+                }
+            }
+            else if (mmd.hasMap())
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Collection coll = new ArrayList();
+                    Map rawMap = (Map)value;
+                    Iterator<Map.Entry> entryIter = rawMap.entrySet().iterator();
+                    while (entryIter.hasNext())
+                    {
+                        Map.Entry entry = entryIter.next();
+
+                        BasicDBObject entryObj = new BasicDBObject();
+                        Object storeKey = getStoredValueForField(ec, mmd, entry.getKey(), FieldRole.ROLE_MAP_KEY);
+                        entryObj.put("key", storeKey);
+                        Object storeValue = getStoredValueForField(ec, mmd, entry.getValue(), FieldRole.ROLE_MAP_VALUE);
+                        entryObj.put("value", storeValue);
+
+                        coll.add(entryObj);
+                    }
+                    return coll;
+                }
+                else if (fieldRole == FieldRole.ROLE_MAP_KEY)
+                {
+                    if (mmd.getKeyMetaData() != null && mmd.getKeyMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Key is using a converter
+                        TypeConverter keyConv = ec.getTypeManager().getTypeConverterForName(mmd.getKeyMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return keyConv.toDatastoreType(value);
+                    }
+                }
+                else if (fieldRole == FieldRole.ROLE_MAP_VALUE)
+                {
+                    if (mmd.getValueMetaData() != null && mmd.getValueMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Key is using a converter
+                        TypeConverter valConv = ec.getTypeManager().getTypeConverterForName(mmd.getValueMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return valConv.toDatastoreType(value);
+                    }
+                }
+            }
+        }
+
         Class type = value.getClass();
         if (mmd != null)
         {
@@ -877,50 +959,23 @@ public class MongoDBUtils
             }
             else
             {
-                if (fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
+                if (mmd.hasCollection() && fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
                 {
                     type = ec.getClassLoaderResolver().classForName(mmd.getCollection().getElementType());
                 }
-                else if (fieldRole == FieldRole.ROLE_ARRAY_ELEMENT)
+                else if (mmd.hasArray() && fieldRole == FieldRole.ROLE_ARRAY_ELEMENT)
                 {
                     type = ec.getClassLoaderResolver().classForName(mmd.getArray().getElementType());
                 }
-                else if (fieldRole == FieldRole.ROLE_MAP_KEY)
+                else if (mmd.hasMap() && fieldRole == FieldRole.ROLE_MAP_KEY)
                 {
                     type = ec.getClassLoaderResolver().classForName(mmd.getMap().getKeyType());
                 }
-                else if (fieldRole == FieldRole.ROLE_MAP_VALUE)
+                else if (mmd.hasMap() && fieldRole == FieldRole.ROLE_MAP_VALUE)
                 {
                     type = ec.getClassLoaderResolver().classForName(mmd.getMap().getValueType());
                 }
-                /*else
-                {
-                    type = mmd.getType();
-                }*/
             }
-        }
-
-        if (mmd != null && mmd.hasCollection() && !optional && fieldRole == FieldRole.ROLE_FIELD)
-        {
-            Collection coll = new ArrayList();
-            Collection rawColl = (Collection)value;
-            for (Object elem : rawColl)
-            {
-                Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
-                coll.add(storeElem);
-            }
-            return coll;
-        }
-        else if (mmd != null && mmd.hasArray() && fieldRole == FieldRole.ROLE_FIELD)
-        {
-            Object[] array = new Object[Array.getLength(value)];
-            for (int i=0;i<array.length;i++)
-            {
-                Object elem = Array.get(value, i);
-                Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
-                array[i] = storeElem;
-            }
-            return array;
         }
 
         if (Long.class.isAssignableFrom(type) ||
@@ -947,7 +1002,7 @@ public class MongoDBUtils
         }
         else if (Date.class.isAssignableFrom(type))
         {
-            // Convert to java.util.Date
+            // Convert to java.util.Date since MongoDB doesn't support java.sql
             return new java.util.Date(((Date)value).getTime());
         }
         else if (Calendar.class.isAssignableFrom(type))
@@ -1022,6 +1077,104 @@ public class MongoDBUtils
 
         boolean optional = (mmd != null ? Optional.class.isAssignableFrom(mmd.getType()) : false);
 
+        if (mmd != null)
+        {
+            if (mmd.hasCollection() && !optional)
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Collection<Object> coll;
+                    try
+                    {
+                        Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+                        coll = (Collection<Object>) instanceType.newInstance();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new NucleusDataStoreException(e.getMessage(), e);
+                    }
+
+                    Collection rawColl = (Collection)value;
+                    for (Object elem : rawColl)
+                    {
+                        Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
+                        coll.add(storeElem);
+                    }
+                    return coll;
+                }
+                else if (fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
+                {
+                    if (mmd.getElementMetaData() != null && mmd.getElementMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Element is using a converter
+                        TypeConverter elemConv = ec.getTypeManager().getTypeConverterForName(mmd.getElementMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return elemConv.toMemberType(value);
+                    }
+                }
+            }
+            else if (mmd.hasArray())
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Collection rawColl = (Collection)value;
+                    Object array = Array.newInstance(mmd.getType().getComponentType(), rawColl.size());
+                    int i=0;
+                    for (Object elem : rawColl)
+                    {
+                        Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
+                        storeElem = TypeConversionHelper.convertTo(storeElem, mmd.getType().getComponentType());
+                        Array.set(array, i++, storeElem);
+                    }
+                    return array;
+                }
+            }
+            else if (mmd.hasMap())
+            {
+                if (fieldRole == FieldRole.ROLE_FIELD)
+                {
+                    Map map;
+                    try
+                    {
+                        Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+                        map = (Map) instanceType.newInstance();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new NucleusDataStoreException(e.getMessage(), e);
+                    }
+
+                    Collection<DBObject> rawColl = (Collection<DBObject>)value;
+                    for (DBObject mapEntryObj : rawColl)
+                    {
+                        Object dbKey = mapEntryObj.get("key");
+                        Object dbVal = mapEntryObj.get("value");
+                        Object key = getFieldValueFromStored(ec, mmd, dbKey, FieldRole.ROLE_MAP_KEY);
+                        Object val = getFieldValueFromStored(ec, mmd, dbVal, FieldRole.ROLE_MAP_VALUE);
+                        map.put(key, val);
+                    }
+                    return map;
+                }
+                else if (fieldRole == FieldRole.ROLE_MAP_KEY)
+                {
+                    if (mmd.getKeyMetaData() != null && mmd.getKeyMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Key is using a converter
+                        TypeConverter keyConv = ec.getTypeManager().getTypeConverterForName(mmd.getKeyMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return keyConv.toMemberType(value);
+                    }
+                }
+                else if (fieldRole == FieldRole.ROLE_MAP_VALUE)
+                {
+                    if (mmd.getValueMetaData() != null && mmd.getValueMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    {
+                        // Key is using a converter
+                        TypeConverter valConv = ec.getTypeManager().getTypeConverterForName(mmd.getValueMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
+                        return valConv.toMemberType(value);
+                    }
+                }
+            }
+        }
+
         Class type = value.getClass();
         if (mmd != null)
         {
@@ -1052,41 +1205,6 @@ public class MongoDBUtils
                     type = mmd.getType();
                 }
             }
-        }
-
-        if (mmd != null && mmd.hasCollection() && !optional && fieldRole == FieldRole.ROLE_FIELD)
-        {
-            Collection<Object> coll;
-            try
-            {
-                Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
-                coll = (Collection<Object>) instanceType.newInstance();
-            }
-            catch (Exception e)
-            {
-                throw new NucleusDataStoreException(e.getMessage(), e);
-            }
-
-            Collection rawColl = (Collection)value;
-            for (Object elem : rawColl)
-            {
-                Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
-                coll.add(storeElem);
-            }
-            return coll;
-        }
-        else if (mmd != null && mmd.hasArray() && fieldRole == FieldRole.ROLE_FIELD)
-        {
-            Collection rawColl = (Collection)value;
-            Object array = Array.newInstance(mmd.getType().getComponentType(), rawColl.size());
-            int i=0;
-            for (Object elem : rawColl)
-            {
-                Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
-                storeElem = TypeConversionHelper.convertTo(storeElem, mmd.getType().getComponentType());
-                Array.set(array, i++, storeElem);
-            }
-            return array;
         }
 
         if (Character.class.isAssignableFrom(type))
