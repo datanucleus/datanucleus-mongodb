@@ -1025,7 +1025,7 @@ public class MongoDBUtils
         }
         else if (BufferedImage.class.isAssignableFrom(type))
         {
-            // store serialised
+            // TODO This is now part of BufferedImageByteArrayConverter, so remove this
             byte[] bytes = null;
             try
             {
@@ -1338,6 +1338,7 @@ public class MongoDBUtils
         }
         else if (BufferedImage.class.isAssignableFrom(type))
         {
+            // TODO This is now part of BufferedImageByteArrayConverter, so remove this
             Object returnValue = null;
             try
             {
