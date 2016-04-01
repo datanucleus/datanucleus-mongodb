@@ -17,7 +17,6 @@ Contributors :
 ***********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.awt.image.BufferedImage;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -71,9 +70,6 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
 
         schemaHandler = new MongoDBSchemaHandler(this);
         persistenceHandler = new MongoDBPersistenceHandler(this);
-
-        // Disable BufferedReader default converter
-        nucleusCtx.getTypeManager().setDefaultTypeConverterForType(BufferedImage.class, "dn.bufferedimage-bytearray");
 
         logConfiguration();
     }
