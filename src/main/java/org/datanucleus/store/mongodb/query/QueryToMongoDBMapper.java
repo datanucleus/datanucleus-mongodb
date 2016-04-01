@@ -190,7 +190,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 // Impossible to compile all to run in the datastore, so just exit
                 if (NucleusLogger.QUERY.isDebugEnabled())
                 {
-                    NucleusLogger.QUERY.debug("Compilation of filter to be evaluated completely in-datastore was impossible : ", e);
+                    NucleusLogger.QUERY.debug("Compilation of filter to be evaluated completely in-datastore was impossible : " + e.getMessage());
                 }
                 filterComplete = false;
             }
@@ -739,7 +739,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         }
 
         NucleusLogger.QUERY.warn("Dont currently support method invocation in MongoDB datastore queries : method=" + operation + " args=" + StringUtils.collectionToString(args));
-        return super.processInExpression(invokedExpr);
+        return super.processInvokeExpression(expr);
     }
 
     /**

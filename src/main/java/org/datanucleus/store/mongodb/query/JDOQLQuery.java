@@ -309,8 +309,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                 {
                     // Execute as much as possible in the datastore
                     BasicDBObject orderingObject = datastoreCompilation.getOrdering();
-                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
-                        (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
+                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options, (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
                     if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
                     {
                         // Order processed when getting candidates
@@ -333,15 +332,13 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                     ((QueryResult)candidates).disconnect();
                 }
 
-                JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation,
-                    parameters, ec.getClassLoaderResolver());
+                JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation, parameters, ec.getClassLoaderResolver());
                 results = resultMapper.execute(filterInMemory, orderInMemory, result != null, resultClass != null, rangeInMemory);
             }
 
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(Localiser.msg("021074", "JDOQL", 
-                    "" + (System.currentTimeMillis() - startTime)));
+                NucleusLogger.QUERY.debug(Localiser.msg("021074", "JDOQL", "" + (System.currentTimeMillis() - startTime)));
             }
 
             if (type == QueryType.BULK_DELETE)
