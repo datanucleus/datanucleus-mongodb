@@ -682,9 +682,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 {
                     for (int i=0;i<mapping.getNumberOfColumns();i++)
                     {
-                        // TODO Persist as the correct column type since the typeConverter type may not be directly persistable
-                        Object colValue = Array.get(datastoreValue, i);
-                        dbObject.put(mapping.getColumn(i).getName(), colValue);
+                        dbObject.put(mapping.getColumn(i).getName(), MongoDBUtils.getAcceptableDatastoreValue(Array.get(datastoreValue, i)));
                     }
                 }
                 else
