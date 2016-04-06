@@ -469,7 +469,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                         if (keyCmd == null)
                         {
-                            processContainerNonRelationField("key", ec, entry.getKey(), entryObj, mmd, FieldRole.ROLE_MAP_KEY);
+                            processContainerNonRelationField("key", ec, entry.getKey(), entryObj, mmd, mapping, FieldRole.ROLE_MAP_KEY);
                         }
                         else
                         {
@@ -516,7 +516,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                         if (valCmd == null)
                         {
-                            processContainerNonRelationField("value", ec, entry.getValue(), entryObj, mmd, FieldRole.ROLE_MAP_VALUE);
+                            processContainerNonRelationField("value", ec, entry.getValue(), entryObj, mmd, mapping, FieldRole.ROLE_MAP_VALUE);
                         }
                         else
                         {
@@ -661,7 +661,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             }
 
             // Collection/Map/Array
-            processContainerRelationField(mmd, value, ec, mapping.getColumn(0).getName());
+            processContainerRelationField(mmd, mapping, value, ec, mapping.getColumn(0).getName());
             SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
         else
@@ -692,7 +692,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             }
             else
             {
-                processContainerNonRelationField(mapping.getColumn(0).getName(), ec, value, dbObject, mmd, FieldRole.ROLE_FIELD);
+                processContainerNonRelationField(mapping.getColumn(0).getName(), ec, value, dbObject, mmd, mapping, FieldRole.ROLE_FIELD);
             }
             SCOUtils.wrapSCOField(op, fieldNumber, value, true);
         }
@@ -706,7 +706,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
     }
 
-    protected void processContainerRelationField(AbstractMemberMetaData mmd, Object value, ExecutionContext ec, String fieldName)
+    protected void processContainerRelationField(AbstractMemberMetaData mmd, MemberColumnMapping mapping, Object value, ExecutionContext ec, String fieldName)
     {
         // Collection/Map/Array
         if (mmd.hasCollection())
@@ -783,7 +783,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else
                 {
-                    processContainerNonRelationField("key", ec, mapKey, entryObj, mmd, FieldRole.ROLE_MAP_KEY);
+                    processContainerNonRelationField("key", ec, mapKey, entryObj, mmd, mapping, FieldRole.ROLE_MAP_KEY);
                 }
 
                 if (ec.getApiAdapter().isPersistable(mapValue))
@@ -795,7 +795,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else
                 {
-                    processContainerNonRelationField("value", ec, mapValue, entryObj, mmd, FieldRole.ROLE_MAP_VALUE);
+                    processContainerNonRelationField("value", ec, mapValue, entryObj, mmd, mapping, FieldRole.ROLE_MAP_VALUE);
                 }
 
                 collEntries.add(entryObj);
@@ -830,9 +830,10 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
     }
 
-    protected void processContainerNonRelationField(String fieldName, ExecutionContext ec, Object value, DBObject dbObject, AbstractMemberMetaData mmd, FieldRole fieldRole)
+    protected void processContainerNonRelationField(String fieldName, ExecutionContext ec, Object value, DBObject dbObject, AbstractMemberMetaData mmd, MemberColumnMapping mapping, 
+            FieldRole fieldRole)
     {
-        Object storeValue = MongoDBUtils.getStoredValueForField(ec, mmd, value, fieldRole);
+        Object storeValue = MongoDBUtils.getStoredValueForField(ec, mmd, mapping, value, fieldRole);
         dbObject.put(fieldName, storeValue);
     }
 }

@@ -53,7 +53,6 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityType;
-import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.VersionMetaData;
@@ -344,9 +343,9 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, value, FieldRole.ROLE_FIELD);
+                        storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, mapping, value, FieldRole.ROLE_FIELD);
                     }
-                    query.put(table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName(), storeValue);
+                    query.put(mapping.getColumn(0).getName(), storeValue);
                 }
             }
         }
@@ -397,8 +396,9 @@ public class MongoDBUtils
                         fieldValue = op.provideField(fieldNumbers[i]);
                     }
 
-                    Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), mmd, fieldValue, FieldRole.ROLE_FIELD);
-                    query.put(table.getMemberColumnMappingForMember(mmd).getColumn(0).getName(), storeValue);
+                    MemberColumnMapping mapping = table.getMemberColumnMappingForMember(mmd);
+                    Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), mmd, mapping, fieldValue, FieldRole.ROLE_FIELD);
+                    query.put(mapping.getColumn(0).getName(), storeValue);
                 }
             }
         }
@@ -853,11 +853,12 @@ public class MongoDBUtils
      * Note that this does not cater for relation fields, just basic fields.
      * @param ec ExecutionContext
      * @param mmd Metadata for the field holding this value (if available)
+     * @param mapping Mapping for the member (if available)
      * @param value The raw value for the field
      * @param fieldRole The role of this value for the field
      * @return The value to store
      */
-    public static Object getStoredValueForField(ExecutionContext ec, AbstractMemberMetaData mmd, Object value, FieldRole fieldRole)
+    public static Object getStoredValueForField(ExecutionContext ec, AbstractMemberMetaData mmd, MemberColumnMapping mapping, Object value, FieldRole fieldRole)
     {
         if (value == null)
         {
@@ -876,17 +877,16 @@ public class MongoDBUtils
                     Collection rawColl = (Collection)value;
                     for (Object elem : rawColl)
                     {
-                        Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
+                        Object storeElem = getStoredValueForField(ec, mmd, mapping, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
                         coll.add(storeElem);
                     }
                     return coll;
                 }
                 else if (fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
                 {
-                    if (mmd.getElementMetaData() != null && mmd.getElementMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter elemConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (elemConv != null)
                     {
-                        // Element is using a converter
-                        TypeConverter elemConv = ec.getTypeManager().getTypeConverterForName(mmd.getElementMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return elemConv.toDatastoreType(value);
                     }
                 }
@@ -899,7 +899,7 @@ public class MongoDBUtils
                     for (int i=0;i<array.length;i++)
                     {
                         Object elem = Array.get(value, i);
-                        Object storeElem = getStoredValueForField(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
+                        Object storeElem = getStoredValueForField(ec, mmd, mapping, elem, FieldRole.ROLE_ARRAY_ELEMENT);
                         array[i] = storeElem;
                     }
                     return array;
@@ -917,9 +917,9 @@ public class MongoDBUtils
                         Map.Entry entry = entryIter.next();
 
                         BasicDBObject entryObj = new BasicDBObject();
-                        Object storeKey = getStoredValueForField(ec, mmd, entry.getKey(), FieldRole.ROLE_MAP_KEY);
+                        Object storeKey = getStoredValueForField(ec, mmd, mapping, entry.getKey(), FieldRole.ROLE_MAP_KEY);
                         entryObj.put("key", storeKey);
-                        Object storeValue = getStoredValueForField(ec, mmd, entry.getValue(), FieldRole.ROLE_MAP_VALUE);
+                        Object storeValue = getStoredValueForField(ec, mmd, mapping, entry.getValue(), FieldRole.ROLE_MAP_VALUE);
                         entryObj.put("value", storeValue);
 
                         coll.add(entryObj);
@@ -928,19 +928,17 @@ public class MongoDBUtils
                 }
                 else if (fieldRole == FieldRole.ROLE_MAP_KEY)
                 {
-                    if (mmd.getKeyMetaData() != null && mmd.getKeyMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter keyConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (keyConv != null)
                     {
-                        // Key is using a converter
-                        TypeConverter keyConv = ec.getTypeManager().getTypeConverterForName(mmd.getKeyMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return keyConv.toDatastoreType(value);
                     }
                 }
                 else if (fieldRole == FieldRole.ROLE_MAP_VALUE)
                 {
-                    if (mmd.getValueMetaData() != null && mmd.getValueMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter valConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (valConv != null)
                     {
-                        // Key is using a converter
-                        TypeConverter valConv = ec.getTypeManager().getTypeConverterForName(mmd.getValueMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return valConv.toDatastoreType(value);
                     }
                 }
@@ -1045,11 +1043,12 @@ public class MongoDBUtils
      * in the object. Note that this does not cater for relation fields, just basic fields.
      * @param ec ExecutionContext
      * @param mmd Metadata for the field holding this value (if available)
+     * @param mapping Member column mapping (if available)
      * @param value The stored value for the field
      * @param fieldRole The role of this value for the field
      * @return The value to put in the field
      */
-    public static Object getFieldValueFromStored(ExecutionContext ec, AbstractMemberMetaData mmd, Object value, FieldRole fieldRole)
+    public static Object getFieldValueFromStored(ExecutionContext ec, AbstractMemberMetaData mmd, MemberColumnMapping mapping, Object value, FieldRole fieldRole)
     {
         if (value == null)
         {
@@ -1078,17 +1077,16 @@ public class MongoDBUtils
                     Collection rawColl = (Collection)value;
                     for (Object elem : rawColl)
                     {
-                        Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
+                        Object storeElem = getFieldValueFromStored(ec, mmd, mapping, elem, FieldRole.ROLE_COLLECTION_ELEMENT);
                         coll.add(storeElem);
                     }
                     return coll;
                 }
                 else if (fieldRole == FieldRole.ROLE_COLLECTION_ELEMENT)
                 {
-                    if (mmd.getElementMetaData() != null && mmd.getElementMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter elemConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (elemConv != null)
                     {
-                        // Element is using a converter
-                        TypeConverter elemConv = ec.getTypeManager().getTypeConverterForName(mmd.getElementMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return elemConv.toMemberType(value);
                     }
                 }
@@ -1102,7 +1100,7 @@ public class MongoDBUtils
                     int i=0;
                     for (Object elem : rawColl)
                     {
-                        Object storeElem = getFieldValueFromStored(ec, mmd, elem, FieldRole.ROLE_ARRAY_ELEMENT);
+                        Object storeElem = getFieldValueFromStored(ec, mmd, mapping, elem, FieldRole.ROLE_ARRAY_ELEMENT);
                         storeElem = TypeConversionHelper.convertTo(storeElem, mmd.getType().getComponentType());
                         Array.set(array, i++, storeElem);
                     }
@@ -1129,27 +1127,25 @@ public class MongoDBUtils
                     {
                         Object dbKey = mapEntryObj.get("key");
                         Object dbVal = mapEntryObj.get("value");
-                        Object key = getFieldValueFromStored(ec, mmd, dbKey, FieldRole.ROLE_MAP_KEY);
-                        Object val = getFieldValueFromStored(ec, mmd, dbVal, FieldRole.ROLE_MAP_VALUE);
+                        Object key = getFieldValueFromStored(ec, mmd, mapping, dbKey, FieldRole.ROLE_MAP_KEY);
+                        Object val = getFieldValueFromStored(ec, mmd, mapping, dbVal, FieldRole.ROLE_MAP_VALUE);
                         map.put(key, val);
                     }
                     return map;
                 }
                 else if (fieldRole == FieldRole.ROLE_MAP_KEY)
                 {
-                    if (mmd.getKeyMetaData() != null && mmd.getKeyMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter keyConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (keyConv != null)
                     {
-                        // Key is using a converter
-                        TypeConverter keyConv = ec.getTypeManager().getTypeConverterForName(mmd.getKeyMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return keyConv.toMemberType(value);
                     }
                 }
                 else if (fieldRole == FieldRole.ROLE_MAP_VALUE)
                 {
-                    if (mmd.getValueMetaData() != null && mmd.getValueMetaData().hasExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME))
+                    TypeConverter valConv = mapping.getTypeConverterForComponent(fieldRole);
+                    if (valConv != null)
                     {
-                        // Key is using a converter
-                        TypeConverter valConv = ec.getTypeManager().getTypeConverterForName(mmd.getValueMetaData().getValueForExtension(MetaData.EXTENSION_MEMBER_TYPE_CONVERTER_NAME));
                         return valConv.toMemberType(value);
                     }
                 }

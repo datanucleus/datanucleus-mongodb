@@ -819,7 +819,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         }
         else
         {
-            val = MongoDBUtils.getFieldValueFromStored(ec, mmd, value, FieldRole.ROLE_FIELD);
+            val = MongoDBUtils.getFieldValueFromStored(ec, mmd, mapping, value, FieldRole.ROLE_FIELD);
         }
         val = optional ? Optional.of(val) : val;
 
