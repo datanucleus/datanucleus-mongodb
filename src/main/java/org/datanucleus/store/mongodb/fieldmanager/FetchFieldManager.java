@@ -978,6 +978,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 }
             }
 
+            // TODO Check if this has OrderBy and reorder the elements based on that criteria
             if (op != null)
             {
                 // Wrap if SCO
