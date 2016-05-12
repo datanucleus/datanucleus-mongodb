@@ -51,6 +51,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaDataUtils;
@@ -64,6 +65,7 @@ import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.query.LazyLoadQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.schema.table.Column;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
@@ -314,6 +316,7 @@ public class MongoDBUtils
         AbstractClassMetaData cmd = op.getClassMetaData();
         Table table = op.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         StoreManager storeMgr = op.getExecutionContext().getStoreManager();
+        ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
 
         if (cmd.getIdentityType() == IdentityType.APPLICATION)
         {
@@ -322,30 +325,76 @@ public class MongoDBUtils
             for (int i=0;i<pkPositions.length;i++)
             {
                 AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPositions[i]);
-                Object value = op.provideField(pkPositions[i]);
-                if (value == null && storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
+                RelationType relType = pkMmd.getRelationType(clr);
+                Object fieldVal = op.provideField(pkPositions[i]);
+                if (relType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(op.getStoreManager().getMetaDataManager(), clr, pkMmd, relType, null))
                 {
-                    // PK field not yet set, so return null (needs to be attributed in the datastore)
-                    return null;
-                }
+                    // Embedded : allow 1 level of embedded field for PK
+                    List<AbstractMemberMetaData> embMmds = new ArrayList();
+                    embMmds.add(pkMmd);
 
-                if (storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
-                {
-                    query.put("_id", new ObjectId((String)value));
+                    ObjectProvider embOP = op.getExecutionContext().findObjectProvider(fieldVal);
+                    AbstractClassMetaData embCmd = embOP.getClassMetaData();
+                    int[] memberPositions = embCmd.getAllMemberPositions();
+
+                    String embOwnerCol = null;
+                    if (MongoDBUtils.isMemberNested(pkMmd))
+                    {
+                        MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
+                        embOwnerCol = mapping.getColumn(0).getName();
+                    }
+
+                    for (int j=0;j<memberPositions.length;j++)
+                    {
+                        AbstractMemberMetaData embMmd = embCmd.getMetaDataForManagedMemberAtAbsolutePosition(memberPositions[j]);
+                        if (embMmd.getPersistenceModifier() != FieldPersistenceModifier.PERSISTENT)
+                        {
+                            // Don't need column if not persistent
+                            continue;
+                        }
+
+                        embMmds.add(embMmd);
+                        MemberColumnMapping mapping = table.getMemberColumnMappingForEmbeddedMember(embMmds);
+                        embMmds.remove(embMmds.size()-1);
+
+                        Column[] cols = mapping.getColumns();
+                        Object embFieldVal = embOP.provideField(memberPositions[j]);
+                        if (embOwnerCol != null)
+                        {
+                            query.put(embOwnerCol + "." + cols[0].getName(), embFieldVal); // TODO Support field mapped to multiple cols
+                        }
+                        else
+                        {
+                            query.put(cols[0].getName(), embFieldVal); // TODO Support field mapped to multiple cols
+                        }
+                    }
                 }
                 else
                 {
-                    MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
-                    Object storeValue = value;
-                    if (mapping.getTypeConverter() != null)
+                    if (fieldVal == null && storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
                     {
-                        storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                        // PK field not yet set, so return null (needs to be attributed in the datastore)
+                        return null;
+                    }
+
+                    if (storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
+                    {
+                        query.put("_id", new ObjectId((String)fieldVal));
                     }
                     else
                     {
-                        storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, mapping, value, FieldRole.ROLE_FIELD);
+                        MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
+                        Object storeValue = fieldVal;
+                        if (mapping.getTypeConverter() != null)
+                        {
+                            storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                        }
+                        else
+                        {
+                            storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, mapping, fieldVal, FieldRole.ROLE_FIELD);
+                        }
+                        query.put(mapping.getColumn(0).getName(), storeValue);
                     }
-                    query.put(mapping.getColumn(0).getName(), storeValue);
                 }
             }
         }
@@ -375,7 +424,7 @@ public class MongoDBUtils
             for (int i=0;i<fieldNumbers.length;i++)
             {
                 AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
-                RelationType relationType = mmd.getRelationType(op.getExecutionContext().getClassLoaderResolver());
+                RelationType relationType = mmd.getRelationType(clr);
                 if (relationType == RelationType.NONE)
                 {
                     Object fieldValue = null;
