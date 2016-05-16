@@ -33,7 +33,6 @@ import com.mongodb.WriteConcern;
 
 import org.bson.types.ObjectId;
 import org.datanucleus.ExecutionContext;
-import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
@@ -316,6 +315,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         DBObject dbObject = new BasicDBObject();
         AbstractClassMetaData cmd = op.getClassMetaData();
         Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+        ExecutionContext ec = op.getExecutionContext();
 
         if (cmd.getIdentityType() == IdentityType.DATASTORE && !storeMgr.isStrategyDatastoreAttributed(cmd, -1))
         {
@@ -343,17 +343,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
 
         // Add Multi-tenancy discriminator if applicable
-        if (storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID) != null)
+        if (ec.getNucleusContext().isClassMultiTenant(cmd))
         {
-            if ("true".equalsIgnoreCase(cmd.getValueForExtension("multitenancy-disable")))
-            {
-                // Don't bother with multitenancy for this class
-            }
-            else
-            {
-                String fieldName = table.getMultitenancyColumn().getName();
-                dbObject.put(fieldName, storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID));
-            }
+            String fieldName = table.getMultitenancyColumn().getName();
+            dbObject.put(fieldName, ec.getNucleusContext().getMultiTenancyId(ec, cmd));
         }
 
         VersionMetaData vermd = cmd.getVersionMetaDataForClass();
@@ -383,7 +376,6 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         int[] fieldNumbers = cmd.getAllMemberPositions();
         if (!includeRelationFields)
         {
-            ExecutionContext ec = op.getExecutionContext();
             fieldNumbers = cmd.getNonRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
         }
         op.provideFields(fieldNumbers, fieldManager);

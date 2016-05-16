@@ -40,7 +40,6 @@ import org.bson.types.ObjectId;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.FetchPlan;
-import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -624,19 +623,12 @@ public class MongoDBUtils
                 query.put(rootTable.getDiscriminatorColumn().getName(), rootCmd.getDiscriminatorValue());
             }
 
-            if (storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID) != null)
+            if (ec.getNucleusContext().isClassMultiTenant(rootCmd))
             {
                 // Multitenancy discriminator present : Add restriction for this tenant
-                if ("true".equalsIgnoreCase(rootCmd.getValueForExtension("multitenancy-disable")))
-                {
-                    // Don't bother with multitenancy for this class
-                }
-                else
-                {
-                    String fieldName = rootTable.getMultitenancyColumn().getName();
-                    String value = storeMgr.getStringProperty(PropertyNames.PROPERTY_MAPPING_TENANT_ID);
-                    query.put(fieldName, value);
-                }
+                String fieldName = rootTable.getMultitenancyColumn().getName();
+                String value = ec.getNucleusContext().getMultiTenancyId(ec, rootCmd);
+                query.put(fieldName, value);
             }
 
             DBCollection dbColl = db.getCollection(collectionName);
