@@ -314,8 +314,9 @@ public class MongoDBUtils
         BasicDBObject query = new BasicDBObject();
         AbstractClassMetaData cmd = op.getClassMetaData();
         Table table = op.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
-        StoreManager storeMgr = op.getExecutionContext().getStoreManager();
-        ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
+        ExecutionContext ec = op.getExecutionContext();
+        StoreManager storeMgr = ec.getStoreManager();
+        ClassLoaderResolver clr = ec.getClassLoaderResolver();
 
         if (cmd.getIdentityType() == IdentityType.APPLICATION)
         {
@@ -332,7 +333,7 @@ public class MongoDBUtils
                     List<AbstractMemberMetaData> embMmds = new ArrayList();
                     embMmds.add(pkMmd);
 
-                    ObjectProvider embOP = op.getExecutionContext().findObjectProvider(fieldVal);
+                    ObjectProvider embOP = ec.findObjectProvider(fieldVal);
                     AbstractClassMetaData embCmd = embOP.getClassMetaData();
                     int[] memberPositions = embCmd.getAllMemberPositions();
 
@@ -370,27 +371,34 @@ public class MongoDBUtils
                 }
                 else
                 {
-                    if (fieldVal == null && storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
-                    {
-                        // PK field not yet set, so return null (needs to be attributed in the datastore)
-                        return null;
-                    }
-
                     if (storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
                     {
+                        // Datastore attributed
+                        if (fieldVal == null)
+                        {
+                            // PK field not yet set, so return null (needs to be attributed in the datastore)
+                            return null;
+                        }
                         query.put("_id", new ObjectId((String)fieldVal));
                     }
                     else
                     {
                         MemberColumnMapping mapping = table.getMemberColumnMappingForMember(pkMmd);
                         Object storeValue = fieldVal;
-                        if (mapping.getTypeConverter() != null)
+                        if (RelationType.isRelationSingleValued(relType))
                         {
-                            storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                            storeValue = IdentityUtils.getPersistableIdentityForId(ec.getApiAdapter().getIdForObject(fieldVal));
                         }
                         else
                         {
-                            storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), pkMmd, mapping, fieldVal, FieldRole.ROLE_FIELD);
+                            if (mapping.getTypeConverter() != null)
+                            {
+                                storeValue = mapping.getTypeConverter().toDatastoreType(storeValue);
+                            }
+                            else
+                            {
+                                storeValue = MongoDBUtils.getStoredValueForField(ec, pkMmd, mapping, fieldVal, FieldRole.ROLE_FIELD);
+                            }
                         }
                         query.put(mapping.getColumn(0).getName(), storeValue);
                     }
@@ -445,7 +453,7 @@ public class MongoDBUtils
                     }
 
                     MemberColumnMapping mapping = table.getMemberColumnMappingForMember(mmd);
-                    Object storeValue = MongoDBUtils.getStoredValueForField(op.getExecutionContext(), mmd, mapping, fieldValue, FieldRole.ROLE_FIELD);
+                    Object storeValue = MongoDBUtils.getStoredValueForField(ec, mmd, mapping, fieldValue, FieldRole.ROLE_FIELD);
                     query.put(mapping.getColumn(0).getName(), storeValue);
                 }
             }
@@ -478,16 +486,15 @@ public class MongoDBUtils
             NucleusLogger.DATASTORE_NATIVE.debug("Retrieving object for " + query);
         }
         DBObject dbObj = dbCollection.findOne(query);
-        if (op.getExecutionContext().getStatistics() != null)
+        if (ec.getStatistics() != null)
         {
             // Add to statistics
-            op.getExecutionContext().getStatistics().incrementNumReads();
+            ec.getStatistics().incrementNumReads();
         }
         return dbObj;
     }
 
-    public static List getObjectsOfCandidateType(Query q, DB db, BasicDBObject filterObject,
-            Map<String, Object> options)
+    public static List getObjectsOfCandidateType(Query q, DB db, BasicDBObject filterObject, Map<String, Object> options)
     {
         return getObjectsOfCandidateType(q, db, filterObject, null, options, null, null);
     }
