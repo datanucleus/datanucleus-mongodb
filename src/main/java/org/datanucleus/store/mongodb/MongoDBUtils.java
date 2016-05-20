@@ -1032,12 +1032,7 @@ public class MongoDBUtils
         }
         else if (Enum.class.isAssignableFrom(type))
         {
-            ColumnMetaData colmd = null;
-            if (mmd != null && mmd.getColumnMetaData() != null && mmd.getColumnMetaData().length > 0)
-            {
-                colmd = mmd.getColumnMetaData()[0];
-            }
-            return MetaDataUtils.persistColumnAsNumeric(colmd) ? ((Enum)value).ordinal() : ((Enum)value).name();
+            return TypeConversionHelper.getStoredValueFromEnum(mmd, fieldRole, (Enum)value);
         }
         else if (type == Date.class)
         {
@@ -1290,17 +1285,7 @@ public class MongoDBUtils
         }
         else if (Enum.class.isAssignableFrom(type))
         {
-            ColumnMetaData colmd = null;
-            if (mmd != null && mmd.getColumnMetaData() != null && mmd.getColumnMetaData().length > 0)
-            {
-                colmd = mmd.getColumnMetaData()[0];
-            }
-            if (MetaDataUtils.persistColumnAsNumeric(colmd))
-            {
-                return type.getEnumConstants()[((Number)value).intValue()];
-            }
-
-            return Enum.valueOf(type, (String)value);
+            return TypeConversionHelper.getEnumForStoredValue(mmd, fieldRole, value, ec.getClassLoaderResolver());
         }
         else if (java.sql.Date.class.isAssignableFrom(type) && value instanceof Date)
         {
