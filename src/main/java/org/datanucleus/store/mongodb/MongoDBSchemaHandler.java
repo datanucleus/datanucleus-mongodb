@@ -31,6 +31,7 @@ import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ClassPersistenceModifier;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.IndexMetaData;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.UniqueMetaData;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
@@ -162,6 +163,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             }
         }
 
+        ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(null);
         if (autoCreateConstraints)
         {
             // Create indexes
@@ -274,8 +276,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             for (MemberColumnMapping mapping : mappings)
             {
                 Column column = mapping.getColumn(0);
+                RelationType relType = mapping.getMemberMetaData().getRelationType(clr);
                 UniqueMetaData unimd = mapping.getMemberMetaData().getUniqueMetaData();
-                if (unimd != null)
+                if (relType == RelationType.NONE && unimd != null) // Don't allow on relation fields since MongoDB would equate two null rows as breaking the constraint (on a String field)
                 {
                     BasicDBObject query = new BasicDBObject();
                     query.append(column.getName(), 1);
