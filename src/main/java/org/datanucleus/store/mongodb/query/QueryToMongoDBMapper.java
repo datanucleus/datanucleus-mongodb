@@ -147,7 +147,21 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     {
         if (compilation.getExprFrom() != null)
         {
-            NucleusLogger.QUERY.warn("FROM clause will be ignored. Not supported for this datastore (MongoDB doesn't do 'joins')");
+            Expression[] fromExpr = compilation.getExprFrom();
+            if (fromExpr != null)
+            {
+                if (fromExpr.length > 1)
+                {
+                    NucleusLogger.QUERY.warn("FROM clause will be ignored. Not supported for this datastore (MongoDB doesn't do 'joins')");
+                }
+                else if (fromExpr.length == 1)
+                {
+                    if (fromExpr[0].getRight() != null)
+                    {
+                        NucleusLogger.QUERY.warn("FROM clause will be ignored. Not supported for this datastore (MongoDB doesn't do 'joins')");
+                    }
+                }
+            }
         }
         compileFilter();
         compileResult();
@@ -697,6 +711,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else if ("matches".equals(operation))
                     {
+                        // TODO Need to check the pattern and map it on to MongoDB REGEX patterns
                         mongoExpr = new MongoBooleanExpression(invokedFieldExpr, invokedExprArg, MongoOperator.REGEX);
                     }
                     else if ("startsWith".equals(operation))
