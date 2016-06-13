@@ -162,7 +162,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
                     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects as " + StringUtils.objectArrayToString(dbObjects));
+                        NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects as " + StringUtils.objectArrayToString(dbObjects) + " into table " + tableName);
                     }
                     collection.insert(dbObjects, new WriteConcern(1));
                     if (ec.getStatistics() != null)
