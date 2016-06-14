@@ -89,6 +89,9 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     /** The filter expression. If no filter is required then this will be null. */
     MongoBooleanExpression filterExpr;
 
+    /** Whether the order clause is completely evaluatable in the datastore. */
+    boolean orderComplete = true;
+
     /** The ordering object. If no ordering is requested then this will be null. */
     BasicDBObject orderingObject;
 
@@ -116,6 +119,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     public boolean isFilterComplete()
     {
         return filterComplete;
+    }
+
+    public boolean isOrderComplete()
+    {
+        return orderComplete;
     }
 
     public boolean isResultComplete()
@@ -575,6 +583,10 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 {
                     filterComplete = false;
                 }
+                else if (compileComponent == CompilationComponent.ORDERING)
+                {
+                    orderComplete = false;
+                }
                 else if (compileComponent == CompilationComponent.RESULT)
                 {
                     resultComplete = false;
@@ -897,6 +909,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             else
             {
                 AbstractMemberMetaData mmd = cmd.getMetaDataForMember(name);
+                if (mmd == null)
+                {
+                    NucleusLogger.QUERY.warn("Attempt to locate PrimaryExpression " + expr + " gave no result! Maybe an unsupported feature?");
+                    return null;
+                }
+
                 RelationType relationType = mmd.getRelationType(clr);
                 if (relationType == RelationType.NONE)
                 {
@@ -969,6 +987,10 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                         if (compileComponent == CompilationComponent.FILTER)
                         {
                             filterComplete = false;
+                        }
+                        else if (compileComponent == CompilationComponent.ORDERING)
+                        {
+                            orderComplete = false;
                         }
                         else if (compileComponent == CompilationComponent.RESULT)
                         {

@@ -420,6 +420,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
         datastoreCompilation.setFilterComplete(mapper.isFilterComplete());
         datastoreCompilation.setFilterExpression(mapper.getFilterExpression());
         datastoreCompilation.setOrdering(mapper.getOrderingObject());
+        datastoreCompilation.setOrderComplete(mapper.isOrderComplete());
         datastoreCompilation.setResultComplete(mapper.isResultComplete());
         datastoreCompilation.setResult(mapper.getResultObject());
         datastoreCompilation.setPrecompilable(mapper.isPrecompilable());

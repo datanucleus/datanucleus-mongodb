@@ -31,6 +31,8 @@ public class MongoDBQueryCompilation
     /** Expression defining the filter (if any). */
     MongoBooleanExpression filterExpr;
 
+    boolean orderComplete = true;
+
     BasicDBObject orderingObject;
 
     boolean resultComplete = true;
@@ -72,6 +74,16 @@ public class MongoDBQueryCompilation
     public MongoBooleanExpression getFilterExpression()
     {
         return filterExpr;
+    }
+
+    public boolean isOrderComplete()
+    {
+        return orderComplete;
+    }
+
+    public void setOrderComplete(boolean complete)
+    {
+        this.orderComplete = complete;
     }
 
     public void setOrdering(BasicDBObject ordering)

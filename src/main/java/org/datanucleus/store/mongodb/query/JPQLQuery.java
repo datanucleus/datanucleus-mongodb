@@ -400,6 +400,8 @@ public class JPQLQuery extends AbstractJPQLQuery
         mapper.compile();
         datastoreCompilation.setFilterComplete(mapper.isFilterComplete());
         datastoreCompilation.setFilterExpression(mapper.getFilterExpression());
+        datastoreCompilation.setOrderComplete(mapper.isOrderComplete());
+        datastoreCompilation.setOrdering(mapper.getOrderingObject());
         datastoreCompilation.setResultComplete(mapper.isResultComplete());
         datastoreCompilation.setResult(mapper.getResultObject());
         datastoreCompilation.setPrecompilable(mapper.isPrecompilable());
