@@ -454,6 +454,110 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         return super.processLteqExpression(expr);
     }
 
+    /* (non-Javadoc)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processInExpression(org.datanucleus.query.expression.Expression)
+     */
+    @Override
+    protected Object processInExpression(Expression expr)
+    {
+        Object right = stack.pop();
+        Object left = stack.pop();
+        if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
+        {
+            MongoLiteral lit = (MongoLiteral)right;
+            Object litValue = lit.getValue();
+            if (litValue instanceof Collection)
+            {
+                // Generate (val $eq lit1 || val $eq lit2 etc)
+                MongoBooleanExpression inExpr = null;
+                Iterator litValueIter = ((Collection)litValue).iterator();
+                while (litValueIter.hasNext())
+                {
+                    Object litElemValue = litValueIter.next();
+                    MongoLiteral elemLit = getMongoLiteralForValue(litElemValue);
+                    if (elemLit != null)
+                    {
+                        MongoBooleanExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, elemLit, MongoOperator.OP_EQ);
+                        if (inExpr == null)
+                        {
+                            inExpr = mongoExpr;
+                        }
+                        else
+                        {
+                            inExpr = new MongoBooleanExpression(inExpr, mongoExpr, MongoOperator.OP_OR);
+                        }
+                    }
+                }
+                if (inExpr != null)
+                {
+                    stack.push(inExpr);
+                    return inExpr;
+                }
+            }
+            else
+            {
+                MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, lit, MongoOperator.OP_EQ);
+                stack.push(mongoExpr);
+                return mongoExpr;
+            }
+        }
+
+        // TODO Auto-generated method stub
+        return super.processInExpression(expr);
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processNotInExpression(org.datanucleus.query.expression.Expression)
+     */
+    @Override
+    protected Object processNotInExpression(Expression expr)
+    {
+        Object right = stack.pop();
+        Object left = stack.pop();
+        if (left instanceof MongoFieldExpression && right instanceof MongoLiteral)
+        {
+            MongoLiteral lit = (MongoLiteral)right;
+            Object litValue = lit.getValue();
+            if (litValue instanceof Collection)
+            {
+                // Generate (val $ne lit1 && val $ne lit2 etc)
+                MongoBooleanExpression inExpr = null;
+                Iterator litValueIter = ((Collection)litValue).iterator();
+                while (litValueIter.hasNext())
+                {
+                    Object litElemValue = litValueIter.next();
+                    MongoLiteral elemLit = getMongoLiteralForValue(litElemValue);
+                    if (elemLit != null)
+                    {
+                        MongoBooleanExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, elemLit, MongoOperator.OP_NOTEQ);
+                        if (inExpr == null)
+                        {
+                            inExpr = mongoExpr;
+                        }
+                        else
+                        {
+                            inExpr = new MongoBooleanExpression(inExpr, mongoExpr, MongoOperator.OP_AND);
+                        }
+                    }
+                }
+                if (inExpr != null)
+                {
+                    stack.push(inExpr);
+                    return inExpr;
+                }
+            }
+            else
+            {
+                MongoExpression mongoExpr = new MongoBooleanExpression((MongoFieldExpression) left, lit, MongoOperator.OP_NOTEQ);
+                stack.push(mongoExpr);
+                return mongoExpr;
+            }
+        }
+
+        // TODO Auto-generated method stub
+        return super.processNotInExpression(expr);
+    }
+
     /*
      * (non-Javadoc)
      * @see org.datanucleus.query.evaluator.AbstractExpressionEvaluator#processPrimaryExpression(org.datanucleus.query.expression.PrimaryExpression)
@@ -582,46 +686,48 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
     protected Object processLiteral(Literal expr)
     {
         Object litValue = expr.getLiteral();
-        if (litValue instanceof BigDecimal)
+        MongoLiteral lit = getMongoLiteralForValue(litValue);
+        if (lit != null)
+        {
+            stack.push(lit);
+            return lit;
+        }
+        return super.processLiteral(expr);
+    }
+
+    protected MongoLiteral getMongoLiteralForValue(Object value)
+    {
+        if (value instanceof BigDecimal)
         {
             // MongoDB can't cope with BigDecimal, so give it a Double
-            MongoLiteral lit = new MongoLiteral(((BigDecimal) litValue).doubleValue());
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral(((BigDecimal) value).doubleValue());
         }
-        else if (litValue instanceof Number)
+        else if (value instanceof Number)
         {
-            MongoLiteral lit = new MongoLiteral(litValue);
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral(value);
         }
-        else if (litValue instanceof String)
+        else if (value instanceof String)
         {
-            MongoLiteral lit = new MongoLiteral(litValue);
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral(value);
         }
-        else if (litValue instanceof Character)
+        else if (value instanceof Character)
         {
-            MongoLiteral lit = new MongoLiteral("" + litValue);
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral("" + value);
         }
-        else if (litValue instanceof Boolean)
+        else if (value instanceof Boolean)
         {
-            MongoLiteral lit = new MongoLiteral(litValue);
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral(value);
         }
-        else if (litValue == null)
+        else if (value == null)
         {
-            MongoLiteral lit = new MongoLiteral(null);
-            stack.push(lit);
-            return lit;
+            return new MongoLiteral(null);
         }
-        // TODO Handle all MongoDB supported (literal) types
-
-        return super.processLiteral(expr);
+        else if (value instanceof Collection)
+        {
+            // Required for some IN constructs
+            return new MongoLiteral(value);
+        }
+        return null;
     }
 
     /*
