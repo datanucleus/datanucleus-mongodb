@@ -272,6 +272,18 @@ public class JDOQLQuery extends AbstractJDOQLQuery
             }
             else if (evaluateInMemory())
             {
+                if (filter != null)
+                {
+                    filterInMemory = true;
+                }
+                if (ordering != null)
+                {
+                    orderInMemory = true;
+                }
+                if (result != null)
+                {
+                    resultInMemory = true;
+                }
                 candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, null, null);
             }
             else
@@ -294,11 +306,6 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                 if (getBooleanExtensionProperty("slave-ok", false))
                 {
                     options.put("slave-ok", true);
-                }
-
-                if (filter == null || datastoreCompilation.isFilterComplete())
-                {
-                    filterInMemory = false;
                 }
 
                 if (filterInMemory || resultInMemory || resultClass != null)

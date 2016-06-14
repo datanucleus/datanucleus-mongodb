@@ -247,6 +247,18 @@ public class JPQLQuery extends AbstractJPQLQuery
             }
             else if (evaluateInMemory())
             {
+                if (filter != null)
+                {
+                    filterInMemory = true;
+                }
+                if (ordering != null)
+                {
+                    orderInMemory = true;
+                }
+                if (result != null)
+                {
+                    resultInMemory = true;
+                }
                 candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, null, null);
             }
             else
