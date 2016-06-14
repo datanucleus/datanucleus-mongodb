@@ -236,7 +236,8 @@ public class JPQLQuery extends AbstractJPQLQuery
                 NucleusLogger.QUERY.debug(Localiser.msg("021046", "JPQL", getSingleStringQuery(), null));
             }
 
-            boolean filterInMemory = true;
+            boolean filterInMemory = (filter != null && !datastoreCompilation.isFilterComplete());
+            boolean resultInMemory = (result != null && !datastoreCompilation.isResultComplete());
             boolean orderInMemory = (ordering != null);
             boolean rangeInMemory = (range != null);
             List candidates = null;
@@ -259,8 +260,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                 
                 MongoDBResult resultObject = datastoreCompilation.getResult();
                 // TODO properly support GROUP BY
-                if (resultObject != null && resultObject.isCountOnly() && datastoreCompilation.isFilterComplete() && 
-                    grouping == null) 
+                if (resultObject != null && resultObject.isCountOnly() && datastoreCompilation.isFilterComplete() && grouping == null) 
                 {
                     return MongoDBUtils.performMongoCount(db, filterObject, candidateClass, subclasses, ec);
                 } 
@@ -271,12 +271,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                     options.put("slave-ok", true);
                 }
 
-                if (filter == null || datastoreCompilation.isFilterComplete())
-                {
-                    filterInMemory = false;
-                }
-
-                if (filterInMemory || result != null || resultClass != null)
+                if (filterInMemory || resultInMemory || resultClass != null)
                 {
                     candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, options);
                 }
@@ -284,8 +279,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                 {
                     // Execute as much as possible in the datastore
                     BasicDBObject orderingObject = datastoreCompilation.getOrdering();
-                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options,
-                        (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
+                    candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, orderingObject, options, (int) this.fromInclNo, (int) (this.toExclNo - this.fromInclNo));
                     if (orderInMemory && ((LazyLoadQueryResult)candidates).getOrderProcessed())
                     {
                         // Order processed when getting candidates
@@ -300,7 +294,7 @@ public class JPQLQuery extends AbstractJPQLQuery
             }
 
             Collection results = candidates;
-            if (filterInMemory || result != null || resultClass != null || rangeInMemory || orderInMemory)
+            if (filterInMemory || resultInMemory || resultClass != null || rangeInMemory || orderInMemory)
             {
                 if (results instanceof QueryResult)
                 {
@@ -309,8 +303,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                 }
 
                 // Perform any additional evaluation in-memory
-                JavaQueryEvaluator resultMapper = new JPQLEvaluator(this, candidates, compilation, 
-                    parameters, ec.getClassLoaderResolver());
+                JavaQueryEvaluator resultMapper = new JPQLEvaluator(this, candidates, compilation, parameters, ec.getClassLoaderResolver());
                 results = resultMapper.execute(filterInMemory, orderInMemory, result != null, resultClass != null, rangeInMemory);
             }
 

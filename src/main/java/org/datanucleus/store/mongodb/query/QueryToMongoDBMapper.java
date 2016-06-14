@@ -243,12 +243,12 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                     }
                     else
                     {
-
+                        resultComplete = false;
                     }
                 }
                 else
                 {
-
+                    resultComplete = false;
                 }
             }
         }

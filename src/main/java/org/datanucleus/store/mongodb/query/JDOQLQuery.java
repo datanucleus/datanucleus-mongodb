@@ -184,8 +184,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
         if (useCaching())
         {
             // Allowing caching so try to find compiled (datastore) query
-            datastoreCompilation = (MongoDBQueryCompilation)qm.getDatastoreQueryCompilation(datastoreKey,
-                getLanguage(), cacheKey);
+            datastoreCompilation = (MongoDBQueryCompilation)qm.getDatastoreQueryCompilation(datastoreKey, getLanguage(), cacheKey);
             if (datastoreCompilation != null)
             {
                 // Cached compilation exists for this datastore so reuse it
@@ -262,7 +261,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                 NucleusLogger.QUERY.debug(Localiser.msg("021046", "JDOQL", getSingleStringQuery(), null));
             }
 
-            boolean filterInMemory = true;
+            boolean filterInMemory = (filter != null && !datastoreCompilation.isFilterComplete());
+            boolean resultInMemory = (result != null && !datastoreCompilation.isResultComplete());
             Boolean orderInMemory = (ordering != null);
             Boolean rangeInMemory = (range != null);
             List candidates = null;
@@ -301,7 +301,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                     filterInMemory = false;
                 }
 
-                if (filterInMemory || result != null || resultClass != null)
+                if (filterInMemory || resultInMemory || resultClass != null)
                 {
                     candidates = MongoDBUtils.getObjectsOfCandidateType(this, db, filterObject, options);
                 }
@@ -324,7 +324,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
             }
 
             Collection results = candidates;
-            if (filterInMemory || result != null || resultClass != null || rangeInMemory || orderInMemory)
+            if (filterInMemory || resultInMemory || resultClass != null || rangeInMemory || orderInMemory)
             {
                 if (candidates instanceof QueryResult)
                 {
