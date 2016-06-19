@@ -27,8 +27,8 @@ import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.query.evaluator.JDOQLEvaluator;
-import org.datanucleus.query.evaluator.JavaQueryEvaluator;
+import org.datanucleus.query.inmemory.JDOQLInMemoryEvaluator;
+import org.datanucleus.query.inmemory.JavaQueryInMemoryEvaluator;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
@@ -50,6 +50,7 @@ import com.mongodb.DB;
 public class JDOQLQuery extends AbstractJDOQLQuery
 {
     private static final long serialVersionUID = -8591715136438523983L;
+
     /** The compilation of the query for this datastore. Not applicable if totally in-memory. */
     protected transient MongoDBQueryCompilation datastoreCompilation = null;
 
@@ -339,7 +340,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
                     ((QueryResult)candidates).disconnect();
                 }
 
-                JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation, parameters, ec.getClassLoaderResolver());
+                JavaQueryInMemoryEvaluator resultMapper = new JDOQLInMemoryEvaluator(this, candidates, compilation, parameters, ec.getClassLoaderResolver());
                 results = resultMapper.execute(filterInMemory, orderInMemory, result != null, resultClass != null, rangeInMemory);
             }
 
