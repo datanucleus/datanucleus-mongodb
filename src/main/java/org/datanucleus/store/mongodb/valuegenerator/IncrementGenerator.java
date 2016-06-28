@@ -25,6 +25,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
 import org.datanucleus.store.valuegenerator.ValueGenerationBlock;
+import org.datanucleus.store.valuegenerator.ValueGenerator;
 import org.datanucleus.util.Localiser;
 
 import com.mongodb.BasicDBObject;
@@ -63,15 +64,15 @@ public class IncrementGenerator extends AbstractDatastoreGenerator<Long>
     public IncrementGenerator(String name, Properties props)
     {
         super(name, props);
-        this.key = properties.getProperty("field-name", name);
-        this.collectionName = properties.getProperty("sequence-table-name");
+        this.key = properties.getProperty(ValueGenerator.PROPERTY_FIELD_NAME, name);
+        this.collectionName = properties.getProperty(ValueGenerator.PROPERTY_SEQUENCETABLE_TABLE);
         if (this.collectionName == null)
         {
             this.collectionName = "IncrementTable";
         }
-        if (properties.containsKey("key-cache-size"))
+        if (properties.containsKey(ValueGenerator.PROPERTY_KEY_CACHE_SIZE))
         {
-            allocationSize = Integer.valueOf(properties.getProperty("key-cache-size"));
+            allocationSize = Integer.valueOf(properties.getProperty(ValueGenerator.PROPERTY_KEY_CACHE_SIZE));
         }
         else
         {
@@ -108,9 +109,9 @@ public class IncrementGenerator extends AbstractDatastoreGenerator<Long>
             {
                 // No current entry for this key, so add initial entry
                 long initialValue = 0;
-                if (properties.containsKey("key-initial-value"))
+                if (properties.containsKey(ValueGenerator.PROPERTY_KEY_INITIAL_VALUE))
                 {
-                    initialValue = Long.valueOf(properties.getProperty("key-initial-value"))-1;
+                    initialValue = Long.valueOf(properties.getProperty(ValueGenerator.PROPERTY_KEY_INITIAL_VALUE))-1;
                 }
                 BasicDBObject dbObject = new BasicDBObject();
                 dbObject.put("field-name", key);
