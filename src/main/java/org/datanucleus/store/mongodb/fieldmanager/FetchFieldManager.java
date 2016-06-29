@@ -363,7 +363,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                     }
 
-                    List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                    List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                     embMmds.add(mmd);
 
                     ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
@@ -411,7 +411,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     return null;
                 }
 
-                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                 embMmds.add(mmd);
                 ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
                 FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);

@@ -78,7 +78,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     public void insertObjects(ObjectProvider... ops)
     {
         // This is called by the flush() process, so groups inserts.
-        List<ObjectProvider> insertOps = new ArrayList<ObjectProvider>();
+        List<ObjectProvider> insertOps = new ArrayList<>();
         for (int i=0;i<ops.length;i++)
         {
             insertOps.add(ops[i]);
@@ -107,7 +107,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DB db = (DB)mconn.getConnection();
 
             // Separate the objects to be persisted into groups, for the "table" in question
-            Map<String, Set<ObjectProvider>> opsByTable = new HashMap();
+            Map<String, Set<ObjectProvider>> opsByTable = new HashMap<>();
             for (int i=0;i<ops.length;i++)
             {
                 AbstractClassMetaData cmd = ops[i].getClassMetaData();
@@ -123,7 +123,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     Set<ObjectProvider> opsForTable = opsByTable.get(tableName);
                     if (opsForTable == null)
                     {
-                        opsForTable = new HashSet<ObjectProvider>();
+                        opsForTable = new HashSet<>();
                         opsByTable.put(tableName, opsForTable);
                     }
                     opsForTable.add(ops[i]);
@@ -627,7 +627,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 {
                     if (nonpersistableFields == null)
                     {
-                        nonpersistableFields = new HashSet<Integer>();
+                        nonpersistableFields = new HashSet<>();
                     }
                     nonpersistableFields.add(fieldNumbers[i]);
                 }

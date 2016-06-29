@@ -102,7 +102,7 @@ public class MongoDBUtils
             count += db.getCollection(collectionName).count(filterObject);
         }
 
-        List<Long> results = new LinkedList<Long>();
+        List<Long> results = new LinkedList<>();
         results.add(count);
         if (ec.getStatistics() != null)
         {
@@ -192,7 +192,7 @@ public class MongoDBUtils
      */
     public static String getClassNameForIdentity(Object id, AbstractClassMetaData rootCmd, ExecutionContext ec, ClassLoaderResolver clr)
     {
-        Map<String, Set<String>> classNamesByDbCollectionName = new HashMap<String, Set<String>>();
+        Map<String, Set<String>> classNamesByDbCollectionName = new HashMap<>();
         StoreManager storeMgr = ec.getStoreManager();
         Set rootClassNames = new HashSet<String>();
         rootClassNames.add(rootCmd.getFullClassName());
@@ -520,7 +520,7 @@ public class MongoDBUtils
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         List<AbstractClassMetaData> cmds = MetaDataUtils.getMetaDataForCandidates(q.getCandidateClass(), q.isSubclasses(), ec);
 
-        Map<String, List<AbstractClassMetaData>> classesByCollectionName = new HashMap();
+        Map<String, List<AbstractClassMetaData>> classesByCollectionName = new HashMap<>();
         for (AbstractClassMetaData cmd : cmds)
         {
             if (cmd instanceof ClassMetaData && ((ClassMetaData)cmd).isAbstract())
@@ -539,7 +539,7 @@ public class MongoDBUtils
                 List<AbstractClassMetaData> cmdsForCollection = classesByCollectionName.get(collectionName);
                 if (cmdsForCollection == null)
                 {
-                    cmdsForCollection = new ArrayList();
+                    cmdsForCollection = new ArrayList<>();
                     classesByCollectionName.put(collectionName, cmdsForCollection);
                 }
                 cmdsForCollection.add(cmd);

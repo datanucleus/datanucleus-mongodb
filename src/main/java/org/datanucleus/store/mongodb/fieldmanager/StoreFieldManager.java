@@ -318,7 +318,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     embeddedObject.put(discPropName, discVal);
                 }
 
-                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>();
+                List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                 embMmds.add(mmd);
 
                 FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
@@ -764,7 +764,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 throw new NucleusUserException("Don't currently support serialised map keys/values at " + mmd.getFullFieldName() + " . Serialise the whole field");
             }
 
-            Collection<DBObject> collEntries = new HashSet();
+            Collection<DBObject> collEntries = new HashSet<>();
             Map map = (Map)value;
             Iterator<Map.Entry> mapIter = map.entrySet().iterator();
             while (mapIter.hasNext())

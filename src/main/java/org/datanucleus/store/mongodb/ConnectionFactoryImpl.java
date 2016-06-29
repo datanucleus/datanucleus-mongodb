@@ -88,7 +88,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         // Split into any replica sets
         try
         {
-            List<ServerAddress> serverAddrs = new ArrayList<ServerAddress>();
+            List<ServerAddress> serverAddrs = new ArrayList<>();
             if (remains.length() == 0)
             {
                 // "mongodb:"
@@ -147,8 +147,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                     int portSeparatorPos = serverName.indexOf(':');
                     if (portSeparatorPos > 0)
                     {
-                        addr = new ServerAddress(serverName.substring(0, portSeparatorPos), 
-                            Integer.valueOf(serverName.substring(portSeparatorPos + 1)).intValue());
+                        addr = new ServerAddress(serverName.substring(0, portSeparatorPos), Integer.valueOf(serverName.substring(portSeparatorPos + 1)).intValue());
                     }
                     else
                     {
@@ -166,7 +165,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (!StringUtils.isWhitespace(userName))
             {
                 MongoCredential credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
-                credentials = new ArrayList<MongoCredential>();
+                credentials = new ArrayList<>();
                 credentials.add(credential);
             }
 
