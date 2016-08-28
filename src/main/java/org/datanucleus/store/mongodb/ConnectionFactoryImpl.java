@@ -331,8 +331,9 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 listeners.get(i).managedConnectionPostClose();
             }
 
-            this.conn = null;
             this.xaRes = null;
+
+            super.close();
         }
 
         public XAResource getXAResource()
