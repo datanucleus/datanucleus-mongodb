@@ -40,8 +40,6 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.DiscriminatorMetaData;
-import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
@@ -328,18 +326,8 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (cmd.hasDiscriminatorStrategy())
         {
             // Add discriminator field
-            DiscriminatorMetaData discmd = cmd.getDiscriminatorMetaData();
             String fieldName = table.getDiscriminatorColumn().getName();
-            Object discVal = null;
-            if (cmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-            {
-                discVal = cmd.getFullClassName();
-            }
-            else
-            {
-                discVal = discmd.getValue();
-            }
-            dbObject.put(fieldName, discVal);
+            dbObject.put(fieldName, cmd.getDiscriminatorValue());
         }
 
         // Add Multi-tenancy discriminator if applicable

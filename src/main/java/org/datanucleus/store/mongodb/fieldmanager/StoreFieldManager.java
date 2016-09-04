@@ -36,8 +36,6 @@ import org.datanucleus.exceptions.ReachableObjectNotCascadedException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.DiscriminatorMetaData;
-import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
@@ -305,17 +303,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                     {
                         discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                     }
-                    DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                    String discVal = null;
-                    if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                    {
-                        discVal = embcmd.getFullClassName();
-                    }
-                    else
-                    {
-                        discVal = discmd.getValue();
-                    }
-                    embeddedObject.put(discPropName, discVal);
+                    embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                 }
 
                 List<AbstractMemberMetaData> embMmds = new ArrayList<>();
@@ -371,17 +359,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             {
                                 discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
-                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                            String discVal = null;
-                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                            {
-                                discVal = embcmd.getFullClassName();
-                            }
-                            else
-                            {
-                                discVal = discmd.getValue();
-                            }
-                            embeddedObject.put(discPropName, discVal);
+                            embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
@@ -426,17 +404,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             {
                                 discPropName = storeMgr.getNamingFactory().getColumnName(embcmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                             }
-                            DiscriminatorMetaData discmd = embcmd.getDiscriminatorMetaData();
-                            String discVal = null;
-                            if (embcmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                            {
-                                discVal = embcmd.getFullClassName();
-                            }
-                            else
-                            {
-                                discVal = discmd.getValue();
-                            }
-                            embeddedObject.put(discPropName, discVal);
+                            embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
@@ -489,17 +457,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                                 {
                                     discPropName = storeMgr.getNamingFactory().getColumnName(keyCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                                 }
-                                DiscriminatorMetaData discmd = keyCmd.getDiscriminatorMetaData();
-                                String discVal = null;
-                                if (keyCmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                                {
-                                    discVal = embOP.getClassMetaData().getFullClassName();
-                                }
-                                else
-                                {
-                                    discVal = discmd.getValue();
-                                }
-                                embeddedKey.put(discPropName, discVal);
+                                embeddedKey.put(discPropName, keyCmd.getDiscriminatorValue());
                             }
 
                             String keyClassName = embOP.getClassMetaData().getFullClassName();
@@ -536,17 +494,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                                 {
                                     discPropName = storeMgr.getNamingFactory().getColumnName(valCmd, ColumnType.DISCRIMINATOR_COLUMN); // TODO Use Table
                                 }
-                                DiscriminatorMetaData discmd = valCmd.getDiscriminatorMetaData();
-                                String discVal = null;
-                                if (valCmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME)
-                                {
-                                    discVal = embOP.getClassMetaData().getFullClassName();
-                                }
-                                else
-                                {
-                                    discVal = discmd.getValue();
-                                }
-                                embeddedVal.put(discPropName, discVal);
+                                embeddedVal.put(discPropName, valCmd.getDiscriminatorValue());
                             }
 
                             String valClassName = embOP.getClassMetaData().getFullClassName();
