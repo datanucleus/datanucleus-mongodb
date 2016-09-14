@@ -184,14 +184,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             AbstractClassMetaData theCmd = cmd;
             while (theCmd != null)
             {
-                IndexMetaData[] clsIdxMds = theCmd.getIndexMetaData();
+                List<IndexMetaData> clsIdxMds = theCmd.getIndexMetaData();
                 if (clsIdxMds != null)
                 {
-                    for (int i=0;i<clsIdxMds.length;i++)
+                    int i = 0;
+                    for (IndexMetaData idxmd : clsIdxMds)
                     {
-                        IndexMetaData idxmd = clsIdxMds[i];
                         DBObject idxObj = getDBObjectForIndex(cmd, idxmd, table);
-                        String idxName = namingFactory.getConstraintName(theCmd, idxmd, i);
+                        String idxName = namingFactory.getConstraintName(theCmd, idxmd, i++);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
                             NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", idxName, collectionName, idxObj));
@@ -200,14 +200,14 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     }
                 }
 
-                UniqueMetaData[] clsUniMds = theCmd.getUniqueMetaData();
+                List<UniqueMetaData> clsUniMds = theCmd.getUniqueMetaData();
                 if (clsUniMds != null)
                 {
-                    for (int i=0;i<clsUniMds.length;i++)
+                    int i = 0;
+                    for (UniqueMetaData unimd : clsUniMds)
                     {
-                        UniqueMetaData unimd = clsUniMds[i];
                         DBObject uniObj = getDBObjectForUnique(cmd, unimd, table);
-                        String uniName = namingFactory.getConstraintName(theCmd, unimd, i);
+                        String uniName = namingFactory.getConstraintName(theCmd, unimd, i++);
                         if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                         {
                             NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", uniName, collectionName, uniObj));
@@ -474,45 +474,45 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     DBCollection dbColl = db.getCollection(tableName);
                     List<DBObject> indices = new ArrayList(dbColl.getIndexInfo());
 
-                    IndexMetaData[] idxmds = cmd.getIndexMetaData();
-                    if (idxmds != null && idxmds.length > 0)
+                    List<IndexMetaData> idxmds = cmd.getIndexMetaData();
+                    if (idxmds != null)
                     {
-                        for (int i=0;i<idxmds.length;i++)
+                        for (IndexMetaData idxmd : idxmds)
                         {
-                            DBObject idxObj = getDBObjectForIndex(cmd, idxmds[i], table);
-                            DBObject indexObj = getIndexObjectForIndex(indices, idxmds[i].getName(), idxObj, true);
+                            DBObject idxObj = getDBObjectForIndex(cmd, idxmd, table);
+                            DBObject indexObj = getIndexObjectForIndex(indices, idxmd.getName(), idxObj, true);
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                msg = "Index for class="+cmd.getFullClassName() + " with name="+idxmds[i].getName() + " validated";
+                                msg = "Index for class="+cmd.getFullClassName() + " with name="+idxmd.getName() + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                msg = "Index missing for class="+cmd.getFullClassName() + " name="+idxmds[i].getName() + " key="+idxObj;
+                                msg = "Index missing for class="+cmd.getFullClassName() + " name="+idxmd.getName() + " key="+idxObj;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
                         }
                     }
-                    UniqueMetaData[] unimds = cmd.getUniqueMetaData();
-                    if (unimds != null && unimds.length > 0)
+                    List<UniqueMetaData> unimds = cmd.getUniqueMetaData();
+                    if (unimds != null)
                     {
-                        for (int i=0;i<unimds.length;i++)
+                        for (UniqueMetaData unimd : unimds)
                         {
-                            DBObject uniObj = getDBObjectForUnique(cmd, unimds[i], table);
-                            DBObject indexObj = getIndexObjectForIndex(indices, unimds[i].getName(), uniObj, true);
+                            DBObject uniObj = getDBObjectForUnique(cmd, unimd, table);
+                            DBObject indexObj = getIndexObjectForIndex(indices, unimd.getName(), uniObj, true);
                             if (indexObj != null)
                             {
                                 indices.remove(indexObj);
-                                msg = "Unique index for class="+cmd.getFullClassName() + " with name="+unimds[i].getName() + " validated";
+                                msg = "Unique index for class="+cmd.getFullClassName() + " with name="+unimd.getName() + " validated";
                                 NucleusLogger.DATASTORE_SCHEMA.info(msg);
                             }
                             else
                             {
                                 success = false;
-                                msg = "Unique index missing for class="+cmd.getFullClassName() + " name="+unimds[i].getName() + " key="+uniObj;
+                                msg = "Unique index missing for class="+cmd.getFullClassName() + " name="+unimd.getName() + " key="+uniObj;
                                 System.out.println(msg);
                                 NucleusLogger.DATASTORE_SCHEMA.error(msg);
                             }
