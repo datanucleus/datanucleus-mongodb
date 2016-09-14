@@ -74,9 +74,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         logConfiguration();
     }
 
-    public Collection getSupportedOptions()
+    public Collection<String> getSupportedOptions()
     {
-        Set set = new HashSet();
+        Set<String> set = new HashSet<>();
         set.add(StoreManager.OPTION_APPLICATION_ID);
         set.add(StoreManager.OPTION_APPLICATION_COMPOSITE_ID);
         set.add(StoreManager.OPTION_DATASTORE_ID);
@@ -95,6 +95,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         set.add(StoreManager.OPTION_DATASTORE_TIME_STORES_MILLISECS);
         set.add(StoreManager.OPTION_QUERY_JDOQL_BULK_DELETE);
         set.add(StoreManager.OPTION_QUERY_JPQL_BULK_DELETE);
+        set.add(StoreManager.OPTION_ORM_INHERITANCE_COMPLETE_TABLE);
         return set;
     }
 
