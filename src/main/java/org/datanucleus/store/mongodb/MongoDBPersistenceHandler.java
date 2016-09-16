@@ -263,7 +263,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
                 // Update any relation fields
                 StoreFieldManager fieldManager = new StoreFieldManager(op, dbObject, true, table);
-                int[] fieldNumbers = cmd.getRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
+                int[] fieldNumbers = cmd.getRelationMemberPositions(ec.getClassLoaderResolver());
                 if (fieldNumbers != null && fieldNumbers.length > 0)
                 {
                     op.provideFields(fieldNumbers, fieldManager);
@@ -364,7 +364,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         int[] fieldNumbers = cmd.getAllMemberPositions();
         if (!includeRelationFields)
         {
-            fieldNumbers = cmd.getNonRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
+            fieldNumbers = cmd.getNonRelationMemberPositions(ec.getClassLoaderResolver());
         }
         op.provideFields(fieldNumbers, fieldManager);
 

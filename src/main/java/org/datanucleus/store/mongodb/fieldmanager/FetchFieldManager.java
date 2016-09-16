@@ -431,7 +431,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     }
                     Object value = dbObject.get(fieldName);
                     Collection<Object> coll;
-                    AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr);
                     try
                     {
                         Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
@@ -500,7 +500,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         return null;
                     }
 
-                    AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr);
                     Object value = dbObject.get(fieldName);
                     Object[] array = new Object[Array.getLength(value)];
                     for (int i=0;i<array.length;i++)
@@ -566,8 +566,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         throw new NucleusDataStoreException(e.getMessage(), e);
                     }
 
-                    AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
-                    AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr);
+                    AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr);
                     Collection<DBObject> entryColl = (Collection)value;
                     Iterator<DBObject> entryIter = entryColl.iterator();
                     while (entryIter.hasNext())
@@ -918,7 +918,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                 throw new NucleusDataStoreException(e.getMessage(), e);
             }
 
-            AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+            AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr);
             if (elemCmd == null)
             {
                 // Try any listed implementations
@@ -939,7 +939,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             Collection collIds = (Collection)value;
             Iterator idIter = collIds.iterator();
             boolean changeDetected = false;
-            AbstractClassMetaData elementCmd = mmd.getCollection().getElementClassMetaData(ec.getClassLoaderResolver(), ec.getMetaDataManager());
+            AbstractClassMetaData elementCmd = mmd.getCollection().getElementClassMetaData(ec.getClassLoaderResolver());
             while (idIter.hasNext())
             {
                 Object idValue = idIter.next();
@@ -1017,8 +1017,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             }
 
             // TODO Support DBRef option rather than persistable id
-            AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
-            AbstractClassMetaData valueCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
+            AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr);
+            AbstractClassMetaData valueCmd = mmd.getMap().getValueClassMetaData(clr);
             Collection<DBObject> collEntries = (Collection)value;
             Iterator<DBObject> entryIter = collEntries.iterator();
             boolean changeDetected = false;
@@ -1107,7 +1107,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         else if (mmd.hasArray())
         {
             // "a,b,c,d,..."
-            AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+            AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr);
             if (elemCmd == null)
             {
                 // Try any listed implementations

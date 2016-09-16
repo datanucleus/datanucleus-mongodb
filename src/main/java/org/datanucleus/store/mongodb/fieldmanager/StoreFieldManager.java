@@ -333,7 +333,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                 if (mmd.hasCollection())
                 {
-                    AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr);
                     Collection coll = new ArrayList();
                     Collection valueColl = (Collection)value;
                     Iterator collIter = valueColl.iterator();
@@ -380,7 +380,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else if (mmd.hasArray())
                 {
-                    AbstractClassMetaData embcmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData embcmd = mmd.getArray().getElementClassMetaData(clr);
                     Object[] array = new Object[Array.getLength(value)];
                     for (int i=0;i<array.length;i++)
                     {
@@ -425,8 +425,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 }
                 else
                 {
-                    AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
-                    AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
+                    AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr);
+                    AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr);
                     Collection entryList = new ArrayList();
                     Map valueMap = (Map)value;
                     Iterator<Map.Entry> mapEntryIter = valueMap.entrySet().iterator();
