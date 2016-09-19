@@ -55,7 +55,6 @@ import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.MultiColumnConverter;
 import org.datanucleus.store.types.converters.TypeConverter;
-import org.datanucleus.store.types.converters.TypeConverterHelper;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.TypeConversionHelper;
 
@@ -801,7 +800,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     return null;
                 }
                 Object propVal = dbObject.get(colName);
-                Class datastoreType = TypeConverterHelper.getDatastoreTypeForTypeConverter(conv, mmd.getType());
+                Class datastoreType = ec.getTypeManager().getDatastoreTypeForTypeConverter(conv, mmd.getType());
                 if (!datastoreType.isAssignableFrom(propVal.getClass()))
                 {
                     // Need to do conversion to the correct type for the converter e.g datastore returned java.util.Date yet need java.sql.Timestamp/Date/Time
