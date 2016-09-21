@@ -118,10 +118,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             return ((SCOID) id).getSCOClass();
         }
 
+        // Find overall root class possible for this id
         String rootClassName = super.getClassNameForObjectID(id, clr, ec);
         if (rootClassName != null)
         {
-            // TODO Allow for use of users-own PK class in multiple inheritance trees
+            // User could have passed in a superclass of the real class, so consult the datastore for the precise table/class
             String[] subclasses = getMetaDataManager().getSubclassesForClass(rootClassName, true);
             if (subclasses == null || subclasses.length == 0)
             {
@@ -233,7 +234,6 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         try
         {
             DB db = (DB) mconn.getConnection();
-
             manageClasses(classNames, clr, db);
         }
         finally
@@ -253,7 +253,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         String[] filteredClassNames = getNucleusContext().getTypeManager().filterOutSupportedSecondClassNames(classNames);
 
         // Find the ClassMetaData for these classes and all referenced by these classes
-        Set<String> clsNameSet = new HashSet<String>();
+        Set<String> clsNameSet = new HashSet<>();
         Iterator iter = getMetaDataManager().getReferencedClasses(filteredClassNames, clr).iterator();
         while (iter.hasNext())
         {

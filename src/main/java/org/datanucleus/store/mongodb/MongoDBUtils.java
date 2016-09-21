@@ -58,6 +58,7 @@ import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.FieldValues;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
@@ -192,27 +193,51 @@ public class MongoDBUtils
      */
     public static String getClassNameForIdentity(Object id, AbstractClassMetaData rootCmd, ExecutionContext ec, ClassLoaderResolver clr)
     {
-        Map<String, Set<String>> classNamesByDbCollectionName = new HashMap<>();
+        Map<String, Set<String>> classNamesByTableName = new HashMap<>();
+        Map<String, Table> tableByTableName = new HashMap<>();
         StoreManager storeMgr = ec.getStoreManager();
-        Set rootClassNames = new HashSet<String>();
-        rootClassNames.add(rootCmd.getFullClassName());
-        Table rootTable = storeMgr.getStoreDataForClass(rootCmd.getFullClassName()).getTable();
-        classNamesByDbCollectionName.put(rootTable.getName(), rootClassNames);
+
+        if (!storeMgr.managesClass(rootCmd.getFullClassName()))
+        {
+            storeMgr.manageClasses(clr, rootCmd.getFullClassName());
+        }
+        StoreData sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
+        if (sd != null)
+        {
+            Set classNames = new HashSet<String>();
+            classNames.add(rootCmd.getFullClassName());
+            Table tbl = sd.getTable();
+            classNamesByTableName.put(tbl.getName(), classNames);
+            tableByTableName.put(tbl.getName(), tbl);
+        }
+
         Collection<String> subclassNames = storeMgr.getSubClassesForClass(rootCmd.getFullClassName(), true, clr);
         if (subclassNames != null && !subclassNames.isEmpty())
         {
             for (String subclassName : subclassNames)
             {
                 AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassName, clr);
-                Table subTable = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
-                String subTableName = subTable.getName();
-                Set<String> classNames = classNamesByDbCollectionName.get(subTableName);
-                if (classNames == null)
+                if (!storeMgr.managesClass(cmd.getFullClassName()))
                 {
-                    classNames = new HashSet<String>();
-                    classNamesByDbCollectionName.put(subTableName, classNames);
+                    storeMgr.manageClasses(clr, cmd.getFullClassName());
                 }
-                classNames.add(cmd.getFullClassName());
+                sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                if (sd != null)
+                {
+                    Table subTable = sd.getTable();
+                    String subTableName = subTable.getName();
+                    Set<String> classNames = classNamesByTableName.get(subTableName);
+                    if (classNames == null)
+                    {
+                        classNames = new HashSet<String>();
+                        classNamesByTableName.put(subTableName, classNames);
+                    }
+                    classNames.add(cmd.getFullClassName());
+                    if (!tableByTableName.containsKey(subTableName))
+                    {
+                        tableByTableName.put(subTableName, subTable);
+                    }
+                }
             }
         }
 
@@ -221,12 +246,13 @@ public class MongoDBUtils
         {
             DB db = (DB)mconn.getConnection();
 
-            for (Map.Entry<String, Set<String>> dbCollEntry : classNamesByDbCollectionName.entrySet())
+            for (Map.Entry<String, Set<String>> dbCollEntry : classNamesByTableName.entrySet())
             {
                 // Check each DBCollection for the id PK field(s)
-                String dbCollName = dbCollEntry.getKey();
+                String tableName = dbCollEntry.getKey();
                 Set<String> classNames = dbCollEntry.getValue();
-                DBCollection dbColl = db.getCollection(dbCollName);
+                Table table = tableByTableName.get(tableName);
+                DBCollection dbColl = db.getCollection(tableName);
                 BasicDBObject query = new BasicDBObject();
                 if (rootCmd.getIdentityType() == IdentityType.DATASTORE)
                 {
@@ -237,7 +263,7 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        query.put(rootTable.getDatastoreIdColumn().getName(), key);
+                        query.put(table.getDatastoreIdColumn().getName(), key);
                     }
                 }
                 else if (rootCmd.getIdentityType() == IdentityType.APPLICATION)
@@ -247,7 +273,7 @@ public class MongoDBUtils
                         Object key = IdentityUtils.getTargetKeyForSingleFieldIdentity(id);
                         int[] pkNums = rootCmd.getPKMemberPositions();
                         AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[0]);
-                        String pkPropName = rootTable.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
+                        String pkPropName = table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
                         query.put(pkPropName, key);
                     }
                     else
@@ -256,7 +282,7 @@ public class MongoDBUtils
                         for (int i=0;i<pkNums.length;i++)
                         {
                             AbstractMemberMetaData pkMmd = rootCmd.getMetaDataForManagedMemberAtAbsolutePosition(pkNums[i]);
-                            String pkPropName = rootTable.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
+                            String pkPropName = table.getMemberColumnMappingForMember(pkMmd).getColumn(0).getName();
                             Object pkVal = IdentityUtils.getValueForMemberInId(id, pkMmd);
                             query.put(pkPropName, pkVal);
                         }
@@ -265,7 +291,7 @@ public class MongoDBUtils
 
                 if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
                 {
-                    NucleusLogger.DATASTORE_NATIVE.debug("Retrieving object for " + query + " from DBCollection with name " + dbCollName);
+                    NucleusLogger.DATASTORE_NATIVE.debug("Retrieving object for " + query + " from DBCollection with name " + tableName);
                 }
                 DBObject foundObj = dbColl.findOne(query);
                 if (ec.getStatistics() != null)
@@ -284,7 +310,7 @@ public class MongoDBUtils
 
                     if (rootCmd.hasDiscriminatorStrategy())
                     {
-                        String discValue = (String)foundObj.get(rootTable.getDiscriminatorColumn().getName());
+                        String discValue = (String)foundObj.get(table.getDiscriminatorColumn().getName());
                         return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
                     }
 
