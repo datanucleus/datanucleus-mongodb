@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -93,7 +94,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                 AbstractClassMetaData embCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
                 if (embCmd == null)
                 {
-                    throw new NucleusUserException("Field " + mmd.getFullFieldName() +
+                    throw new NucleusUserException("Member " + mmd.getFullFieldName() +
                         " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
                 }
 
@@ -144,6 +145,10 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                 FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
                 embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
                 return;
+            }
+            else if (RelationType.isRelationMultiValued(relationType))
+            {
+                throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support multi-valued embedded fields in this location (owner=" + op + ")");
             }
         }
 
