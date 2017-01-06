@@ -41,6 +41,7 @@ import org.datanucleus.store.schema.naming.NamingFactory;
 import org.datanucleus.store.schema.table.Column;
 import org.datanucleus.store.schema.table.CompleteClassTable;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.SurrogateColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -261,7 +262,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 else
                 {
                     BasicDBObject query = new BasicDBObject();
-                    query.append(table.getDatastoreIdColumn().getName(), 1);
+                    query.append(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName(), 1);
                     String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                     if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
                     {
@@ -557,7 +558,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                         {
                             // Check unique index on PK
                             BasicDBObject query = new BasicDBObject();
-                            query.append(table.getDatastoreIdColumn().getName(), 1);
+                            query.append(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName(), 1);
                             String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
                             DBObject indexObj = getIndexObjectForIndex(indices, pkName, query, true);
                             if (indexObj != null)

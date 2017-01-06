@@ -67,6 +67,7 @@ import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.store.schema.table.Column;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
+import org.datanucleus.store.schema.table.SurrogateColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.SCOUtils;
@@ -263,7 +264,7 @@ public class MongoDBUtils
                     }
                     else
                     {
-                        query.put(table.getDatastoreIdColumn().getName(), key);
+                        query.put(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName(), key);
                     }
                 }
                 else if (rootCmd.getIdentityType() == IdentityType.APPLICATION)
@@ -310,7 +311,7 @@ public class MongoDBUtils
 
                     if (rootCmd.hasDiscriminatorStrategy())
                     {
-                        String discValue = (String)foundObj.get(table.getDiscriminatorColumn().getName());
+                        String discValue = (String)foundObj.get(table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName());
                         return ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, rootCmd.getDiscriminatorMetaData());
                     }
 
@@ -447,7 +448,7 @@ public class MongoDBUtils
             }
             else
             {
-                query.put(table.getDatastoreIdColumn().getName(), value);
+                query.put(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName(), value);
             }
         }
         else
@@ -488,7 +489,7 @@ public class MongoDBUtils
         if (cmd.hasDiscriminatorStrategy())
         {
             // Add discriminator to the query object
-            query.put(table.getDiscriminatorColumn().getName(), cmd.getDiscriminatorValue());
+            query.put(table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), cmd.getDiscriminatorValue());
         }
         if (checkVersion && cmd.isVersioned())
         {
@@ -503,7 +504,7 @@ public class MongoDBUtils
             else
             {
                 // Surrogate version field
-                query.put(table.getVersionColumn().getName(), currentVersion);
+                query.put(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName(), currentVersion);
             }
         }
 
@@ -617,7 +618,7 @@ public class MongoDBUtils
             }
             if (rootCmd.getIdentityType() == IdentityType.DATASTORE)
             {
-                fieldsSelection.append(rootTable.getDatastoreIdColumn().getName(), 1);
+                fieldsSelection.append(rootTable.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName(), 1);
             }
             if (rootCmd.isVersioned())
             {
@@ -630,12 +631,12 @@ public class MongoDBUtils
                 }
                 else
                 {
-                    fieldsSelection.append(rootTable.getVersionColumn().getName(), 1);
+                    fieldsSelection.append(rootTable.getSurrogateColumn(SurrogateColumnType.VERSION).getName(), 1);
                 }
             }
             if (rootCmd.hasDiscriminatorStrategy())
             {
-                fieldsSelection.append(rootTable.getDiscriminatorColumn().getName(), 1);
+                fieldsSelection.append(rootTable.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), 1);
             }
 
             BasicDBObject query = new BasicDBObject();
@@ -653,13 +654,13 @@ public class MongoDBUtils
             {
                 // TODO Add this restriction on *all* possible cmds for this DBCollection
                 // Discriminator present : Add restriction on the discriminator value for this class
-                query.put(rootTable.getDiscriminatorColumn().getName(), rootCmd.getDiscriminatorValue());
+                query.put(rootTable.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), rootCmd.getDiscriminatorValue());
             }
 
             if (ec.getNucleusContext().isClassMultiTenant(rootCmd))
             {
                 // Multitenancy discriminator present : Add restriction for this tenant
-                String fieldName = rootTable.getMultitenancyColumn().getName();
+                String fieldName = rootTable.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
                 String value = ec.getNucleusContext().getMultiTenancyId(ec, rootCmd);
                 query.put(fieldName, value);
             }
@@ -729,7 +730,7 @@ public class MongoDBUtils
         if (cmd.hasDiscriminatorStrategy())
         {
             // Determine the class from the discriminator property
-            String disPropName = table.getDiscriminatorColumn().getName();
+            String disPropName = table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName();
             String discValue = (String)dbObject.get(disPropName);
             String clsName = ec.getMetaDataManager().getClassNameFromDiscriminatorValue(discValue, cmd.getDiscriminatorMetaData());
             if (!cmd.getFullClassName().equals(clsName) && clsName != null)
@@ -810,7 +811,7 @@ public class MongoDBUtils
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(table.getVersionColumn().getName());
+                version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
             op.setVersion(version);
         }
@@ -832,7 +833,7 @@ public class MongoDBUtils
         }
         else
         {
-            idKey = dbObject.get(table.getDatastoreIdColumn().getName());
+            idKey = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName());
         }
 
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
@@ -870,7 +871,7 @@ public class MongoDBUtils
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(table.getVersionColumn().getName());
+                version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
             sm.setVersion(version);
         }
@@ -915,7 +916,7 @@ public class MongoDBUtils
             else
             {
                 // Get the surrogate version from the datastore
-                version = dbObject.get(table.getVersionColumn().getName());
+                version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
             sm.setVersion(version);
         }

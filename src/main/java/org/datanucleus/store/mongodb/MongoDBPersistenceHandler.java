@@ -51,6 +51,7 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.fieldmanager.DeleteFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.StoreFieldManager;
+import org.datanucleus.store.schema.table.SurrogateColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -318,7 +319,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (cmd.getIdentityType() == IdentityType.DATASTORE && !storeMgr.isStrategyDatastoreAttributed(cmd, -1))
         {
             // Add surrogate datastore identity field (if using identity then just uses "_id" MongoDB special)
-            String fieldName = table.getDatastoreIdColumn().getName();
+            String fieldName = table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName();
             Object key = IdentityUtils.getTargetKeyForDatastoreIdentity(op.getInternalObjectId());
             dbObject.put(fieldName, key);
         }
@@ -326,14 +327,14 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (cmd.hasDiscriminatorStrategy())
         {
             // Add discriminator field
-            String fieldName = table.getDiscriminatorColumn().getName();
+            String fieldName = table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName();
             dbObject.put(fieldName, cmd.getDiscriminatorValue());
         }
 
         // Add Multi-tenancy discriminator if applicable
         if (ec.getNucleusContext().isClassMultiTenant(cmd))
         {
-            String fieldName = table.getMultitenancyColumn().getName();
+            String fieldName = table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
             dbObject.put(fieldName, ec.getNucleusContext().getMultiTenancyId(ec, cmd));
         }
 
@@ -354,7 +355,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
             else
             {
-                String fieldName = table.getVersionColumn().getName();
+                String fieldName = table.getSurrogateColumn(SurrogateColumnType.VERSION).getName();
                 dbObject.put(fieldName, versionValue);
             }
             op.setTransactionalVersion(versionValue);
@@ -451,7 +452,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 else
                 {
                     // Update the stored surrogate value
-                    String fieldName = table.getVersionColumn().getName();
+                    String fieldName = table.getSurrogateColumn(SurrogateColumnType.VERSION).getName();
                     dbObject.put(fieldName, nextVersion);
                 }
             }
@@ -660,7 +661,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     else
                     {
                         // Surrogate version
-                        String fieldName = table.getVersionColumn().getName();
+                        String fieldName = table.getSurrogateColumn(SurrogateColumnType.VERSION).getName();
                         Object datastoreVersion = dbObject.get(fieldName);
                         op.setVersion(datastoreVersion);
                     }
