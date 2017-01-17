@@ -340,7 +340,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         VersionMetaData vermd = cmd.getVersionMetaDataForClass();
         if (vermd != null)
         {
-            Object versionValue = ec.getNextVersion(vermd.getVersionStrategy(), null);
+            Object versionValue = ec.getNextVersion(vermd, null);
             if (vermd.getFieldName() != null)
             {
                 // Version is stored in a member, so update the member too
@@ -423,7 +423,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             {
                 // Version object so calculate version to store with
                 Object currentVersion = op.getTransactionalVersion();
-                Object nextVersion = ec.getNextVersion(vermd.getVersionStrategy(), currentVersion);
+                Object nextVersion = ec.getNextVersion(vermd, currentVersion);
                 op.setTransactionalVersion(nextVersion);
 
                 if (vermd.getFieldName() != null)
