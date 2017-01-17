@@ -46,7 +46,6 @@ import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.AbstractPersistenceHandler;
 import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.VersionHelper;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.fieldmanager.DeleteFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
@@ -341,7 +340,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         VersionMetaData vermd = cmd.getVersionMetaDataForClass();
         if (vermd != null)
         {
-            Object versionValue = VersionHelper.getNextVersion(vermd.getVersionStrategy(), null);
+            Object versionValue = ec.getNextVersion(vermd.getVersionStrategy(), null);
             if (vermd.getFieldName() != null)
             {
                 // Version is stored in a member, so update the member too
@@ -424,7 +423,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             {
                 // Version object so calculate version to store with
                 Object currentVersion = op.getTransactionalVersion();
-                Object nextVersion = VersionHelper.getNextVersion(vermd.getVersionStrategy(), currentVersion);
+                Object nextVersion = ec.getNextVersion(vermd.getVersionStrategy(), currentVersion);
                 op.setTransactionalVersion(nextVersion);
 
                 if (vermd.getFieldName() != null)
