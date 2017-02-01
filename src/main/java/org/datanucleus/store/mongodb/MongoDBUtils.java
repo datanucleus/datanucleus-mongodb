@@ -665,6 +665,12 @@ public class MongoDBUtils
                 query.put(fieldName, value);
             }
 
+            if (rootTable.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+            {
+                // Soft-delete flag
+                query.put(rootTable.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
+            }
+
             DBCollection dbColl = db.getCollection(collectionName);
             Object val = (options != null ? options.get("slave-ok") : Boolean.FALSE);
             if (val == Boolean.TRUE)

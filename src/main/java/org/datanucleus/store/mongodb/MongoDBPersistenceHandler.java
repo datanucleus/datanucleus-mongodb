@@ -325,16 +325,20 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
         if (cmd.hasDiscriminatorStrategy())
         {
-            // Add discriminator field
-            String fieldName = table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName();
-            dbObject.put(fieldName, cmd.getDiscriminatorValue());
+            // Discriminator field
+            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), cmd.getDiscriminatorValue());
         }
 
-        // Add Multi-tenancy discriminator if applicable
         if (ec.getNucleusContext().isClassMultiTenant(cmd))
         {
-            String fieldName = table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
-            dbObject.put(fieldName, ec.getNucleusContext().getMultiTenancyId(ec, cmd));
+            // Multi-tenancy discriminator
+            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), ec.getNucleusContext().getMultiTenancyId(ec, cmd));
+        }
+
+        if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+        {
+            // Soft-delete flag
+            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
         }
 
         VersionMetaData vermd = cmd.getVersionMetaDataForClass();
