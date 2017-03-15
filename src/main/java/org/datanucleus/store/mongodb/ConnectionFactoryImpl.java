@@ -212,16 +212,14 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
     private MongoClientOptions getMongodbOptions(StoreManager storeManager)
     {
-        Object connectionsPerHost = storeManager.getProperty(MONGODB_CONNECTIONS_PER_HOST);
-        Object threadsAllowedToBlockForConnectionMultiplier = storeManager.getProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER);
         MongoClientOptions.Builder mongoOptionsBuilder = MongoClientOptions.builder();
-        if (connectionsPerHost != null)
+        if (storeManager.hasProperty(MONGODB_CONNECTIONS_PER_HOST))
         {
-            mongoOptionsBuilder.connectionsPerHost((int) connectionsPerHost);
+            mongoOptionsBuilder.connectionsPerHost(storeManager.getIntProperty(MONGODB_CONNECTIONS_PER_HOST));
         }
-        if (threadsAllowedToBlockForConnectionMultiplier != null)
+        if (storeManager.hasProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER))
         {
-            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier((int) threadsAllowedToBlockForConnectionMultiplier);
+            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
         }
         return mongoOptionsBuilder.build();
     }
