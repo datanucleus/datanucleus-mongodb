@@ -217,11 +217,11 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         MongoClientOptions.Builder mongoOptionsBuilder = MongoClientOptions.builder();
         if (connectionsPerHost != null)
         {
-            mongoOptionsBuilder.connectionsPerHost(Integer.parseInt((String) connectionsPerHost));
+            mongoOptionsBuilder.connectionsPerHost(connectionsPerHost);
         }
         if (threadsAllowedToBlockForConnectionMultiplier != null)
         {
-            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(Integer.parseInt((String) threadsAllowedToBlockForConnectionMultiplier));
+            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(threadsAllowedToBlockForConnectionMultiplier);
         }
         return mongoOptionsBuilder.build();
     }
