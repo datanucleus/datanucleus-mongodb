@@ -802,11 +802,11 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
+        ObjectProvider op = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
             // Set the version on the retrieved object
-            ObjectProvider op = ec.findObjectProvider(pc);
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
@@ -821,6 +821,10 @@ public class MongoDBUtils
             }
             op.setVersion(version);
         }
+
+        // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
+        op.replaceAllLoadedSCOFieldsWithWrappers();
+
         return pc;
     }
 
@@ -842,7 +846,7 @@ public class MongoDBUtils
             idKey = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName());
         }
 
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Object oid = ec.getNucleusContext().getIdentityManager().getDatastoreId(cmd.getFullClassName(), idKey);
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(oid, 
@@ -862,25 +866,29 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
+        ObjectProvider op = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
             // Set the version on the retrieved object
-            ObjectProvider sm = ec.findObjectProvider(pc);
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
                 version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
-            sm.setVersion(version);
+            op.setVersion(version);
         }
+
+        // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
+        op.replaceAllLoadedSCOFieldsWithWrappers();
+
         return pc;
     }
 
@@ -888,7 +896,7 @@ public class MongoDBUtils
     {
         Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         SCOID oid = new SCOID(cmd.getFullClassName());
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table);
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(oid, 
             new FieldValues()
@@ -907,25 +915,29 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
+        ObjectProvider op = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
             // Set the version on the retrieved object
-            ObjectProvider sm = ec.findObjectProvider(pc);
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
                 version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
-            sm.setVersion(version);
+            op.setVersion(version);
         }
+
+        // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
+        op.replaceAllLoadedSCOFieldsWithWrappers();
+
         return pc;
     }
 
