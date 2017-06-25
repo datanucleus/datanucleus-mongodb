@@ -83,8 +83,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Boolean.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Boolean.valueOf(value));
     }
 
     @Override
@@ -94,8 +94,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), "" + value);
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), "" + value);
     }
 
     @Override
@@ -105,8 +105,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Byte.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Byte.valueOf(value));
     }
 
     @Override
@@ -116,8 +116,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Short.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Short.valueOf(value));
     }
 
     @Override
@@ -127,8 +127,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Integer.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Integer.valueOf(value));
     }
 
     @Override
@@ -138,8 +138,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Long.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Long.valueOf(value));
     }
 
     @Override
@@ -149,8 +149,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Float.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Float.valueOf(value));
     }
 
     @Override
@@ -160,8 +160,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         {
             return;
         }
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        dbObject.put(mapping.getColumn(0).getName(), Double.valueOf(value));
+
+        dbObject.put(getColumnMapping(fieldNumber).getColumn(0).getName(), Double.valueOf(value));
     }
 
     @Override
@@ -179,8 +179,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (value == null)
         {
             dbObject.removeField(fieldName);

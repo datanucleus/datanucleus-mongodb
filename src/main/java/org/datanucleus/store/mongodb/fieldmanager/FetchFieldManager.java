@@ -92,8 +92,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public boolean fetchBooleanField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -112,8 +111,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public byte fetchByteField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -132,8 +130,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public char fetchCharField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -152,8 +149,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public double fetchDoubleField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -172,8 +168,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public float fetchFloatField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -192,8 +187,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public int fetchIntField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -212,8 +206,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public long fetchLongField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -232,8 +225,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     @Override
     public short fetchShortField(int fieldNumber)
     {
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (!dbObject.containsField(fieldName))
         {
             AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
@@ -260,8 +252,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             return id.toString();
         }
 
-        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-        String fieldName = mapping.getColumn(0).getName();
+        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (dbObject.containsField(fieldName))
         {
             return (String)(dbObject.get(fieldName));
@@ -554,6 +545,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         return null;
                     }
                     Object value = dbObject.get(fieldName);
+
                     Map map = null;
                     try
                     {
@@ -568,10 +560,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr);
                     AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr);
                     Collection<DBObject> entryColl = (Collection)value;
-                    Iterator<DBObject> entryIter = entryColl.iterator();
-                    while (entryIter.hasNext())
+                    for (DBObject entryObj : entryColl)
                     {
-                        DBObject entryObj = entryIter.next();
                         Object keyObj = entryObj.get("key");
                         Object valObj = entryObj.get("value");
 
@@ -1019,11 +1009,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr);
             AbstractClassMetaData valueCmd = mmd.getMap().getValueClassMetaData(clr);
             Collection<DBObject> collEntries = (Collection)value;
-            Iterator<DBObject> entryIter = collEntries.iterator();
             boolean changeDetected = false;
-            while (entryIter.hasNext())
+            for (DBObject entryObj : collEntries)
             {
-                DBObject entryObj = entryIter.next();
                 Object keyObj = entryObj.get("key");
                 Object valueObj = entryObj.get("value");
 
