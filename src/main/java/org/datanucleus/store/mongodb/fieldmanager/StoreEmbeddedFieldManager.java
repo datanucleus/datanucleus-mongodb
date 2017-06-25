@@ -70,14 +70,11 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this member being a link back to the owner. TODO Repeat this for nested and their owners
-            if (op != null)
+            ObjectProvider[] ownerOPs = ec.getOwnersForEmbeddedObjectProvider(op);
+            if (ownerOPs != null && ownerOPs.length == 1 && value != ownerOPs[0].getObject())
             {
-                ObjectProvider[] ownerOPs = ec.getOwnersForEmbeddedObjectProvider(op);
-                if (ownerOPs != null && ownerOPs.length == 1 && value != ownerOPs[0].getObject())
-                {
-                    // Make sure the owner field is set
-                    op.replaceField(fieldNumber, ownerOPs[0].getObject());
-                }
+                // Make sure the owner field is set
+                op.replaceField(fieldNumber, ownerOPs[0].getObject());
             }
             return;
         }

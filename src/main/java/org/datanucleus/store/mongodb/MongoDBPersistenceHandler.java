@@ -17,10 +17,8 @@ Contributors :
 ***********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,13 +73,6 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     @Override
     public void insertObjects(ObjectProvider... ops)
     {
-        // This is called by the flush() process, so groups inserts.
-        List<ObjectProvider> insertOps = new ArrayList<>();
-        for (int i=0;i<ops.length;i++)
-        {
-            insertOps.add(ops[i]);
-        }
-
         if (ops.length == 1)
         {
             insertObject(ops[0]);

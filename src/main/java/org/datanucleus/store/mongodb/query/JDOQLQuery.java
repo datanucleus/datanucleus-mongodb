@@ -264,8 +264,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery
 
             boolean filterInMemory = (filter != null && !datastoreCompilation.isFilterComplete());
             boolean resultInMemory = (result != null && !datastoreCompilation.isResultComplete());
-            Boolean orderInMemory = (ordering != null);
-            Boolean rangeInMemory = (range != null);
+            boolean orderInMemory = (ordering != null);
+            boolean rangeInMemory = (range != null);
             List candidates = null;
             if (candidateCollection != null)
             {

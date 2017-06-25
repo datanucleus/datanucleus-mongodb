@@ -267,13 +267,13 @@ public class LazyLoadQueryResult extends AbstractQueryResult
         while (true)
         {
             Object nextPojo = getNextObject();
-            if (itemsByIndex.size() == (index+1))
+            if (itemsByIndex != null && itemsByIndex.size() == (index+1))
             {
                 return nextPojo;
             }
             if (candidateResults.isEmpty())
             {
-                throw new IndexOutOfBoundsException("Beyond size of the results (" + itemsByIndex.size() + ")");
+                throw new IndexOutOfBoundsException("Beyond size of the results (" + (itemsByIndex!=null ? itemsByIndex.size() : 0) + ")");
             }
         }
     }

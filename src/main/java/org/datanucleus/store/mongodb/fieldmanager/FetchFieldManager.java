@@ -267,7 +267,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
         AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
         if (mmd.getPersistenceModifier() != FieldPersistenceModifier.PERSISTENT)
         {
-            return op.provideField(fieldNumber);
+            return op != null ? op.provideField(fieldNumber) : null;
         }
 
         StoreManager storeMgr = ec.getStoreManager();
