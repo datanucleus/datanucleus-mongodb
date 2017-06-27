@@ -18,7 +18,7 @@
 
     <properties>
         <dn.core.version>5.1.0-m1-SNAPSHOT</dn.core.version>
-        <mongodb.version>3.0.0</mongodb.version>
+        <mongodb.version>3.4.2</mongodb.version>
     </properties>
 
     <scm>
@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
+            <artifactId>mongodb-driver</artifactId>
             <version>${mongodb.version}</version>
         </dependency>
     </dependencies>
