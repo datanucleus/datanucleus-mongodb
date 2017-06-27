@@ -80,12 +80,12 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
 
         // Process "identity" cases first in case they are referenced
-        for (int i=0;i<ops.length;i++)
+        for (ObjectProvider op : ops)
         {
-            AbstractClassMetaData cmd = ops[i].getClassMetaData();
+            AbstractClassMetaData cmd = op.getClassMetaData();
             if (cmd.pkIsDatastoreAttributed(storeMgr))
             {
-                insertObject(ops[i]);
+                insertObject(op);
             }
         }
 
@@ -97,9 +97,9 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
             // Separate the objects to be persisted into groups, for the "table" in question
             Map<String, Set<ObjectProvider>> opsByTable = new HashMap<>();
-            for (int i=0;i<ops.length;i++)
+            for (ObjectProvider op : ops)
             {
-                AbstractClassMetaData cmd = ops[i].getClassMetaData();
+                AbstractClassMetaData cmd = op.getClassMetaData();
                 if (!cmd.pkIsDatastoreAttributed(storeMgr))
                 {
                     if (!storeMgr.managesClass(cmd.getFullClassName()))
@@ -115,7 +115,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                         opsForTable = new HashSet<>();
                         opsByTable.put(tableName, opsForTable);
                     }
-                    opsForTable.add(ops[i]);
+                    opsForTable.add(op);
                 }
             }
 
@@ -151,7 +151,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
                     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
                     {
-                        NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects as " + StringUtils.objectArrayToString(dbObjects) + " into table " + tableName);
+                        NucleusLogger.DATASTORE_NATIVE.debug("Persisting objects using collection.insert(" + StringUtils.objectArrayToString(dbObjects) + ") into table " + tableName);
                     }
                     collection.insert(dbObjects, new WriteConcern(1));
                     if (ec.getStatistics() != null)
@@ -208,7 +208,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DBCollection collection = db.getCollection(table.getName());
             DBObject dbObject = getDBObjectForObjectProviderToInsert(op, !cmd.pkIsDatastoreAttributed(storeMgr));
 
-            NucleusLogger.DATASTORE_NATIVE.debug("Persisting object " + op + " as " + dbObject);
+            NucleusLogger.DATASTORE_NATIVE.debug("Persisting object " + op + " using collection.insert(" + dbObject + ") into table=" + table.getName());
             collection.insert(dbObject, new WriteConcern(1));
             if (ec.getStatistics() != null)
             {
@@ -395,8 +395,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     }
                     fieldStr.append(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]).getName());
                 }
-                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Update.Start", 
-                    op.getObjectAsPrintable(), op.getInternalObjectId(), fieldStr.toString()));
+                NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Update.Start", op.getObjectAsPrintable(), op.getInternalObjectId(), fieldStr.toString()));
             }
 
             DBCollection collection = db.getCollection(table.getName());
@@ -405,10 +404,8 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             {
                 if (cmd.isVersioned())
                 {
-                    throw new NucleusOptimisticException("Object with id " + op.getInternalObjectId() + 
-                        " and version " + op.getTransactionalVersion() + " no longer present");
+                    throw new NucleusOptimisticException("Object with id " + op.getInternalObjectId() + " and version " + op.getTransactionalVersion() + " no longer present");
                 }
-
                 throw new NucleusDataStoreException("Could not find object with id " + op.getInternalObjectId());
             }
 
@@ -455,7 +452,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             op.provideFields(updatedFieldNums, fieldManager);
             if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_NATIVE.debug("Updating object " + op + " as " + dbObject);
+                NucleusLogger.DATASTORE_NATIVE.debug("Updating object " + op + " using collection.save(" + dbObject + ") into table=" + table.getName());
             }
             collection.save(dbObject); // TODO If we only provide fields that are set, but want to remove (null) a field, does this do it ?
             if (ec.getStatistics() != null)
@@ -531,7 +528,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             op.removeAssociatedValue(OP_DB_OBJECT);
             if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
             {
-                NucleusLogger.DATASTORE_NATIVE.debug("Removing object " + op + " as " + dbObject);
+                NucleusLogger.DATASTORE_NATIVE.debug("Removing object " + op + " using collection.remove(" + dbObject + ") from table=" + table.getName());
             }
             collection.remove(dbObject);
             if (ec.getStatistics() != null)

@@ -18,7 +18,6 @@ Contributors:
 package org.datanucleus.store.mongodb;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -77,11 +76,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 db = (DB)mconn.getConnection();
             }
 
-            Iterator<String> classIter = classNames.iterator();
             ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(null);
-            while (classIter.hasNext())
+            for (String className : classNames)
             {
-                String className = classIter.next();
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
@@ -323,22 +320,21 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         if (idxmd.getNumberOfColumns() > 0)
         {
             String[] idxcolNames = idxmd.getColumnNames();
-            for (int j=0;j<idxcolNames.length;j++)
+            for (String idxcolName : idxcolNames)
             {
-                idxObj.append(idxcolNames[j], 1);
+                idxObj.append(idxcolName, 1);
             }
         }
         else if (idxmd.getNumberOfMembers() > 0)
         {
             String[] idxMemberNames = idxmd.getMemberNames();
-            for (int i=0;i<idxMemberNames.length;i++)
+            for (String idxMemberName : idxMemberNames)
             {
-                AbstractMemberMetaData mmd = cmd.getMetaDataForMember(idxMemberNames[i]);
+                AbstractMemberMetaData mmd = cmd.getMetaDataForMember(idxMemberName);
                 Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns();
-                for (int j=0;j<cols.length;j++)
+                for (Column col : cols)
                 {
-                    String colName = cols[j].getName();
-                    idxObj.append(colName, 1);
+                    idxObj.append(col.getName(), 1);
                 }
             }
         }
@@ -351,22 +347,21 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         if (unimd.getNumberOfColumns() > 0)
         {
             String[] unicolNames = unimd.getColumnNames();
-            for (int j=0;j<unicolNames.length;j++)
+            for (String unicolName : unicolNames)
             {
-                uniObj.append(unicolNames[j], 1);
+                uniObj.append(unicolName, 1);
             }
         }
         else if (unimd.getMemberNames() != null)
         {
             String[] uniMemberNames = unimd.getMemberNames();
-            for (int i=0;i<uniMemberNames.length;i++)
+            for (String uniMemberName : uniMemberNames)
             {
-                AbstractMemberMetaData mmd = cmd.getMetaDataForMember(uniMemberNames[i]);
+                AbstractMemberMetaData mmd = cmd.getMetaDataForMember(uniMemberName);
                 Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns();
-                for (int j=0;j<cols.length;j++)
+                for (Column col : cols)
                 {
-                    String colName = cols[j].getName();
-                    uniObj.append(colName, 1);
+                    uniObj.append(col.getName(), 1);
                 }
             }
         }
@@ -389,11 +384,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 db = (DB)mconn.getConnection();
             }
 
-            Iterator<String> classIter = classNames.iterator();
             ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(null);
-            while (classIter.hasNext())
+            for (String className : classNames)
             {
-                String className = classIter.next();
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
@@ -443,11 +436,9 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 db = (DB)mconn.getConnection();
             }
 
-            Iterator<String> classIter = classNames.iterator();
             ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(null);
-            while (classIter.hasNext())
+            for (String className : classNames)
             {
-                String className = classIter.next();
                 AbstractClassMetaData cmd = storeMgr.getMetaDataManager().getMetaDataForClass(className, clr);
                 if (cmd != null)
                 {
@@ -584,46 +575,46 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     AbstractMemberMetaData[] mmds = cmd.getManagedMembers();
                     if (mmds != null && mmds.length > 0)
                     {
-                        for (int i=0;i<mmds.length;i++)
+                        for (AbstractMemberMetaData mmd : mmds)
                         {
-                            IndexMetaData idxmd = mmds[i].getIndexMetaData();
+                            IndexMetaData idxmd = mmd.getIndexMetaData();
                             if (idxmd != null)
                             {
-                                Column[] cols = table.getMemberColumnMappingForMember(mmds[i]).getColumns(); // TODO Check for embedded fields
+                                Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns(); // TODO Check for embedded fields
                                 BasicDBObject query = new BasicDBObject();
                                 query.append(cols[0].getName(), 1);
                                 DBObject indexObj = getIndexObjectForIndex(indices, idxmd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    msg = "Index for field=" + mmds[i].getFullFieldName() + " with name=" + idxmd.getName() + " validated";
+                                    msg = "Index for field=" + mmd.getFullFieldName() + " with name=" + idxmd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    msg = "Index missing for field="+mmds[i].getFullFieldName() + " name=" + idxmd.getName() + " key=" + query;
+                                    msg = "Index missing for field="+mmd.getFullFieldName() + " name=" + idxmd.getName() + " key=" + query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }
                             }
-                            UniqueMetaData unimd = mmds[i].getUniqueMetaData();
+                            UniqueMetaData unimd = mmd.getUniqueMetaData();
                             if (unimd != null)
                             {
-                                Column[] cols = table.getMemberColumnMappingForMember(mmds[i]).getColumns(); // TODO Check for embedded fields
+                                Column[] cols = table.getMemberColumnMappingForMember(mmd).getColumns(); // TODO Check for embedded fields
                                 BasicDBObject query = new BasicDBObject();
                                 query.append(cols[0].getName(), 1);
                                 DBObject indexObj = getIndexObjectForIndex(indices, unimd.getName(), query, true);
                                 if (indexObj != null)
                                 {
-                                    msg = "Unique index for field=" + mmds[i].getFullFieldName() + " with name=" + unimd.getName() + " validated";
+                                    msg = "Unique index for field=" + mmd.getFullFieldName() + " with name=" + unimd.getName() + " validated";
                                     NucleusLogger.DATASTORE_SCHEMA.info(msg);
                                     indices.remove(indexObj);
                                 }
                                 else
                                 {
                                     success = false;
-                                    msg = "Unique index missing for field=" + mmds[i].getFullFieldName() + " name=" + unimd.getName() + " key="+query;
+                                    msg = "Unique index missing for field=" + mmd.getFullFieldName() + " name=" + unimd.getName() + " key="+query;
                                     System.out.println(msg);
                                     NucleusLogger.DATASTORE_SCHEMA.error(msg);
                                 }
@@ -656,10 +647,8 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             return null;
         }
 
-        Iterator<DBObject> idxIter = indices.iterator();
-        while (idxIter.hasNext())
+        for (DBObject index : indices)
         {
-            DBObject index = idxIter.next();
             DBObject obj = null;
             String name = (String) index.get("name");
             if (name.equals(idxName))
@@ -682,10 +671,8 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 }
                 else
                 {
-                    Iterator<String> indicKeyIter = key.keySet().iterator();
-                    while (indicKeyIter.hasNext())
+                    for (String fieldKey : key.keySet())
                     {
-                        String fieldKey = indicKeyIter.next();
                         Object fieldValue = key.get(fieldKey);
                         if (!idxObj.containsField(fieldKey))
                         {
