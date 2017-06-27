@@ -245,12 +245,16 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 }
                 if (applyIndex)
                 {
-                    String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
-                    if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                    if (!query.containsField("_id"))
                     {
-                        NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
+                        // MongoDB v3.4+ detects attempts to put an index on "_id" which is already indexed by default!
+                        String pkName = (cmd.getPrimaryKeyMetaData() != null ? cmd.getPrimaryKeyMetaData().getName() : cmd.getName() + "_PK");
+                        if (NucleusLogger.DATASTORE_SCHEMA.isDebugEnabled())
+                        {
+                            NucleusLogger.DATASTORE_SCHEMA.debug(Localiser.msg("MongoDB.Schema.CreateClassIndex", pkName, collectionName, query));
+                        }
+                        collection.createIndex(query, pkName, true);
                     }
-                    collection.createIndex(query, pkName, true);
                 }
             }
             else if (cmd.getIdentityType() == IdentityType.DATASTORE)
