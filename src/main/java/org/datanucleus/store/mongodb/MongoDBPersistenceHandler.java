@@ -457,7 +457,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             {
                 NucleusLogger.DATASTORE_NATIVE.debug("Updating object " + op + " as " + dbObject);
             }
-            collection.save(dbObject);
+            collection.save(dbObject); // TODO If we only provide fields that are set, but want to remove (null) a field, does this do it ?
             if (ec.getStatistics() != null)
             {
                 ec.getStatistics().incrementNumWrites();
