@@ -369,8 +369,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery
             {
                 final QueryResult qr1 = (QueryResult)results;
                 final ManagedConnection mconn1 = mconn;
-                ManagedConnectionResourceListener listener =
-                    new ManagedConnectionResourceListener()
+                ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener()
                 {
                     public void transactionFlushed(){}
                     public void transactionPreClose()
@@ -408,8 +407,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery
     }
 
     /**
-     * Method to compile the query for the datastore attempting to evaluate the whole query in the datastore
-     * if possible. Sets the components of the "datastoreCompilation".
+     * Method to compile the query for the datastore attempting to evaluate the whole query in the datastore if possible. 
+     * Sets the components of the "datastoreCompilation".
      * @param parameters Input parameters (if known)
      * @param candidateCmd Metadata for the candidate class
      */

@@ -35,6 +35,7 @@ import org.datanucleus.store.connection.AbstractConnectionFactory;
 import org.datanucleus.store.connection.AbstractEmulatedXAResource;
 import org.datanucleus.store.connection.AbstractManagedConnection;
 import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -52,7 +53,7 @@ import com.mongodb.ServerAddress;
  * <pre>mongodb:[{server1}][/{dbName}][,{server2}[,{server3}]]</pre>
  * Defaults to a server of "localhost" if nothing specified.
  * Defaults to a DB name of "DataNucleus" if nothing specified.
- * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
+ * Has a MongoDatabase object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
@@ -97,13 +98,12 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             else
             {
                 StringTokenizer tokeniser = new StringTokenizer(remains, ",");
-                boolean firstServer = true;
                 while (tokeniser.hasMoreTokens())
                 {
                     String token = tokeniser.nextToken();
 
                     String serverName = "localhost";
-                    if (firstServer)
+                    if (serverAddrs.isEmpty())
                     {
                         // Set dbName
                         int dbNameSepPos = token.indexOf("/");
@@ -154,8 +154,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                         addr = new ServerAddress(serverName);
                     }
                     serverAddrs.add(addr);
-
-                    firstServer = false;
                 }
             }
 
@@ -201,12 +199,12 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         }
         catch (MongoException me)
         {
-            throw new NucleusDataStoreException("Unable to connect to mongodb", me);
+            throw new NucleusDataStoreException("Unable to connect to MongoClient", me);
         }
         catch (Exception e)
         {
             // We catch this since with MongoDB 2.x driver ServerAddress(...) can throw UnknownHostException
-            throw new NucleusDataStoreException("Unable to connect to mongodb", e);
+            throw new NucleusDataStoreException("Unable to connect to MongoClient", e);
         }
     }
 
@@ -232,8 +230,8 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     }
 
     /**
-     * Obtain a connection from the Factory. The connection will be enlisted within the transaction associated
-     * to the ExecutionContext
+     * Obtain a connection from the Factory. 
+     * The connection will be enlisted within the transaction associated to the ExecutionContext
      * @param ec the pool that is bound the connection during its lifecycle (or null)
      * @param options Options for creating the connection
      * @return the {@link org.datanucleus.store.connection.ManagedConnection}
@@ -260,8 +258,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         @Override
         public boolean closeAfterTransactionEnd()
         {
-            // Don't call close() immediately after transaction commit/rollback/end since we want to
-            // hang on to the connection until the ExecutionContext ends
+            // Don't call close() immediately after transaction commit/rollback/end since we want to hang on to the connection until the ExecutionContext ends
             return false;
         }
 
@@ -274,14 +271,13 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             return conn;
         }
 
-        @SuppressWarnings("deprecation")
         protected void obtainNewConnection()
         {
             if (conn == null)
             {
-                // Create new connection TODO mongo-java-driver changes this to getDatabase in v3.1
-                conn = mongo.getDB(dbName);
-                NucleusLogger.CONNECTION.debug("Created DB from MongoClient");
+                // Create new connection
+                conn = mongo.getDatabase(dbName);
+                NucleusLogger.CONNECTION.debug("Created MongoDatabase from MongoClient");
             }
 
             if (!startRequested)
@@ -311,9 +307,9 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             }
 
             // Notify anything using this connection to use it now
-            for (int i = 0; i < listeners.size(); i++)
+            for (ManagedConnectionResourceListener listener : listeners)
             {
-                listeners.get(i).managedConnectionPreClose();
+                listener.managedConnectionPreClose();
             }
 
             if (startRequested)
@@ -324,9 +320,9 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             }
 
             // Removes the connection from pooling
-            for (int i = 0; i < listeners.size(); i++)
+            for (ManagedConnectionResourceListener listener : listeners)
             {
-                listeners.get(i).managedConnectionPostClose();
+                listener.managedConnectionPostClose();
             }
 
             this.xaRes = null;

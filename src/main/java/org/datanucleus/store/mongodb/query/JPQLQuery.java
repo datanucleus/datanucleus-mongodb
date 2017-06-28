@@ -49,6 +49,7 @@ import org.datanucleus.util.NucleusLogger;
 public class JPQLQuery extends AbstractJPQLQuery
 {
     private static final long serialVersionUID = 7034826767990733282L;
+
     /** The compilation of the query for this datastore. Not applicable if totally in-memory. */
     protected transient MongoDBQueryCompilation datastoreCompilation = null;
 
@@ -185,8 +186,7 @@ public class JPQLQuery extends AbstractJPQLQuery
         if (useCaching())
         {
             // Allowing caching so try to find compiled (datastore) query
-            datastoreCompilation = (MongoDBQueryCompilation)qm.getDatastoreQueryCompilation(datastoreKey,
-                getLanguage(), cacheKey);
+            datastoreCompilation = (MongoDBQueryCompilation)qm.getDatastoreQueryCompilation(datastoreKey, getLanguage(), cacheKey);
             if (datastoreCompilation != null)
             {
                 // Cached compilation exists for this datastore so reuse it
@@ -269,7 +269,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                 {
                     filterObject = filterExpr.getDBObject();
                 }
-                
+
                 MongoDBResult resultObject = datastoreCompilation.getResult();
                 // TODO properly support GROUP BY
                 if (resultObject != null && resultObject.isCountOnly() && datastoreCompilation.isFilterComplete() && grouping == null) 
@@ -277,7 +277,7 @@ public class JPQLQuery extends AbstractJPQLQuery
                     return MongoDBUtils.performMongoCount(db, filterObject, candidateClass, subclasses, ec);
                 } 
 
-                Map<String, Object> options = new HashMap();
+                Map<String, Object> options = new HashMap<>();
                 if (getBooleanExtensionProperty("slave-ok", false))
                 {
                     options.put("slave-ok", true);
@@ -321,8 +321,7 @@ public class JPQLQuery extends AbstractJPQLQuery
 
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(Localiser.msg("021074", "JPQL", 
-                    "" + (System.currentTimeMillis() - startTime)));
+                NucleusLogger.QUERY.debug(Localiser.msg("021074", "JPQL", "" + (System.currentTimeMillis() - startTime)));
             }
 
             if (type == QueryType.BULK_DELETE)
@@ -345,8 +344,7 @@ public class JPQLQuery extends AbstractJPQLQuery
             {
                 final QueryResult qr1 = (QueryResult)results;
                 final ManagedConnection mconn1 = mconn;
-                ManagedConnectionResourceListener listener =
-                    new ManagedConnectionResourceListener()
+                ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener()
                 {
                     public void transactionFlushed(){}
                     public void transactionPreClose()
@@ -384,8 +382,8 @@ public class JPQLQuery extends AbstractJPQLQuery
     }
 
     /**
-     * Method to compile the query for the datastore attempting to evaluate the whole query in the datastore
-     * if possible. Sets the components of the "datastoreCompilation".
+     * Method to compile the query for the datastore attempting to evaluate the whole query in the datastore if possible. 
+     * Sets the components of the "datastoreCompilation".
      * @param parameters Input parameters (if known)
      * @param candidateCmd Metadata for the candidate class
      */

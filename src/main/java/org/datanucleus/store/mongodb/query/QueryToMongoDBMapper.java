@@ -264,11 +264,11 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
         if (compilation.getExprOrdering() != null)
         {
             compileComponent = CompilationComponent.ORDERING;
-            Expression[] orderingExpr = compilation.getExprOrdering();
             orderingObject = new BasicDBObject();
-            for (int i = 0; i < orderingExpr.length; i++)
+
+            for (Expression expr : compilation.getExprOrdering())
             {
-                OrderExpression orderExpr = (OrderExpression) orderingExpr[i];
+                OrderExpression orderExpr = (OrderExpression)expr;
                 MongoFieldExpression orderMongoExpr = (MongoFieldExpression) orderExpr.getLeft().evaluate(this);
                 String orderDir = orderExpr.getSortOrder();
                 int direction = ((orderDir == null || orderDir.equals("ascending")) ? 1 : -1);
@@ -478,10 +478,8 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             {
                 // Generate (val $eq lit1 || val $eq lit2 etc)
                 MongoBooleanExpression inExpr = null;
-                Iterator litValueIter = ((Collection)litValue).iterator();
-                while (litValueIter.hasNext())
+                for (Object litElemValue : (Collection)litValue)
                 {
-                    Object litElemValue = litValueIter.next();
                     MongoLiteral elemLit = getMongoLiteralForValue(litElemValue);
                     if (elemLit != null)
                     {
@@ -530,10 +528,8 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             {
                 // Generate (val $ne lit1 && val $ne lit2 etc)
                 MongoBooleanExpression inExpr = null;
-                Iterator litValueIter = ((Collection)litValue).iterator();
-                while (litValueIter.hasNext())
+                for (Object litElemValue : (Collection)litValue)
                 {
-                    Object litElemValue = litValueIter.next();
                     MongoLiteral elemLit = getMongoLiteralForValue(litElemValue);
                     if (elemLit != null)
                     {
