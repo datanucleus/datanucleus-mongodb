@@ -53,7 +53,7 @@ import com.mongodb.ServerAddress;
  * <pre>mongodb:[{server1}][/{dbName}][,{server2}[,{server3}]]</pre>
  * Defaults to a server of "localhost" if nothing specified.
  * Defaults to a DB name of "DataNucleus" if nothing specified.
- * Has a MongoDatabase object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
+ * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
@@ -195,7 +195,10 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                     mongo = new MongoClient(serverAddrs, credentials, getMongodbOptions(storeMgr));
                 }
             }
-            NucleusLogger.CONNECTION.debug("Created MongoClient object");
+            if (NucleusLogger.CONNECTION.isDebugEnabled())
+            {
+                NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
+            }
         }
         catch (MongoException me)
         {
@@ -224,31 +227,36 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
     public void close()
     {
-        NucleusLogger.CONNECTION.debug("Closing MongoClient object");
+        if (NucleusLogger.CONNECTION.isDebugEnabled())
+        {
+            NucleusLogger.CONNECTION.debug("Closing MongoClient object on resource " + getResourceName());
+        }
         mongo.close();
         super.close();
     }
 
     /**
      * Obtain a connection from the Factory. 
-     * The connection will be enlisted within the transaction associated to the ExecutionContext
+     * The connection will be enlisted within the transaction associated to the ExecutionContext.
+     * Note that MongoDB doesn't have a "transaction" as such, so commit/rollback don't apply.
      * @param ec the pool that is bound the connection during its lifecycle (or null)
      * @param options Options for creating the connection
      * @return the {@link org.datanucleus.store.connection.ManagedConnection}
      */
     public ManagedConnection createManagedConnection(ExecutionContext ec, Map options)
     {
-        return new ManagedConnectionImpl();
+        return new ManagedConnectionImpl(ec);
     }
 
     public class ManagedConnectionImpl extends AbstractManagedConnection
     {
-        boolean startRequested = false;
+        ExecutionContext ec;
 
         XAResource xaRes = null;
 
-        public ManagedConnectionImpl()
+        public ManagedConnectionImpl(ExecutionContext ec)
         {
+            this.ec = ec;
         }
 
         /*
@@ -264,27 +272,24 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
         public Object getConnection()
         {
-            if (conn == null || !startRequested)
+            if (conn == null)
             {
                 obtainNewConnection();
             }
             return conn;
         }
 
+        @SuppressWarnings("deprecation")
         protected void obtainNewConnection()
         {
             if (conn == null)
             {
                 // Create new connection
-                conn = mongo.getDatabase(dbName);
-                NucleusLogger.CONNECTION.debug("Created MongoDatabase from MongoClient");
-            }
-
-            if (!startRequested)
-            {
-                // Start the "transaction"
-                startRequested = true;
-                NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is starting");
+                conn = mongo.getDB(dbName); // TODO Change this to getDatabase(...)
+                if (NucleusLogger.CONNECTION.isDebugEnabled())
+                {
+                    NucleusLogger.CONNECTION.debug(Localiser.msg("009011", this.toString(), getResourceName()));
+                }
             }
         }
 
@@ -292,39 +297,36 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         {
             if (commitOnRelease)
             {
-                NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
-                startRequested = false;
-                NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
+                if (NucleusLogger.CONNECTION.isDebugEnabled())
+                {
+                    NucleusLogger.CONNECTION.debug(Localiser.msg("009015", this.toString()));
+                }
             }
             super.release();
         }
 
         public void close()
         {
-            if (conn == null)
-            {
-                return;
-            }
-
             // Notify anything using this connection to use it now
             for (ManagedConnectionResourceListener listener : listeners)
             {
                 listener.managedConnectionPreClose();
             }
 
-            if (startRequested)
+            if (conn != null)
             {
-                NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " is committing");
-                startRequested = false;
-                NucleusLogger.CONNECTION.debug("ManagedConnection " + this.toString() + " committed connection");
+                if (NucleusLogger.CONNECTION.isDebugEnabled())
+                {
+                    NucleusLogger.CONNECTION.debug(Localiser.msg("009013", this.toString()));
+                }
             }
 
-            // Removes the connection from pooling
-            for (ManagedConnectionResourceListener listener : listeners)
+            for (int i=0;i<listeners.size();i++)
             {
-                listener.managedConnectionPostClose();
+                listeners.get(i).managedConnectionPostClose();
             }
 
+            this.ec = null;
             this.xaRes = null;
 
             super.close();
@@ -359,14 +361,20 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
         public void commit(Xid xid, boolean onePhase) throws XAException
         {
+            if (NucleusLogger.CONNECTION.isDebugEnabled())
+            {
+                NucleusLogger.CONNECTION.debug(Localiser.msg("009015", this.toString()));
+            }
             super.commit(xid, onePhase);
-            ((ManagedConnectionImpl) mconn).startRequested = false;
         }
 
         public void rollback(Xid xid) throws XAException
         {
+            if (NucleusLogger.CONNECTION.isDebugEnabled())
+            {
+                NucleusLogger.CONNECTION.debug(Localiser.msg("009016", this.toString()));
+            }
             super.rollback(xid);
-            ((ManagedConnectionImpl) mconn).startRequested = false;
         }
     }
 }

@@ -225,7 +225,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     @Override
     public void manageClasses(ClassLoaderResolver clr, String... classNames)
     {
-        if (classNames == null)
+        if (classNames == null || classNames.length == 0)
         {
             return;
         }
@@ -244,7 +244,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
 
     public void manageClasses(String[] classNames, ClassLoaderResolver clr, DB db)
     {
-        if (classNames == null)
+        if (classNames == null || classNames.length == 0)
         {
             return;
         }
