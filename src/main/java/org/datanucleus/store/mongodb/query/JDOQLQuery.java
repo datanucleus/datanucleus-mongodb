@@ -29,6 +29,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.query.inmemory.JDOQLInMemoryEvaluator;
 import org.datanucleus.query.inmemory.JavaQueryInMemoryEvaluator;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
@@ -197,8 +198,11 @@ public class JDOQLQuery extends AbstractJDOQLQuery
         datastoreCompilation = new MongoDBQueryCompilation();
         AbstractClassMetaData cmd = getCandidateClassMetaData();
 
-        // TODO Remove this and when class is registered, use listener to manage it
-        storeMgr.manageClasses(clr, cmd.getFullClassName());
+        StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+        if (sd == null)
+        {
+            storeMgr.manageClasses(clr, cmd.getFullClassName());
+        }
 
         synchronized (datastoreCompilation)
         {

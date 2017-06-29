@@ -198,33 +198,39 @@ public class MongoDBUtils
         Map<String, Table> tableByTableName = new HashMap<>();
         StoreManager storeMgr = ec.getStoreManager();
 
-        if (!storeMgr.managesClass(rootCmd.getFullClassName()))
+        ManagedConnection mconn = storeMgr.getConnection(ec);
+        try
         {
-            storeMgr.manageClasses(clr, rootCmd.getFullClassName());
-        }
-        StoreData sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
-        if (sd != null)
-        {
-            Set classNames = new HashSet<String>();
-            classNames.add(rootCmd.getFullClassName());
-            Table tbl = sd.getTable();
-            classNamesByTableName.put(tbl.getName(), classNames);
-            tableByTableName.put(tbl.getName(), tbl);
-        }
+            DB db = (DB)mconn.getConnection();
 
-        Collection<String> subclassNames = storeMgr.getSubClassesForClass(rootCmd.getFullClassName(), true, clr);
-        if (subclassNames != null && !subclassNames.isEmpty())
-        {
-            for (String subclassName : subclassNames)
+            StoreData sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
+            if (sd == null)
             {
-                AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassName, clr);
-                if (!storeMgr.managesClass(cmd.getFullClassName()))
+                // Make sure schema exists, using this connection
+                ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {rootCmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
+            }
+
+            Set rootClassNames = new HashSet<String>();
+            rootClassNames.add(rootCmd.getFullClassName());
+            Table tbl = sd.getTable();
+            classNamesByTableName.put(tbl.getName(), rootClassNames);
+            tableByTableName.put(tbl.getName(), tbl);
+
+            Collection<String> subclassNames = storeMgr.getSubClassesForClass(rootCmd.getFullClassName(), true, clr);
+            if (subclassNames != null && !subclassNames.isEmpty())
+            {
+                for (String subclassName : subclassNames)
                 {
-                    storeMgr.manageClasses(clr, cmd.getFullClassName());
-                }
-                sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
-                if (sd != null)
-                {
+                    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(subclassName, clr);
+                    sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                    if (sd == null)
+                    {
+                        // Make sure schema exists, using this connection
+                        ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {rootCmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                        sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
+                    }
+
                     Table subTable = sd.getTable();
                     String subTableName = subTable.getName();
                     Set<String> classNames = classNamesByTableName.get(subTableName);
@@ -240,12 +246,6 @@ public class MongoDBUtils
                     }
                 }
             }
-        }
-
-        ManagedConnection mconn = storeMgr.getConnection(ec);
-        try
-        {
-            DB db = (DB)mconn.getConnection();
 
             for (Map.Entry<String, Set<String>> dbCollEntry : classNamesByTableName.entrySet())
             {
@@ -556,12 +556,14 @@ public class MongoDBUtils
             }
             else
             {
-                if (!storeMgr.managesClass(cmd.getFullClassName()))
+                StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                if (sd == null)
                 {
                     // Make sure schema exists, using this connection
                     ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                    sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
                 }
-                Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                Table table = sd.getTable();
                 String collectionName = table.getName();
                 List<AbstractClassMetaData> cmdsForCollection = classesByCollectionName.get(collectionName);
                 if (cmdsForCollection == null)

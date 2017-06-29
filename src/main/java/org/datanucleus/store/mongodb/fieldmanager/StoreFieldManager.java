@@ -41,6 +41,7 @@ import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.AbstractStoreFieldManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
@@ -364,11 +365,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embOP.getClassMetaData().getFullClassName();
-                        if (!storeMgr.managesClass(embClassName))
+                        StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                        if (sd == null)
                         {
                             storeMgr.manageClasses(clr, embClassName);
+                            sd = storeMgr.getStoreDataForClass(embClassName);
                         }
-                        Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        Table elemTable = sd.getTable();
                         StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
@@ -409,11 +412,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embOP.getClassMetaData().getFullClassName();
-                        if (!storeMgr.managesClass(embClassName))
+                        StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                        if (sd == null)
                         {
                             storeMgr.manageClasses(clr, embClassName);
+                            sd = storeMgr.getStoreDataForClass(embClassName);
                         }
-                        Table elemTable = op.getStoreManager().getStoreDataForClass(embClassName).getTable();
+                        Table elemTable = sd.getTable();
                         StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedObject, insert, elemTable);
                         sfm.ownerMmd = mmd;
                         embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
@@ -460,11 +465,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
 
                             String keyClassName = embOP.getClassMetaData().getFullClassName();
-                            if (!storeMgr.managesClass(keyClassName))
+                            StoreData sd = storeMgr.getStoreDataForClass(keyClassName);
+                            if (sd == null)
                             {
                                 storeMgr.manageClasses(clr, keyClassName);
+                                sd = storeMgr.getStoreDataForClass(keyClassName);
                             }
-                            Table keyTable = op.getStoreManager().getStoreDataForClass(keyClassName).getTable();
+                            Table keyTable = sd.getTable();
                             StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedKey, insert, keyTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(embOP.getClassMetaData().getAllMemberPositions(), sfm);
@@ -497,11 +504,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             }
 
                             String valClassName = embOP.getClassMetaData().getFullClassName();
-                            if (!storeMgr.managesClass(valClassName))
+                            StoreData sd = storeMgr.getStoreDataForClass(valClassName);
+                            if (sd == null)
                             {
                                 storeMgr.manageClasses(clr, valClassName);
+                                sd = storeMgr.getStoreDataForClass(valClassName);
                             }
-                            Table valTable = op.getStoreManager().getStoreDataForClass(valClassName).getTable();
+                            Table valTable = sd.getTable();
                             StoreFieldManager sfm = new StoreFieldManager(embOP, embeddedVal, insert, valTable);
                             sfm.ownerMmd = mmd;
                             embOP.provideFields(embOP.getClassMetaData().getAllMemberPositions(), sfm);

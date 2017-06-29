@@ -45,6 +45,7 @@ import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.QueryUtils;
 import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.AbstractFetchFieldManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
@@ -462,11 +463,13 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embOP.getClassMetaData().getFullClassName();
-                        if (!storeMgr.managesClass(embClassName))
+                        StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                        if (sd == null)
                         {
                             storeMgr.manageClasses(clr, embClassName);
+                            sd = storeMgr.getStoreDataForClass(embClassName);
                         }
-                        Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        Table elemTable = sd.getTable();
                         // TODO Use FetchEmbeddedFieldManager
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
@@ -521,11 +524,13 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embOP.getClassMetaData().getFullClassName();
-                        if (!storeMgr.managesClass(embClassName))
+                        StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                        if (sd == null)
                         {
                             storeMgr.manageClasses(clr, embClassName);
+                            sd = storeMgr.getStoreDataForClass(embClassName);
                         }
-                        Table elemTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                        Table elemTable = sd.getTable();
                         // TODO Use FetchEmbeddedFieldManager
                         FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
@@ -596,11 +601,13 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
 
                             String embClassName = embOP.getClassMetaData().getFullClassName();
-                            if (!storeMgr.managesClass(embClassName))
+                            StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                            if (sd == null)
                             {
                                 storeMgr.manageClasses(clr, embClassName);
+                                sd = storeMgr.getStoreDataForClass(embClassName);
                             }
-                            Table keyTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                            Table keyTable = sd.getTable();
                             // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyTable);
                             ffm.ownerMmd = mmd;
@@ -643,11 +650,13 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
 
                             String embClassName = embOP.getClassMetaData().getFullClassName();
-                            if (!storeMgr.managesClass(embClassName))
+                            StoreData sd = storeMgr.getStoreDataForClass(embClassName);
+                            if (sd == null)
                             {
                                 storeMgr.manageClasses(clr, embClassName);
+                                sd = storeMgr.getStoreDataForClass(embClassName);
                             }
-                            Table valTable = storeMgr.getStoreDataForClass(embClassName).getTable();
+                            Table valTable = sd.getTable();
                             // TODO Use FetchEmbeddedFieldManager
                             FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valTable);
                             ffm.ownerMmd = mmd;

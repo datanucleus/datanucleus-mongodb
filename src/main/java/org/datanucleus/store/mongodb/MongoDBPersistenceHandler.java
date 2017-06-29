@@ -43,6 +43,7 @@ import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.AbstractPersistenceHandler;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.fieldmanager.DeleteFieldManager;
@@ -102,12 +103,14 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 AbstractClassMetaData cmd = op.getClassMetaData();
                 if (!cmd.pkIsDatastoreAttributed(storeMgr))
                 {
-                    if (!storeMgr.managesClass(cmd.getFullClassName()))
+                    StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                    if (sd == null)
                     {
                         // Make sure schema exists, using this connection
                         ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                        sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
                     }
-                    Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                    Table table = sd.getTable();
                     String tableName = table.getName();
                     Set<ObjectProvider> opsForTable = opsByTable.get(tableName);
                     if (opsForTable == null)
@@ -192,12 +195,14 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DB db = (DB)mconn.getConnection();
 
             AbstractClassMetaData cmd = op.getClassMetaData();
-            if (!storeMgr.managesClass(cmd.getFullClassName()))
+            StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+            if (sd == null)
             {
                 // Make sure schema exists, using this connection
                 ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
             }
-            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+            Table table = sd.getTable();
 
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
@@ -377,13 +382,16 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DB db = (DB)mconn.getConnection();
 
             long startTime = System.currentTimeMillis();
+
             AbstractClassMetaData cmd = op.getClassMetaData();
-            if (!storeMgr.managesClass(cmd.getFullClassName()))
+            StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+            if (sd == null)
             {
                 // Make sure schema exists, using this connection
                 ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
             }
-            Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+            Table table = sd.getTable();
             if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
             {
                 StringBuilder fieldStr = new StringBuilder();
@@ -699,12 +707,15 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             try
             {
                 DB db = (DB)mconn.getConnection();
-                if (!storeMgr.managesClass(cmd.getFullClassName()))
+
+                StoreData sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
+                if (sd == null)
                 {
                     // Make sure schema exists, using this connection
                     ((MongoDBStoreManager)storeMgr).manageClasses(new String[] {cmd.getFullClassName()}, ec.getClassLoaderResolver(), db);
+                    sd = storeMgr.getStoreDataForClass(cmd.getFullClassName());
                 }
-                Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
+                Table table = sd.getTable();
                 DBCollection collection = db.getCollection(table.getName());
                 DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, false, false);
                 if (dbObject == null)
