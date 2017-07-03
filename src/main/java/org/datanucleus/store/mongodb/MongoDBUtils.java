@@ -198,7 +198,7 @@ public class MongoDBUtils
         Map<String, Table> tableByTableName = new HashMap<>();
         StoreManager storeMgr = ec.getStoreManager();
 
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();

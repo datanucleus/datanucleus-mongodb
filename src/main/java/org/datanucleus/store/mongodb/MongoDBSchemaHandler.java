@@ -72,7 +72,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         {
             if (db == null)
             {
-                mconn = storeMgr.getConnection(-1);
+                mconn = storeMgr.getConnectionManager().getConnection(-1);
                 db = (DB)mconn.getConnection();
             }
 
@@ -380,7 +380,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         {
             if (db == null)
             {
-                mconn = storeMgr.getConnection(-1);
+                mconn = storeMgr.getConnectionManager().getConnection(-1);
                 db = (DB)mconn.getConnection();
             }
 
@@ -432,7 +432,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
         {
             if (db == null)
             {
-                mconn = storeMgr.getConnection(-1);
+                mconn = storeMgr.getConnectionManager().getConnection(-1);
                 db = (DB)mconn.getConnection();
             }
 

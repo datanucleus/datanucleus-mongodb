@@ -230,7 +230,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             return;
         }
 
-        ManagedConnection mconn = getConnection(-1);
+        ManagedConnection mconn = connectionMgr.getConnection(-1);
         try
         {
             DB db = (DB) mconn.getConnection();

@@ -91,7 +91,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
 
         ExecutionContext ec = ops[0].getExecutionContext();
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();
@@ -189,7 +189,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         assertReadOnlyForUpdateOfObject(op);
 
         ExecutionContext ec = op.getExecutionContext();
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();
@@ -376,7 +376,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         assertReadOnlyForUpdateOfObject(op);
 
         ExecutionContext ec = op.getExecutionContext();
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();
@@ -503,7 +503,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         AbstractClassMetaData cmd = op.getClassMetaData();
         Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
         ExecutionContext ec = op.getExecutionContext();
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();
@@ -566,7 +566,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         AbstractClassMetaData cmd = op.getClassMetaData();
 
         ExecutionContext ec = op.getExecutionContext();
-        ManagedConnection mconn = storeMgr.getConnection(ec);
+        ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
         try
         {
             DB db = (DB)mconn.getConnection();
@@ -703,7 +703,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (cmd.getIdentityType() == IdentityType.APPLICATION || cmd.getIdentityType() == IdentityType.DATASTORE)
         {
             ExecutionContext ec = op.getExecutionContext();
-            ManagedConnection mconn = storeMgr.getConnection(ec);
+            ManagedConnection mconn = storeMgr.getConnectionManager().getConnection(ec);
             try
             {
                 DB db = (DB)mconn.getConnection();
