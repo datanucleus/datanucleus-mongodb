@@ -197,9 +197,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
      * @param strategy The strategy
      * @return Whether it is supported.
      */
-    public boolean supportsValueStrategy(String strategy)
+    public boolean supportsValueGenerationStrategy(String strategy)
     {
-        if (super.supportsValueStrategy(strategy))
+        if (super.supportsValueGenerationStrategy(strategy))
         {
             return true;
         }
@@ -226,7 +226,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             Class type = mmd.getType();
             if (String.class.isAssignableFrom(type))
             {
-                if (supportsValueStrategy("identity"))
+                if (supportsValueGenerationStrategy("identity"))
                 {
                     return "identity";
                 }
@@ -235,11 +235,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             }
             else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
             {
-                if (supportsValueStrategy("sequence") && mmd.getSequence() != null)
+                if (supportsValueGenerationStrategy("sequence") && mmd.getSequence() != null)
                 {
                     return "sequence";
                 }
-                else if (supportsValueStrategy("increment"))
+                else if (supportsValueGenerationStrategy("increment"))
                 {
                     return "increment";
                 }
@@ -257,15 +257,15 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             return "uuid-hex";
         }
 
-        if (supportsValueStrategy("identity"))
+        if (supportsValueGenerationStrategy("identity"))
         {
             return "identity";
         }
-        else if (supportsValueStrategy("sequence") && idmd != null && idmd.getSequence() != null)
+        else if (supportsValueGenerationStrategy("sequence") && idmd != null && idmd.getSequence() != null)
         {
             return "sequence";
         }
-        else if (supportsValueStrategy("increment"))
+        else if (supportsValueGenerationStrategy("increment"))
         {
             return "increment";
         }

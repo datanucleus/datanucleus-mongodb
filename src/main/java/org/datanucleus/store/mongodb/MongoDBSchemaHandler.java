@@ -225,7 +225,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                 for (int i=0;i<pkFieldNumbers.length;i++)
                 {
                     AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFieldNumbers[i]);
-                    if (storeMgr.isStrategyDatastoreAttributed(cmd, pkFieldNumbers[i]))
+                    if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, pkFieldNumbers[i]))
                     {
                         applyIndex = false;
                         break;
@@ -256,7 +256,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
             }
             else if (cmd.getIdentityType() == IdentityType.DATASTORE)
             {
-                if (storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+                if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
                 {
                     // Using builtin "_id" field so nothing to do
                 }
@@ -545,7 +545,7 @@ public class MongoDBSchemaHandler extends AbstractStoreSchemaHandler
                     }
                     else if (cmd.getIdentityType() == IdentityType.DATASTORE)
                     {
-                        if (storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+                        if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
                         {
                             // Using builtin "_id" field so nothing to do
                         }

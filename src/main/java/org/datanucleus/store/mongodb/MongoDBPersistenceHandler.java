@@ -239,7 +239,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     for (int i=0;i<pkFieldNumbers.length;i++)
                     {
                         AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFieldNumbers[i]);
-                        if (storeMgr.isStrategyDatastoreAttributed(cmd, pkFieldNumbers[i]))
+                        if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, pkFieldNumbers[i]))
                         {
                             if (mmd.getType() != String.class)
                             {
@@ -311,7 +311,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
         ExecutionContext ec = op.getExecutionContext();
 
-        if (cmd.getIdentityType() == IdentityType.DATASTORE && !storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+        if (cmd.getIdentityType() == IdentityType.DATASTORE && !storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
         {
             // Add surrogate datastore identity field (if using identity then just uses "_id" MongoDB special)
             String fieldName = table.getSurrogateColumn(SurrogateColumnType.DATASTORE_ID).getName();

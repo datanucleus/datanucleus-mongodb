@@ -258,7 +258,7 @@ public class MongoDBUtils
                 if (rootCmd.getIdentityType() == IdentityType.DATASTORE)
                 {
                     Object key = IdentityUtils.getTargetKeyForDatastoreIdentity(id);
-                    if (storeMgr.isStrategyDatastoreAttributed(rootCmd, -1))
+                    if (storeMgr.isValueGenerationStrategyDatastoreAttributed(rootCmd, -1))
                     {
                         query.put("_id", new ObjectId((String)key));
                     }
@@ -398,7 +398,7 @@ public class MongoDBUtils
                 }
                 else
                 {
-                    if (storeMgr.isStrategyDatastoreAttributed(cmd, pkPositions[i]))
+                    if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, pkPositions[i]))
                     {
                         // Datastore attributed
                         if (fieldVal == null)
@@ -436,13 +436,13 @@ public class MongoDBUtils
         {
             // Datastore id - Add "id" field to the query object
             Object id = op.getInternalObjectId();
-            if (id == null && storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+            if (id == null && storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
             {
                 // Not yet set, so return null (needs to be attributed in the datastore)
                 return null;
             }
             Object value = IdentityUtils.getTargetKeyForDatastoreIdentity(id);
-            if (storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+            if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
             {
                 query.put("_id", new ObjectId((String)value));
             }
@@ -835,7 +835,7 @@ public class MongoDBUtils
         Object idKey = null;
         StoreManager storeMgr = ec.getStoreManager();
         Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
-        if (storeMgr.isStrategyDatastoreAttributed(cmd, -1))
+        if (storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
         {
             idKey = dbObject.get("_id");
             if (idKey instanceof ObjectId)
