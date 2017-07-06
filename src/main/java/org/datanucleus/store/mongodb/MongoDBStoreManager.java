@@ -28,6 +28,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PersistenceNucleusContext;
 import org.datanucleus.PropertyNames;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.SCOID;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -40,6 +41,9 @@ import org.datanucleus.store.AbstractStoreManager;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.mongodb.query.JDOQLQuery;
+import org.datanucleus.store.mongodb.query.JPQLQuery;
+import org.datanucleus.store.query.Query;
 import org.datanucleus.store.schema.SchemaAwareStoreManager;
 import org.datanucleus.store.schema.table.CompleteClassTable;
 import org.datanucleus.util.Localiser;
@@ -97,6 +101,57 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         set.add(StoreManager.OPTION_QUERY_JPQL_BULK_DELETE);
         set.add(StoreManager.OPTION_ORM_INHERITANCE_COMPLETE_TABLE);
         return set;
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.store.StoreManager#newQuery(java.lang.String, org.datanucleus.ExecutionContext)
+     */
+    @Override
+    public Query newQuery(String language, ExecutionContext ec)
+    {
+        if (language.equalsIgnoreCase("JDOQL"))
+        {
+            return new JDOQLQuery(this, ec);
+        }
+        else if (language.equalsIgnoreCase("JPQL"))
+        {
+            return new JPQLQuery(this, ec);
+        }
+        throw new NucleusException("Error creating query for language " + language);
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.store.StoreManager#newQuery(java.lang.String, org.datanucleus.ExecutionContext, java.lang.String)
+     */
+    @Override
+    public Query newQuery(String language, ExecutionContext ec, String queryString)
+    {
+        if (language.equalsIgnoreCase("JDOQL"))
+        {
+            return new JDOQLQuery(this, ec, queryString);
+        }
+        else if (language.equalsIgnoreCase("JPQL"))
+        {
+            return new JPQLQuery(this, ec, queryString);
+        }
+        throw new NucleusException("Error creating query for language " + language);
+    }
+
+    /* (non-Javadoc)
+     * @see org.datanucleus.store.StoreManager#newQuery(java.lang.String, org.datanucleus.ExecutionContext, org.datanucleus.store.query.Query)
+     */
+    @Override
+    public Query newQuery(String language, ExecutionContext ec, Query q)
+    {
+        if (language.equalsIgnoreCase("JDOQL"))
+        {
+            return new JDOQLQuery(this, ec, (JDOQLQuery) q);
+        }
+        else if (language.equalsIgnoreCase("JPQL"))
+        {
+            return new JPQLQuery(this, ec, (JPQLQuery) q);
+        }
+        throw new NucleusException("Error creating query for language " + language);
     }
 
     /*

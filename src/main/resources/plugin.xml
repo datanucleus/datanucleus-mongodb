@@ -32,16 +32,9 @@ Contributors:
             validator="org.datanucleus.properties.IntegerPropertyValidator"/>
     </extension>
 
-    <!-- QUERY LANGUAGES -->
-    <extension point="org.datanucleus.store_query_query">
-        <query class-name="org.datanucleus.store.mongodb.query.JDOQLQuery" datastore="mongodb" name="JDOQL"/>
-        <query class-name="org.datanucleus.store.mongodb.query.JPQLQuery" datastore="mongodb" name="JPQL"/>
-    </extension>
-
     <!-- CONNECTION FACTORY -->
     <extension point="org.datanucleus.store_connectionfactory">
-        <connectionfactory name="mongodb" class-name="org.datanucleus.store.mongodb.ConnectionFactoryImpl" transactional="true"
-            datastore="mongodb"/>
+        <connectionfactory name="mongodb" class-name="org.datanucleus.store.mongodb.ConnectionFactoryImpl" transactional="true" datastore="mongodb"/>
     </extension>
 
     <!-- VALUE GENERATORS -->
