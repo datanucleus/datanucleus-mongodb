@@ -214,11 +214,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
 
     /*
      * (non-Javadoc)
-     * @see org.datanucleus.store.AbstractStoreManager#getStrategyForNative(org.datanucleus.metadata.
+     * @see org.datanucleus.store.AbstractStoreManager#getValueGenerationStrategyForNative(org.datanucleus.metadata.
      * AbstractClassMetaData, int)
      */
     @Override
-    public String getStrategyForNative(AbstractClassMetaData cmd, int absFieldNumber)
+    public String getValueGenerationStrategyForNative(AbstractClassMetaData cmd, int absFieldNumber)
     {
         if (absFieldNumber >= 0)
         {
