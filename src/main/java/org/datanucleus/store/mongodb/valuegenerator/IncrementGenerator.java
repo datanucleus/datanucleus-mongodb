@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Properties;
 
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
-import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
+import org.datanucleus.store.valuegenerator.AbstractConnectedGenerator;
 import org.datanucleus.store.valuegenerator.ValueGenerationBlock;
 import org.datanucleus.store.valuegenerator.ValueGenerator;
 import org.datanucleus.util.Localiser;
@@ -37,7 +38,7 @@ import com.mongodb.DBObject;
 /**
  * Generator that uses a collection in MongoDB to store and allocate identity values.
  */
-public class IncrementGenerator extends AbstractDatastoreGenerator<Long>
+public class IncrementGenerator extends AbstractConnectedGenerator<Long>
 {
     static final String INCREMENT_COL_NAME = "increment";
 
@@ -58,12 +59,13 @@ public class IncrementGenerator extends AbstractDatastoreGenerator<Long>
      * <li>column-name : Name of the column in the table (for the field)</li>
      * <li>sequence-name : Name of the sequence (if specified in MetaData as "sequence)</li>
      * </ul>
+     * @param storeMgr StoreManager
      * @param name Symbolic name for this generator
      * @param props Properties controlling the behaviour of the generator (or null if not required).
      */
-    public IncrementGenerator(String name, Properties props)
+    public IncrementGenerator(StoreManager storeMgr, String name, Properties props)
     {
-        super(name, props);
+        super(storeMgr, name, props);
         this.key = properties.getProperty(ValueGenerator.PROPERTY_FIELD_NAME, name);
         this.collectionName = properties.getProperty(ValueGenerator.PROPERTY_SEQUENCETABLE_TABLE);
         if (this.collectionName == null)
