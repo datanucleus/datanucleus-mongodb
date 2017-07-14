@@ -40,7 +40,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.FieldRole;
-import org.datanucleus.metadata.IdentityStrategy;
+import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.QueryUtils;
@@ -246,7 +246,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     public String fetchStringField(int fieldNumber)
     {
         AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
-        if (mmd.getValueStrategy() == IdentityStrategy.IDENTITY)
+        if (mmd.getValueStrategy() == ValueGenerationStrategy.IDENTITY)
         {
             // Return the "_id" value since not using this field as such
             Object id = dbObject.get("_id");

@@ -37,7 +37,7 @@ import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.FieldRole;
-import org.datanucleus.metadata.IdentityStrategy;
+import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.ObjectProvider;
@@ -174,7 +174,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        if (mmd.getValueStrategy() == IdentityStrategy.IDENTITY)
+        if (mmd.getValueStrategy() == ValueGenerationStrategy.IDENTITY)
         {
             // Using "_id" to represent this field so don't put it
             return;
