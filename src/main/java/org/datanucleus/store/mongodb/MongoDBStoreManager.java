@@ -37,6 +37,7 @@ import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ClassPersistenceModifier;
 import org.datanucleus.metadata.IdentityMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
+import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.store.AbstractStoreManager;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
@@ -226,22 +227,22 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             Class type = mmd.getType();
             if (String.class.isAssignableFrom(type))
             {
-                if (supportsValueGenerationStrategy("identity"))
+                if (supportsValueGenerationStrategy(ValueGenerationStrategy.IDENTITY.toString()))
                 {
-                    return "identity";
+                    return ValueGenerationStrategy.IDENTITY.toString();
                 }
 
-                return "uuid-hex";
+                return ValueGenerationStrategy.UUIDHEX.toString();
             }
             else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
             {
-                if (supportsValueGenerationStrategy("sequence") && mmd.getSequence() != null)
+                if (supportsValueGenerationStrategy(ValueGenerationStrategy.SEQUENCE.toString()) && mmd.getSequence() != null)
                 {
-                    return "sequence";
+                    return ValueGenerationStrategy.SEQUENCE.toString();
                 }
-                else if (supportsValueGenerationStrategy("increment"))
+                else if (supportsValueGenerationStrategy(ValueGenerationStrategy.INCREMENT.toString()))
                 {
-                    return "increment";
+                    return ValueGenerationStrategy.INCREMENT.toString();
                 }
                 throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for member " + mmd.getFullFieldName());
             }
@@ -254,20 +255,20 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         IdentityMetaData idmd = cmd.getBaseIdentityMetaData();
         if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
         {
-            return "uuid-hex";
+            return ValueGenerationStrategy.UUIDHEX.toString();
         }
 
-        if (supportsValueGenerationStrategy("identity"))
+        if (supportsValueGenerationStrategy(ValueGenerationStrategy.IDENTITY.toString()))
         {
-            return "identity";
+            return ValueGenerationStrategy.IDENTITY.toString();
         }
-        else if (supportsValueGenerationStrategy("sequence") && idmd != null && idmd.getSequence() != null)
+        else if (supportsValueGenerationStrategy(ValueGenerationStrategy.SEQUENCE.toString()) && idmd != null && idmd.getSequence() != null)
         {
-            return "sequence";
+            return ValueGenerationStrategy.SEQUENCE.toString();
         }
-        else if (supportsValueGenerationStrategy("increment"))
+        else if (supportsValueGenerationStrategy(ValueGenerationStrategy.INCREMENT.toString()))
         {
-            return "increment";
+            return ValueGenerationStrategy.INCREMENT.toString();
         }
         throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for class " + cmd.getFullClassName());
     }
