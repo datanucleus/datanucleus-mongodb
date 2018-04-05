@@ -270,6 +270,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
             {
                 OrderExpression orderExpr = (OrderExpression)expr;
                 MongoFieldExpression orderMongoExpr = (MongoFieldExpression) orderExpr.getLeft().evaluate(this);
+                if(orderMongoExpr == null) continue;
                 String orderDir = orderExpr.getSortOrder();
                 int direction = ((orderDir == null || orderDir.equals("ascending")) ? 1 : -1);
                 orderingObject.put(orderMongoExpr.getPropertyName(), direction);
@@ -595,9 +596,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
                 return fieldExpr;
             }
         }
-
-        // TODO Auto-generated method stub
-        return super.processPrimaryExpression(expr);
+        return null;
     }
 
     /*
