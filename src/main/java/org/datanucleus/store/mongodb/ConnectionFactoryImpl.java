@@ -57,6 +57,27 @@ import com.mongodb.ServerAddress;
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
+    public static final String MONGODB_CONNECT_TIMEOUT = "datanucleus.mongodb.connectTimeout";
+
+    public static final String MONGODB_HEARTBEAT_CONNECT_TIMEOUT = "datanucleus.mongodb.heartbeatConnectTimeout";
+    public static final String MONGODB_HEARTBEAT_FREQUENCY = "datanucleus.mongodb.heartbeatFrequency";
+    public static final String MONGODB_HEARTBEAT_SOCKET_TIMEOUT = "datanucleus.mongodb.heartbeatSocketTimeout";
+    
+    public static final String MONGODB_MAX_CONNECTION_IDLE_TIME = "datanucleus.mongodb.maxConnectionIdleTime";
+    public static final String MONGODB_MAX_CONNECTION_LIFE_TIME = "datanucleus.mongodb.maxConnectionLifeTime";
+    public static final String MONGODB_MAX_WAIT_TIME = "datanucleus.mongodb.maxWaitTime";
+    
+    public static final String MONGODB_MIN_HEARTBEAT_FREQUENCY = "datanucleus.mongodb.minHeartbeatFrequency";
+    public static final String MONGODB_MIN_CONNECTIONS_PER_HOST = "datanucleus.mongodb.minConnectionsPerHost";
+    
+    public static final String MONGODB_SERVER_SELECTION_TIMEOUT = "datanucleus.mongodb.serverSelectionTimeout";
+    
+    public static final String MONGODB_SOCKET_KEEPALIVE = "datanucleus.mongodb.socketKeepAlive";
+    public static final String MONGODB_SOCKET_TIMEOUT = "datanucleus.mongodb.socketTimeout";
+
+    public static final String MONGODB_SSL_ENABLED = "datanucleus.mongodb.sslEnabled";
+    public static final String MONGODB_SSL_INVALID_HOSTNAME_ALLOWED = "datanucleus.mongodb.sslInvalidHostnameAllowed";
+
     public static final String MONGODB_CONNECTIONS_PER_HOST = "datanucleus.mongodb.connectionsPerHost";
     public static final String MONGODB_THREAD_BLOCK_FOR_MULTIPLIER = "datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier";
 
@@ -218,10 +239,74 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         {
             mongoOptionsBuilder.connectionsPerHost(storeManager.getIntProperty(MONGODB_CONNECTIONS_PER_HOST));
         }
+        if (storeManager.hasProperty(MONGODB_CONNECT_TIMEOUT))
+        {
+            mongoOptionsBuilder.connectTimeout(storeManager.getIntProperty(MONGODB_CONNECT_TIMEOUT));
+        }
+
+        if (storeManager.hasProperty(MONGODB_HEARTBEAT_CONNECT_TIMEOUT))
+        {
+            mongoOptionsBuilder.heartbeatConnectTimeout(storeManager.getIntProperty(MONGODB_HEARTBEAT_CONNECT_TIMEOUT));
+        }
+        if (storeManager.hasProperty(MONGODB_HEARTBEAT_FREQUENCY))
+        {
+            mongoOptionsBuilder.heartbeatFrequency(storeManager.getIntProperty(MONGODB_HEARTBEAT_FREQUENCY));
+        }
+        if (storeManager.hasProperty(MONGODB_HEARTBEAT_SOCKET_TIMEOUT))
+        {
+            mongoOptionsBuilder.heartbeatSocketTimeout(storeManager.getIntProperty(MONGODB_HEARTBEAT_SOCKET_TIMEOUT));
+        }
+
+        if (storeManager.hasProperty(MONGODB_MAX_CONNECTION_IDLE_TIME))
+        {
+            mongoOptionsBuilder.maxConnectionIdleTime(storeManager.getIntProperty(MONGODB_MAX_CONNECTION_IDLE_TIME));
+        }
+        if (storeManager.hasProperty(MONGODB_MAX_CONNECTION_LIFE_TIME))
+        {
+            mongoOptionsBuilder.maxConnectionLifeTime(storeManager.getIntProperty(MONGODB_MAX_CONNECTION_LIFE_TIME));
+        }
+        if (storeManager.hasProperty(MONGODB_MAX_WAIT_TIME))
+        {
+            mongoOptionsBuilder.maxWaitTime(storeManager.getIntProperty(MONGODB_MAX_WAIT_TIME));
+        }
+
+        if (storeManager.hasProperty(MONGODB_MIN_CONNECTIONS_PER_HOST))
+        {
+            mongoOptionsBuilder.minConnectionsPerHost(storeManager.getIntProperty(MONGODB_MIN_CONNECTIONS_PER_HOST));
+        }
+        if (storeManager.hasProperty(MONGODB_MIN_HEARTBEAT_FREQUENCY))
+        {
+            mongoOptionsBuilder.minHeartbeatFrequency(storeManager.getIntProperty(MONGODB_MIN_HEARTBEAT_FREQUENCY));
+        }
+
+        if (storeManager.hasProperty(MONGODB_SERVER_SELECTION_TIMEOUT))
+        {
+            mongoOptionsBuilder.serverSelectionTimeout(storeManager.getIntProperty(MONGODB_SERVER_SELECTION_TIMEOUT));
+        }
+
+        if (storeManager.hasProperty(MONGODB_SOCKET_KEEPALIVE))
+        {
+            mongoOptionsBuilder.socketKeepAlive(storeManager.getBooleanProperty(MONGODB_SOCKET_KEEPALIVE));
+        }
+        if (storeManager.hasProperty(MONGODB_SOCKET_TIMEOUT))
+        {
+            mongoOptionsBuilder.socketTimeout(storeManager.getIntProperty(MONGODB_SOCKET_TIMEOUT));
+        }
+
+        if (storeManager.hasProperty(MONGODB_SSL_ENABLED))
+        {
+            mongoOptionsBuilder.sslEnabled(storeManager.getBooleanProperty(MONGODB_SSL_ENABLED));
+        }
+        if (storeManager.hasProperty(MONGODB_SSL_INVALID_HOSTNAME_ALLOWED))
+        {
+            mongoOptionsBuilder.sslInvalidHostNameAllowed(storeManager.getBooleanProperty(MONGODB_SSL_INVALID_HOSTNAME_ALLOWED));
+        }
+
         if (storeManager.hasProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER))
         {
             mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
         }
+
         return mongoOptionsBuilder.build();
     }
 
