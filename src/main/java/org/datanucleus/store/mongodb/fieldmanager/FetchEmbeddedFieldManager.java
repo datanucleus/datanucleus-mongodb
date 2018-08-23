@@ -17,21 +17,16 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb.fieldmanager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.EmbeddedMetaData;
-import org.datanucleus.metadata.MetaDataUtils;
-import org.datanucleus.metadata.RelationType;
+import org.datanucleus.metadata.*;
 import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
-import org.datanucleus.util.NucleusLogger;
 
 import com.mongodb.DBObject;
 
@@ -63,6 +58,8 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
         EmbeddedMetaData embmd = mmds.get(0).getEmbeddedMetaData();
+        StoreManager storeMgr = ec.getStoreManager();
+
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this being a link back to the owner. TODO Repeat this for nested and their owners
@@ -136,9 +133,8 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                 embOP.replaceFields(embCmd.getAllMemberPositions(), fetchEmbFM);
                 return embOP.getObject();
             }
-            else if (RelationType.isRelationMultiValued(relationType))
-            {
-                NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded into the owning embedded object");
+            else if (RelationType.isRelationMultiValued(relationType)) {
+                return fillMultiValued(fieldNumber, mmd, clr, storeMgr);
             }
             return null;
         }

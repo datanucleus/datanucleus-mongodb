@@ -93,11 +93,11 @@ public class MongoDBUtils
     private MongoDBUtils() {}
 
     public static List<Long> performMongoCount(DB db, BasicDBObject filterObject, Class candidateClass, boolean subclasses, ExecutionContext ec)
-    throws MongoException 
+    throws MongoException
     {
         StoreManager storeMgr = ec.getStoreManager();
         long count = 0;
-        for (AbstractClassMetaData cmd : MetaDataUtils.getMetaDataForCandidates(candidateClass, subclasses, ec)) 
+        for (AbstractClassMetaData cmd : MetaDataUtils.getMetaDataForCandidates(candidateClass, subclasses, ec))
         {
             Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             String collectionName = table.getName();
@@ -788,7 +788,7 @@ public class MongoDBUtils
         Object id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, cmd, null, false, fm);
 
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(id, 
+        Object pc = ec.findObject(id,
             new FieldValues()
             {
                 public void fetchFields(ObjectProvider op)
@@ -851,7 +851,7 @@ public class MongoDBUtils
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Object oid = ec.getNucleusContext().getIdentityManager().getDatastoreId(cmd.getFullClassName(), idKey);
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(oid, 
+        Object pc = ec.findObject(oid,
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
@@ -900,7 +900,7 @@ public class MongoDBUtils
         SCOID oid = new SCOID(cmd.getFullClassName());
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(oid, 
+        Object pc = ec.findObject(oid,
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
@@ -1215,8 +1215,14 @@ public class MongoDBUtils
                     Collection<DBObject> rawColl = (Collection<DBObject>)value;
                     for (DBObject mapEntryObj : rawColl)
                     {
-                        Object dbKey = mapEntryObj.get("key");
-                        Object dbVal = mapEntryObj.get("value");
+                        Set<Map.Entry<Object, Object>> entries = mapEntryObj.toMap().entrySet();
+                        Object dbKey = entries.stream().filter(entry -> "key".equalsIgnoreCase(String.valueOf(entry.getKey())))
+                                .findFirst()
+                                .map(Map.Entry::getValue).orElse(null);
+                        Object dbVal = entries.stream().filter(entry -> "value".equalsIgnoreCase(String.valueOf(entry.getKey())))
+                                .findFirst()
+                                .map(Map.Entry::getValue).orElse(null);
+
                         Object key = getFieldValueFromStored(ec, mmd, mapping, dbKey, FieldRole.ROLE_MAP_KEY);
                         Object val = getFieldValueFromStored(ec, mmd, mapping, dbVal, FieldRole.ROLE_MAP_VALUE);
                         map.put(key, val);

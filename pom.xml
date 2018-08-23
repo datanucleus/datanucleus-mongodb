@@ -18,7 +18,7 @@
 
     <properties>
         <dn.core.version>5.1.0-release</dn.core.version>
-        <mongodb.version>3.4.2</mongodb.version>
+        <mongodb.version>3.8.0</mongodb.version>
     </properties>
 
     <scm>
