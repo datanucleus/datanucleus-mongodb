@@ -321,6 +321,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
                     StoreData sd = storeDataMgr.get(cmd.getFullClassName());
                     if (sd == null)
                     {
+                        // TODO Do we really need to create a CompleteClassTable when the class is embeddedOnly???
                         CompleteClassTable table = new CompleteClassTable(this, cmd, null);
                         sd = newStoreData(cmd, clr);
                         sd.setTable(table);
