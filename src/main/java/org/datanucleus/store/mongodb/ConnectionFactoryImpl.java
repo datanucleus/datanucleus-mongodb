@@ -72,7 +72,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     
     public static final String MONGODB_SERVER_SELECTION_TIMEOUT = "datanucleus.mongodb.serverSelectionTimeout";
     
-    public static final String MONGODB_SOCKET_KEEPALIVE = "datanucleus.mongodb.socketKeepAlive";
     public static final String MONGODB_SOCKET_TIMEOUT = "datanucleus.mongodb.socketTimeout";
 
     public static final String MONGODB_SSL_ENABLED = "datanucleus.mongodb.sslEnabled";
@@ -178,14 +177,12 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 }
             }
 
-            List<MongoCredential> credentials = null;
+            MongoCredential credential = null;
             String userName = storeMgr.getConnectionUserName();
             String password = storeMgr.getConnectionPassword();
             if (!StringUtils.isWhitespace(userName))
             {
-                MongoCredential credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
-                credentials = new ArrayList<>();
-                credentials.add(credential);
+                credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
             }
 
             // Create the Mongo connection pool
@@ -196,24 +193,24 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
             if (serverAddrs.size() == 1)
             {
-                if (credentials == null)
+                if (credential == null)
                 {
                     mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
                 }
                 else
                 {
-                    mongo = new MongoClient(serverAddrs.get(0), credentials, getMongodbOptions(storeMgr));
+                    mongo = new MongoClient(serverAddrs.get(0), credential, getMongodbOptions(storeMgr));
                 }
             }
             else
             {
-                if (credentials == null)
+                if (credential == null)
                 {
                     mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
                 }
                 else
                 {
-                    mongo = new MongoClient(serverAddrs, credentials, getMongodbOptions(storeMgr));
+                    mongo = new MongoClient(serverAddrs, credential, getMongodbOptions(storeMgr));
                 }
             }
             if (NucleusLogger.CONNECTION.isDebugEnabled())
@@ -284,10 +281,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             mongoOptionsBuilder.serverSelectionTimeout(storeManager.getIntProperty(MONGODB_SERVER_SELECTION_TIMEOUT));
         }
 
-        if (storeManager.hasProperty(MONGODB_SOCKET_KEEPALIVE))
-        {
-            mongoOptionsBuilder.socketKeepAlive(storeManager.getBooleanProperty(MONGODB_SOCKET_KEEPALIVE));
-        }
         if (storeManager.hasProperty(MONGODB_SOCKET_TIMEOUT))
         {
             mongoOptionsBuilder.socketTimeout(storeManager.getIntProperty(MONGODB_SOCKET_TIMEOUT));
