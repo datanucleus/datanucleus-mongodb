@@ -299,7 +299,8 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
         }
 
-        if (storeManager.hasProperty(MONGODB_REPLICA_SET_NAME)) {
+        if (storeManager.hasProperty(MONGODB_REPLICA_SET_NAME))
+        {
             mongoOptionsBuilder.requiredReplicaSetName(storeManager.getStringProperty(MONGODB_REPLICA_SET_NAME));
         }
 

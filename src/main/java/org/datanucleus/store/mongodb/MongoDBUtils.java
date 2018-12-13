@@ -1215,10 +1215,8 @@ public class MongoDBUtils
                     Collection<DBObject> rawColl = (Collection<DBObject>)value;
                     for (DBObject mapEntryObj : rawColl)
                     {
-                        Object dbKey = ofNullable(mapEntryObj.get("key"))
-                                .orElse(mapEntryObj.get(mmd.getKeyMetaData().getColumnName()));
-                        Object dbVal = ofNullable(mapEntryObj.get("value"))
-                                .orElse(mapEntryObj.get(mmd.getValueMetaData().getColumnName()));
+                        Object dbKey = ofNullable(mapEntryObj.get("key")).orElse(mapEntryObj.get(mmd.getKeyMetaData().getColumnName()));
+                        Object dbVal = ofNullable(mapEntryObj.get("value")).orElse(mapEntryObj.get(mmd.getValueMetaData().getColumnName()));
 
                         Object key = getFieldValueFromStored(ec, mmd, mapping, dbKey, FieldRole.ROLE_MAP_KEY);
                         Object val = getFieldValueFromStored(ec, mmd, mapping, dbVal, FieldRole.ROLE_MAP_VALUE);

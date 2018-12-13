@@ -121,10 +121,12 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                 boolean nested = MongoDBUtils.isMemberNested(mmd);
 
                 DBObject obj;
-                if (nested) {
+                if (nested)
+                {
                     obj = new BasicDBObject();
                 }
-                else {
+                else
+                {
                     obj = dbObject;
                 }
 
@@ -139,24 +141,26 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
-                ColumnMetaData[] embeddedColumns = mapping.getMemberMetaData().getElementMetaData()
-                        .getColumnMetaData();
+                ColumnMetaData[] embeddedColumns = mapping.getMemberMetaData().getElementMetaData().getColumnMetaData();
 
-                if (embeddedColumns.length == 0) {
+                if (embeddedColumns.length == 0)
+                {
                     return;
                 }
 
                 String fieldName = embeddedColumns[0].getName();
 
-                if (value == null) {
+                if (value == null)
+                {
                     dbObject.removeField(fieldName);
                     return;
                 }
 
-                if (mmd.hasCollection()) {
+                if (mmd.hasCollection())
+                {
                     AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr);
                     Collection coll = new ArrayList();
-                    Collection valueColl = (Collection)value;
+                    Collection valueColl = (Collection) value;
                     Iterator collIter = valueColl.iterator();
                     while (collIter.hasNext())
                     {
@@ -181,11 +185,13 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                     return;
                 }
 
-                if (mmd.hasArray()) {
+                if (mmd.hasArray())
+                {
                     throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded array fields in this location (owner=" + op + ")");
                 }
 
-                if (mmd.hasMap()) {
+                if (mmd.hasMap())
+                {
                     throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded map fields in this location (owner=" + op + ")");
                 }
             }

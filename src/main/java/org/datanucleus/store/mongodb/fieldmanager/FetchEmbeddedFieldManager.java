@@ -142,10 +142,10 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
-                ColumnMetaData[] columnMetaData = mapping.getMemberMetaData()
-                        .getElementMetaData().getColumnMetaData();
+                ColumnMetaData[] columnMetaData = mapping.getMemberMetaData().getElementMetaData().getColumnMetaData();
 
-                if (columnMetaData.length == 0) {
+                if (columnMetaData.length == 0)
+                {
                     return null;
                 }
                 String embeddedCollectionColumn = columnMetaData[0].getName();
@@ -174,7 +174,8 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     }
 
                     Collection collValue = (Collection) subObject;
-                    for (Object aCollValue : collValue) {
+                    for (Object aCollValue : collValue)
+                    {
                         DBObject elementObj = (DBObject) aCollValue;
 
                         ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elemCmd, op, fieldNumber);
@@ -188,7 +189,8 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
 
                     return coll;
                 }
-                if (mmd.hasArray()) {
+                if (mmd.hasArray())
+                {
                     NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded array into the owning embedded object");
                 }
                 if (mmd.hasMap())
