@@ -211,9 +211,13 @@ public class MongoDBUtils
 
             Set rootClassNames = new HashSet<String>();
             rootClassNames.add(rootCmd.getFullClassName());
-            Table tbl = sd.getTable();
-            classNamesByTableName.put(tbl.getName(), rootClassNames);
-            tableByTableName.put(tbl.getName(), tbl);
+
+            if (sd != null)
+            {
+                Table tbl = sd.getTable();
+                classNamesByTableName.put(tbl.getName(), rootClassNames);
+                tableByTableName.put(tbl.getName(), tbl);
+            }
 
             Collection<String> subclassNames = storeMgr.getSubClassesForClass(rootCmd.getFullClassName(), true, clr);
             if (subclassNames != null && !subclassNames.isEmpty())
@@ -229,18 +233,21 @@ public class MongoDBUtils
                         sd = storeMgr.getStoreDataForClass(rootCmd.getFullClassName());
                     }
 
-                    Table subTable = sd.getTable();
-                    String subTableName = subTable.getName();
-                    Set<String> classNames = classNamesByTableName.get(subTableName);
-                    if (classNames == null)
+                    if (sd != null)
                     {
-                        classNames = new HashSet<String>();
-                        classNamesByTableName.put(subTableName, classNames);
-                    }
-                    classNames.add(cmd.getFullClassName());
-                    if (!tableByTableName.containsKey(subTableName))
-                    {
-                        tableByTableName.put(subTableName, subTable);
+                        Table subTable = sd.getTable();
+                        String subTableName = subTable.getName();
+                        Set<String> classNames = classNamesByTableName.get(subTableName);
+                        if (classNames == null)
+                        {
+                            classNames = new HashSet<String>();
+                            classNamesByTableName.put(subTableName, classNames);
+                        }
+                        classNames.add(cmd.getFullClassName());
+                        if (!tableByTableName.containsKey(subTableName))
+                        {
+                            tableByTableName.put(subTableName, subTable);
+                        }
                     }
                 }
             }
