@@ -17,15 +17,12 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
-import javax.transaction.xa.Xid;
-
+import com.mongodb.DB;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoCredential;
+import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusDataStoreException;
@@ -40,12 +37,13 @@ import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.MongoException;
-import com.mongodb.ServerAddress;
+import javax.transaction.xa.XAException;
+import javax.transaction.xa.XAResource;
+import javax.transaction.xa.Xid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * Implementation of a ConnectionFactory for MongoDB.
@@ -62,16 +60,16 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     public static final String MONGODB_HEARTBEAT_CONNECT_TIMEOUT = "datanucleus.mongodb.heartbeatConnectTimeout";
     public static final String MONGODB_HEARTBEAT_FREQUENCY = "datanucleus.mongodb.heartbeatFrequency";
     public static final String MONGODB_HEARTBEAT_SOCKET_TIMEOUT = "datanucleus.mongodb.heartbeatSocketTimeout";
-    
+
     public static final String MONGODB_MAX_CONNECTION_IDLE_TIME = "datanucleus.mongodb.maxConnectionIdleTime";
     public static final String MONGODB_MAX_CONNECTION_LIFE_TIME = "datanucleus.mongodb.maxConnectionLifeTime";
     public static final String MONGODB_MAX_WAIT_TIME = "datanucleus.mongodb.maxWaitTime";
-    
+
     public static final String MONGODB_MIN_HEARTBEAT_FREQUENCY = "datanucleus.mongodb.minHeartbeatFrequency";
     public static final String MONGODB_MIN_CONNECTIONS_PER_HOST = "datanucleus.mongodb.minConnectionsPerHost";
-    
+
     public static final String MONGODB_SERVER_SELECTION_TIMEOUT = "datanucleus.mongodb.serverSelectionTimeout";
-    
+
     public static final String MONGODB_SOCKET_TIMEOUT = "datanucleus.mongodb.socketTimeout";
 
     public static final String MONGODB_SSL_ENABLED = "datanucleus.mongodb.sslEnabled";
@@ -79,6 +77,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
     public static final String MONGODB_CONNECTIONS_PER_HOST = "datanucleus.mongodb.connectionsPerHost";
     public static final String MONGODB_THREAD_BLOCK_FOR_MULTIPLIER = "datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier";
+    public static final String MONGODB_REPLICA_SET_NAME = "datanucleus.mongodb.replicaSetName";
 
     String dbName = "DataNucleus";
 
@@ -298,6 +297,10 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         if (storeManager.hasProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER))
         {
             mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
+        }
+
+        if (storeManager.hasProperty(MONGODB_REPLICA_SET_NAME)) {
+            mongoOptionsBuilder.requiredReplicaSetName(storeManager.getStringProperty(MONGODB_REPLICA_SET_NAME));
         }
 
         return mongoOptionsBuilder.build();

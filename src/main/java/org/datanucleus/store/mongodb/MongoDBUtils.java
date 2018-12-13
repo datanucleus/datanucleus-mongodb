@@ -18,24 +18,13 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
+import com.mongodb.ReadPreference;
 import org.bson.types.ObjectId;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
@@ -75,15 +64,26 @@ import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.TypeConversionHelper;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
-import com.mongodb.MongoException;
-import com.mongodb.ReadPreference;
-
+import java.lang.reflect.Array;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Utilities for MongoDB.
@@ -93,11 +93,11 @@ public class MongoDBUtils
     private MongoDBUtils() {}
 
     public static List<Long> performMongoCount(DB db, BasicDBObject filterObject, Class candidateClass, boolean subclasses, ExecutionContext ec)
-    throws MongoException 
+    throws MongoException
     {
         StoreManager storeMgr = ec.getStoreManager();
         long count = 0;
-        for (AbstractClassMetaData cmd : MetaDataUtils.getMetaDataForCandidates(candidateClass, subclasses, ec)) 
+        for (AbstractClassMetaData cmd : MetaDataUtils.getMetaDataForCandidates(candidateClass, subclasses, ec))
         {
             Table table = storeMgr.getStoreDataForClass(cmd.getFullClassName()).getTable();
             String collectionName = table.getName();
@@ -788,7 +788,7 @@ public class MongoDBUtils
         Object id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, cmd, null, false, fm);
 
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(id, 
+        Object pc = ec.findObject(id,
             new FieldValues()
             {
                 public void fetchFields(ObjectProvider op)
@@ -851,7 +851,7 @@ public class MongoDBUtils
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Object oid = ec.getNucleusContext().getIdentityManager().getDatastoreId(cmd.getFullClassName(), idKey);
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(oid, 
+        Object pc = ec.findObject(oid,
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
@@ -900,7 +900,7 @@ public class MongoDBUtils
         SCOID oid = new SCOID(cmd.getFullClassName());
         final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
-        Object pc = ec.findObject(oid, 
+        Object pc = ec.findObject(oid,
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
@@ -1215,8 +1215,11 @@ public class MongoDBUtils
                     Collection<DBObject> rawColl = (Collection<DBObject>)value;
                     for (DBObject mapEntryObj : rawColl)
                     {
-                        Object dbKey = mapEntryObj.get("key");
-                        Object dbVal = mapEntryObj.get("value");
+                        Object dbKey = ofNullable(mapEntryObj.get("key"))
+                                .orElse(mapEntryObj.get(mmd.getKeyMetaData().getColumnName()));
+                        Object dbVal = ofNullable(mapEntryObj.get("value"))
+                                .orElse(mapEntryObj.get(mmd.getValueMetaData().getColumnName()));
+
                         Object key = getFieldValueFromStored(ec, mmd, mapping, dbKey, FieldRole.ROLE_MAP_KEY);
                         Object val = getFieldValueFromStored(ec, mmd, mapping, dbVal, FieldRole.ROLE_MAP_VALUE);
                         map.put(key, val);
