@@ -17,15 +17,15 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb.fieldmanager;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
@@ -35,8 +35,10 @@ import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * FieldManager for the persistence of a related embedded object (1-1/N-1 relation).
@@ -55,7 +57,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
     protected MemberColumnMapping getColumnMapping(int fieldNumber)
     {
-        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+        List<AbstractMemberMetaData> embMmds = new ArrayList<>(mmds);
         embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
         return table.getMemberColumnMappingForEmbeddedMember(embMmds);
     }
@@ -82,6 +84,11 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         ExecutionContext ec = op.getExecutionContext();
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
+
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        List<AbstractMemberMetaData> embMmds = new ArrayList<>(mmds);
+        embMmds.add(mmd);
+
         if (relationType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, lastMmd))
         {
             // Embedded field
@@ -96,7 +103,6 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                 }
 
                 // Embedded PC object - can be stored nested in the BSON doc (default), or flat
-                boolean nested = MongoDBUtils.isMemberNested(mmd);
 
                 if (RelationType.isBidirectional(relationType))
                 {
@@ -105,47 +111,83 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                 if (value == null)
                 {
-                    if (nested)
+                    for (int i=0;i<mapping.getNumberOfColumns();i++)
                     {
-                        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-                        for (int i=0;i<mapping.getNumberOfColumns();i++)
-                        {
-                            dbObject.removeField(mapping.getColumn(i).getName());
-                        }
-                        return;
+                        dbObject.removeField(mapping.getColumn(i).getName());
                     }
-
-                    // TODO Delete any fields for the embedded object (see Cassandra for example)
                     return;
                 }
 
-                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-                embMmds.add(mmd);
+                boolean nested = MongoDBUtils.isMemberNested(mmd);
 
-                if (nested)
-                {
-                    // Store sub-embedded object in own DBObject, nested
-                    DBObject embeddedObject = new BasicDBObject();
-
-                    // Process all fields of the embedded object
-                    ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                    FieldManager ffm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
-                    embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
-
-                    MemberColumnMapping mapping = getColumnMapping(fieldNumber);
-                    dbObject.put(mapping.getColumn(0).getName(), embeddedObject);
-                    return;
+                DBObject obj;
+                if (nested) {
+                    obj = new BasicDBObject();
+                }
+                else {
+                    obj = dbObject;
                 }
 
-                // Process all fields of the embedded object
                 ObjectProvider embOP = ec.findObjectProviderForEmbedded(value, op, mmd);
-                FieldManager ffm = new StoreEmbeddedFieldManager(embOP, dbObject, insert, embMmds, table);
+                FieldManager ffm = new StoreEmbeddedFieldManager(embOP, obj, insert, embMmds, table);
                 embOP.provideFields(embCmd.getAllMemberPositions(), ffm);
+
+                if (nested) {
+                    dbObject.put(mapping.getColumn(0).getName(), obj);
+                }
                 return;
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
-                throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support multi-valued embedded fields in this location (owner=" + op + ")");
+                ColumnMetaData[] embeddedColumns = mapping.getMemberMetaData().getElementMetaData()
+                        .getColumnMetaData();
+
+                if (embeddedColumns.length == 0) {
+                    return;
+                }
+
+                String fieldName = embeddedColumns[0].getName();
+
+                if (value == null) {
+                    dbObject.removeField(fieldName);
+                    return;
+                }
+
+                if (mmd.hasCollection()) {
+                    AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr);
+                    Collection coll = new ArrayList();
+                    Collection valueColl = (Collection)value;
+                    Iterator collIter = valueColl.iterator();
+                    while (collIter.hasNext())
+                    {
+                        Object element = collIter.next();
+                        if (!element.getClass().getName().equals(embcmd.getFullClassName()))
+                        {
+                            // Inherited object
+                            embcmd = ec.getMetaDataManager().getMetaDataForClass(element.getClass(), clr);
+                        }
+
+                        BasicDBObject embeddedObject = new BasicDBObject();
+
+                        ObjectProvider embOP = ec.findObjectProviderForEmbedded(element, op, mmd);
+                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+
+                        StoreFieldManager sfm = new StoreEmbeddedFieldManager(embOP, embeddedObject, insert, embMmds, table);
+                        sfm.ownerMmd = mmd;
+                        embOP.provideFields(embcmd.getAllMemberPositions(), sfm);
+                        coll.add(embeddedObject);
+                    }
+                    dbObject.put(fieldName, coll);
+                    return;
+                }
+
+                if (mmd.hasArray()) {
+                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded array fields in this location (owner=" + op + ")");
+                }
+
+                if (mmd.hasMap()) {
+                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded map fields in this location (owner=" + op + ")");
+                }
             }
         }
 

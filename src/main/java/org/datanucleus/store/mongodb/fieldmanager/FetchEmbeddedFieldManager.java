@@ -17,12 +17,12 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb.fieldmanager;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import com.mongodb.DBObject;
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
@@ -31,9 +31,12 @@ import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
 import org.datanucleus.store.schema.table.Table;
+import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.util.NucleusLogger;
 
-import com.mongodb.DBObject;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * FieldManager for the retrieval of a related embedded object.
@@ -52,7 +55,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
 
     protected MemberColumnMapping getColumnMapping(int fieldNumber)
     {
-        List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
+        List<AbstractMemberMetaData> embMmds = new ArrayList<>(mmds);
         embMmds.add(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
         return table.getMemberColumnMappingForEmbeddedMember(embMmds);
     }
@@ -71,6 +74,10 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
         }
 
         RelationType relationType = mmd.getRelationType(clr);
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        List<AbstractMemberMetaData> embMmds = new ArrayList<>(mmds);
+        embMmds.add(mmd);
+
         if (relationType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(ec.getMetaDataManager(), clr, mmd, relationType, null))
         {
             // (Nested) Embedded field
@@ -91,7 +98,6 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     }
                 }*/
 
-                MemberColumnMapping mapping = getColumnMapping(fieldNumber);
                 boolean nested = MongoDBUtils.isMemberNested(mmd);
 
                 // Check for null value (currently need all columns to return null)
@@ -128,8 +134,6 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     }
                 }
 
-                List<AbstractMemberMetaData> embMmds = new ArrayList<AbstractMemberMetaData>(mmds);
-                embMmds.add(mmd);
                 AbstractClassMetaData embCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
                 ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embCmd, op, fieldNumber);
                 FieldManager fetchEmbFM = new FetchEmbeddedFieldManager(embOP, subObject, embMmds, table);
@@ -138,7 +142,59 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
-                NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded into the owning embedded object");
+                ColumnMetaData[] columnMetaData = mapping.getMemberMetaData()
+                        .getElementMetaData().getColumnMetaData();
+
+                if (columnMetaData.length == 0) {
+                    return null;
+                }
+                String embeddedCollectionColumn = columnMetaData[0].getName();
+                DBObject subObject = (DBObject) dbObject.get(embeddedCollectionColumn);
+
+                if (subObject == null)
+                {
+                    return null;
+                }
+
+                if (mmd.hasCollection())
+                {
+                    Collection<Object> coll;
+                    AbstractClassMetaData elemCmd;
+
+                    elemCmd = mmd.getCollection().getElementClassMetaData(clr);
+
+                    try
+                    {
+                        Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+                        coll = (Collection<Object>) instanceType.newInstance();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new NucleusDataStoreException(e.getMessage(), e);
+                    }
+
+                    Collection collValue = (Collection) subObject;
+                    for (Object aCollValue : collValue) {
+                        DBObject elementObj = (DBObject) aCollValue;
+
+                        ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elemCmd, op, fieldNumber);
+                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+
+                        FetchFieldManager ffm = new FetchEmbeddedFieldManager(embOP, elementObj, embMmds, table);
+                        ffm.ownerMmd = mmd;
+                        embOP.replaceFields(elemCmd.getAllMemberPositions(), ffm);
+                        coll.add(embOP.getObject());
+                    }
+
+                    return coll;
+                }
+                if (mmd.hasArray()) {
+                    NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded array into the owning embedded object");
+                }
+                if (mmd.hasMap())
+                {
+                    NucleusLogger.PERSISTENCE.debug("Field=" + mmd.getFullFieldName() + " not currently supported as embedded map into the owning embedded object");
+                }
             }
             return null;
         }
