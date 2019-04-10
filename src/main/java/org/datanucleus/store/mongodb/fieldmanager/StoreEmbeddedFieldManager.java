@@ -123,7 +123,15 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                 DBObject obj;
                 if (nested)
                 {
-                    obj = new BasicDBObject();
+                    DBObject nestedObject = (DBObject) dbObject.get(mapping.getColumn(0).getName());
+                    if (nestedObject == null)
+                    {
+                        obj = new BasicDBObject();
+                    }
+                    else
+                    {
+                        obj = nestedObject;
+                    }
                 }
                 else
                 {

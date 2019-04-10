@@ -287,8 +287,16 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 DBObject embeddedObject = dbObject;
                 if (nested)
                 {
-                    // Nested, so create nested object that we will store the embedded object in
-                    embeddedObject = new BasicDBObject();
+                    DBObject nestedObject = (DBObject) embeddedObject.get(mapping.getColumn(0).getName());
+                    if (nestedObject == null)
+                    {   //creates nested object when current field has null-value
+                        embeddedObject = new BasicDBObject();
+                    }
+                    else
+                    {   //when current field has a value that differs from null
+                        //then the value is updated
+                        embeddedObject = nestedObject;
+                    }
                 }
 
                 if (embcmd.hasDiscriminatorStrategy())
