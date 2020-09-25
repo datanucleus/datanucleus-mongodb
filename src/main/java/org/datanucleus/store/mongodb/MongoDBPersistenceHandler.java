@@ -328,7 +328,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (ec.getNucleusContext().isClassMultiTenant(cmd))
         {
             // Multi-tenancy discriminator
-            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), ec.getNucleusContext().getMultiTenancyId(ec, cmd));
+            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), ec.getNucleusContext().getMultiTenancyId(ec));
         }
 
         if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)

@@ -668,7 +668,7 @@ public class MongoDBUtils
             {
                 // Multitenancy discriminator present : Add restriction for this tenant
                 String fieldName = rootTable.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
-                String value = ec.getNucleusContext().getMultiTenancyId(ec, rootCmd);
+                String value = ec.getNucleusContext().getMultiTenancyId(ec);
                 query.put(fieldName, value);
             }
 
