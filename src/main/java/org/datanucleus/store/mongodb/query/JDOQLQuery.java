@@ -27,8 +27,6 @@ import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.query.inmemory.JDOQLInMemoryEvaluator;
-import org.datanucleus.query.inmemory.JavaQueryInMemoryEvaluator;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
@@ -40,6 +38,8 @@ import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.query.QueryManager;
 import org.datanucleus.store.query.QueryResult;
+import org.datanucleus.store.query.inmemory.JDOQLInMemoryEvaluator;
+import org.datanucleus.store.query.inmemory.JavaQueryInMemoryEvaluator;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
