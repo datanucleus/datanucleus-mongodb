@@ -602,7 +602,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 dbObject = MongoDBUtils.getObjectForObjectProvider(collection, op, false, false);
                 if (dbObject == null)
                 {
-                    throw new NucleusObjectNotFoundException("Could not find object with id " + op.getInternalObjectId() + " op="+op);
+                    throw new NucleusObjectNotFoundException("Could not find object with id " + IdentityUtils.getPersistableIdentityForId(op.getInternalObjectId()));
                 }
             }
 
