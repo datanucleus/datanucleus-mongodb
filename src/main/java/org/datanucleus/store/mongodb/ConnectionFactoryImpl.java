@@ -55,6 +55,7 @@ import java.util.StringTokenizer;
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
 {
+    public static final String MONGODB_AUTHENTICATION_DATABASE = "datanucleus.mongodb.authenticationDatabase";
     public static final String MONGODB_CONNECT_TIMEOUT = "datanucleus.mongodb.connectTimeout";
 
     public static final String MONGODB_HEARTBEAT_CONNECT_TIMEOUT = "datanucleus.mongodb.heartbeatConnectTimeout";
@@ -181,7 +182,16 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             String password = storeMgr.getConnectionPassword();
             if (!StringUtils.isWhitespace(userName))
             {
-                credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
+                if (storeMgr.hasProperty(MONGODB_AUTHENTICATION_DATABASE))
+                {
+                    // Use separate authentication DB
+                    credential = MongoCredential.createCredential(userName, storeMgr.getStringProperty(MONGODB_AUTHENTICATION_DATABASE), password.toCharArray());
+                }
+                else
+                {
+                    // Use same DB as for persistence
+                    credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
+                }
             }
 
             // Create the Mongo connection pool
