@@ -61,9 +61,9 @@ import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.store.types.converters.EnumConversionHelper;
+import org.datanucleus.store.types.converters.TypeConversionHelper;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.TypeConversionHelper;
 
 import java.lang.reflect.Array;
 import java.io.ByteArrayInputStream;
