@@ -60,6 +60,7 @@ import org.datanucleus.store.schema.table.SurrogateColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.SCOUtils;
+import org.datanucleus.store.types.converters.EnumConversionHelper;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.TypeConversionHelper;
@@ -1084,7 +1085,7 @@ public class MongoDBUtils
         }
         else if (Enum.class.isAssignableFrom(type))
         {
-            return TypeConversionHelper.getStoredValueFromEnum(mmd, fieldRole, (Enum)value);
+            return EnumConversionHelper.getStoredValueFromEnum(mmd, fieldRole, (Enum)value);
         }
         else if (type == Date.class)
         {
@@ -1338,7 +1339,7 @@ public class MongoDBUtils
         }
         else if (Enum.class.isAssignableFrom(type))
         {
-            return TypeConversionHelper.getEnumForStoredValue(mmd, fieldRole, value, ec.getClassLoaderResolver());
+            return EnumConversionHelper.getEnumForStoredValue(mmd, fieldRole, value, ec.getClassLoaderResolver());
         }
         else if (java.sql.Date.class.isAssignableFrom(type) && value instanceof Date)
         {
