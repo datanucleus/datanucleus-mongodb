@@ -1,31 +1,25 @@
 /**********************************************************************
-Copyright (c) 2011 Andy Jefferson and others. All rights reserved.
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Copyright (c) 2011 Andy Jefferson and others. All rights reserved.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
 
-Contributors:
-    ...
-**********************************************************************/
+ Contributors:
+ ...
+ **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoCredential;
-import com.mongodb.MongoException;
-import com.mongodb.ServerAddress;
+import com.mongodb.*;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PropertyNames;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.AbstractConnectionFactory;
@@ -35,21 +29,16 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 /**
  * Implementation of a ConnectionFactory for MongoDB.
- * Accepts a URL of the form 
- * <pre>mongodb:[{server1}][/{dbName}][,{server2}[,{server3}]]</pre>
- * Defaults to a server of "localhost" if nothing specified.
+ * Accepts a URL of the form
+ * <pre>mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]</pre>
  * Defaults to a DB name of "DataNucleus" if nothing specified.
  * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
@@ -93,148 +82,18 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     {
         super(storeMgr, resourceType);
 
-        // "mongodb:[server]/database"
         String url = storeMgr.getConnectionURL();
         if (url == null)
         {
             throw new NucleusException("You haven't specified persistence property '" + PropertyNames.PROPERTY_CONNECTION_URL + "' (or alias)");
         }
 
-        String remains = url.substring(7).trim();
-        if (remains.indexOf(':') == 0)
+        MongoClientURI mongoClientURI = new MongoClientURI(url);
+        mongo = new MongoClient(mongoClientURI); //TODO Change to MongoClients.create(dbConnectionString)
+
+        if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
         {
-            remains = remains.substring(1);
-        }
-
-        // Split into any replica sets
-        try
-        {
-            List<ServerAddress> serverAddrs = new ArrayList<>();
-            if (remains.length() == 0)
-            {
-                // "mongodb:"
-                serverAddrs.add(new ServerAddress());
-            }
-            else
-            {
-                StringTokenizer tokeniser = new StringTokenizer(remains, ",");
-                while (tokeniser.hasMoreTokens())
-                {
-                    String token = tokeniser.nextToken();
-
-                    String serverName = "localhost";
-                    if (serverAddrs.isEmpty())
-                    {
-                        // Set dbName
-                        int dbNameSepPos = token.indexOf("/");
-                        if (dbNameSepPos >= 0)
-                        {
-                            if (dbNameSepPos < token.length())
-                            {
-                                String dbNameStr = token.substring(dbNameSepPos + 1);
-                                if (dbNameStr.length() > 0)
-                                {
-                                    dbName = dbNameStr;
-                                }
-                                else
-                                {
-                                    // Use default ("DataNucleus")
-                                }
-                            }
-                            if (dbNameSepPos > 0)
-                            {
-                                // Server name is not empty so use it
-                                serverName = token.substring(0, dbNameSepPos);
-                            }
-                        }
-                        else
-                        {
-                            if (token.length() > 0)
-                            {
-                                // No "/" specified so just take all of token
-                                serverName = token;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Subsequent replica-set so use full token as server name
-                        serverName = token;
-                    }
-
-                    // Create a ServerAddress for this specification
-                    ServerAddress addr = null;
-                    int portSeparatorPos = serverName.indexOf(':');
-                    if (portSeparatorPos > 0)
-                    {
-                        addr = new ServerAddress(serverName.substring(0, portSeparatorPos), Integer.valueOf(serverName.substring(portSeparatorPos + 1)).intValue());
-                    }
-                    else
-                    {
-                        addr = new ServerAddress(serverName);
-                    }
-                    serverAddrs.add(addr);
-                }
-            }
-
-            MongoCredential credential = null;
-            String userName = storeMgr.getConnectionUserName();
-            String password = storeMgr.getConnectionPassword();
-            if (!StringUtils.isWhitespace(userName))
-            {
-                if (storeMgr.hasProperty(MONGODB_AUTHENTICATION_DATABASE))
-                {
-                    // Use separate authentication DB
-                    credential = MongoCredential.createCredential(userName, storeMgr.getStringProperty(MONGODB_AUTHENTICATION_DATABASE), password.toCharArray());
-                }
-                else
-                {
-                    // Use same DB as for persistence
-                    credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
-                }
-            }
-
-            // Create the Mongo connection pool
-            if (NucleusLogger.CONNECTION.isDebugEnabled())
-            {
-                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(), StringUtils.collectionToString(serverAddrs)));
-            }
-
-            if (serverAddrs.size() == 1)
-            {
-                if (credential == null)
-                {
-                    mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
-                }
-                else
-                {
-                    mongo = new MongoClient(serverAddrs.get(0), credential, getMongodbOptions(storeMgr));
-                }
-            }
-            else
-            {
-                if (credential == null)
-                {
-                    mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
-                }
-                else
-                {
-                    mongo = new MongoClient(serverAddrs, credential, getMongodbOptions(storeMgr));
-                }
-            }
-            if (NucleusLogger.CONNECTION.isDebugEnabled())
-            {
-                NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
-            }
-        }
-        catch (MongoException me)
-        {
-            throw new NucleusDataStoreException("Unable to connect to MongoClient", me);
-        }
-        catch (Exception e)
-        {
-            // We catch this since with MongoDB 2.x driver ServerAddress(...) can throw UnknownHostException
-            throw new NucleusDataStoreException("Unable to connect to MongoClient", e);
+            dbName = mongoClientURI.getDatabase(); //Set database name provided in url.
         }
     }
 
@@ -328,7 +187,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     }
 
     /**
-     * Obtain a connection from the Factory. 
+     * Obtain a connection from the Factory.
      * The connection will be enlisted within the transaction associated to the ExecutionContext.
      * Note that MongoDB doesn't have a "transaction" as such, so commit/rollback don't apply.
      * @param ec the pool that is bound the connection during its lifecycle (or null)
@@ -377,7 +236,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (conn == null)
             {
                 // Create new connection
-                conn = mongo.getDB(dbName); // TODO Change this to getDatabase(...)
+                conn = mongo.getDB(dbName); // TODO Change this to getDatabase(...), dependent on TODO (line 98).
                 if (NucleusLogger.CONNECTION.isDebugEnabled())
                 {
                     NucleusLogger.CONNECTION.debug(Localiser.msg("009011", this.toString(), getResourceName()));
