@@ -17,15 +17,14 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientURI;
 import com.mongodb.MongoCredential;
-import com.mongodb.MongoException;
 import com.mongodb.ServerAddress;
+import com.mongodb.DB;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PropertyNames;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.AbstractConnectionFactory;
@@ -43,13 +42,11 @@ import javax.transaction.xa.Xid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 /**
  * Implementation of a ConnectionFactory for MongoDB.
- * Accepts a URL of the form 
- * <pre>mongodb:[{server1}][/{dbName}][,{server2}[,{server3}]]</pre>
- * Defaults to a server of "localhost" if nothing specified.
+ * Accepts a URL of the form
+ * <pre>mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]</pre>
  * Defaults to a DB name of "DataNucleus" if nothing specified.
  * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
@@ -81,7 +78,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     public static final String MONGODB_REPLICA_SET_NAME = "datanucleus.mongodb.replicaSetName";
 
     String dbName = "DataNucleus";
-
+    String defaultDbNameForAuthentication = "admin";
     MongoClient mongo;
 
     /**
@@ -93,94 +90,37 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     {
         super(storeMgr, resourceType);
 
-        // "mongodb:[server]/database"
         String url = storeMgr.getConnectionURL();
         if (url == null)
         {
             throw new NucleusException("You haven't specified persistence property '" + PropertyNames.PROPERTY_CONNECTION_URL + "' (or alias)");
         }
 
-        String remains = url.substring(7).trim();
-        if (remains.indexOf(':') == 0)
-        {
-            remains = remains.substring(1);
-        }
-
-        // Split into any replica sets
         try
         {
-            List<ServerAddress> serverAddrs = new ArrayList<>();
-            if (remains.length() == 0)
-            {
-                // "mongodb:"
-                serverAddrs.add(new ServerAddress());
-            }
-            else
-            {
-                StringTokenizer tokeniser = new StringTokenizer(remains, ",");
-                while (tokeniser.hasMoreTokens())
-                {
-                    String token = tokeniser.nextToken();
+            MongoClientURI mongoClientURI = new MongoClientURI(url);
 
-                    String serverName = "localhost";
-                    if (serverAddrs.isEmpty())
-                    {
-                        // Set dbName
-                        int dbNameSepPos = token.indexOf("/");
-                        if (dbNameSepPos >= 0)
-                        {
-                            if (dbNameSepPos < token.length())
-                            {
-                                String dbNameStr = token.substring(dbNameSepPos + 1);
-                                if (dbNameStr.length() > 0)
-                                {
-                                    dbName = dbNameStr;
-                                }
-                                else
-                                {
-                                    // Use default ("DataNucleus")
-                                }
-                            }
-                            if (dbNameSepPos > 0)
-                            {
-                                // Server name is not empty so use it
-                                serverName = token.substring(0, dbNameSepPos);
-                            }
-                        }
-                        else
-                        {
-                            if (token.length() > 0)
-                            {
-                                // No "/" specified so just take all of token
-                                serverName = token;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Subsequent replica-set so use full token as server name
-                        serverName = token;
-                    }
-
-                    // Create a ServerAddress for this specification
-                    ServerAddress addr = null;
-                    int portSeparatorPos = serverName.indexOf(':');
-                    if (portSeparatorPos > 0)
-                    {
-                        addr = new ServerAddress(serverName.substring(0, portSeparatorPos), Integer.valueOf(serverName.substring(portSeparatorPos + 1)).intValue());
-                    }
-                    else
-                    {
-                        addr = new ServerAddress(serverName);
-                    }
-                    serverAddrs.add(addr);
-                }
+            //Set options
+            MongoClientOptions mongoClientOptionsFromURI = mongoClientURI.getOptions();
+            if(mongoClientOptionsFromURI == null)
+            {
+                //Only run if options not provided in url
+                MongoClientOptions mongoClientOptions = getMongodbOptions(storeMgr);
+                mongoClientURI = new MongoClientURI(url,MongoClientOptions.builder(mongoClientOptions));
             }
 
+            //Set database name provided in url.
+            if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
+            {
+                dbName = mongoClientURI.getDatabase();
+            }
+
+            //Set mongo credential
+            //Credentials are optional and must not be forced (Null is acceptable)
             MongoCredential credential = null;
             String userName = storeMgr.getConnectionUserName();
             String password = storeMgr.getConnectionPassword();
-            if (!StringUtils.isWhitespace(userName))
+            if (!StringUtils.isWhitespace(userName) && mongoClientURI.getCredentials() == null) //Only run if credentials not provided in url and datanucleus.ConnectionUserName is not empty.
             {
                 if (storeMgr.hasProperty(MONGODB_AUTHENTICATION_DATABASE))
                 {
@@ -189,52 +129,39 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
                 }
                 else
                 {
-                    // Use same DB as for persistence
-                    credential = MongoCredential.createCredential(userName, dbName, password.toCharArray());
+                    // Use admin db as authentication default
+                    credential = MongoCredential.createCredential(userName, defaultDbNameForAuthentication, password.toCharArray());
                 }
             }
 
             // Create the Mongo connection pool
             if (NucleusLogger.CONNECTION.isDebugEnabled())
             {
-                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, serverAddrs.size(), StringUtils.collectionToString(serverAddrs)));
+                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, mongoClientURI.getHosts().size(), StringUtils.collectionToString(mongoClientURI.getHosts())));
             }
 
-            if (serverAddrs.size() == 1)
+            if (credential == null)
             {
-                if (credential == null)
-                {
-                    mongo = new MongoClient(serverAddrs.get(0), getMongodbOptions(storeMgr));
-                }
-                else
-                {
-                    mongo = new MongoClient(serverAddrs.get(0), credential, getMongodbOptions(storeMgr));
-                }
+                mongo = new MongoClient(mongoClientURI);
             }
             else
             {
-                if (credential == null)
+                List<ServerAddress> addressList = new ArrayList<>();
+                for(String host:mongoClientURI.getHosts())
                 {
-                    mongo = new MongoClient(serverAddrs, getMongodbOptions(storeMgr));
+                    addressList.add(new ServerAddress(host));
                 }
-                else
-                {
-                    mongo = new MongoClient(serverAddrs, credential, getMongodbOptions(storeMgr));
-                }
+                mongo = new MongoClient(addressList,credential,mongoClientURI.getOptions());
             }
+
             if (NucleusLogger.CONNECTION.isDebugEnabled())
             {
                 NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
             }
         }
-        catch (MongoException me)
+        catch (IllegalArgumentException e)
         {
-            throw new NucleusDataStoreException("Unable to connect to MongoClient", me);
-        }
-        catch (Exception e)
-        {
-            // We catch this since with MongoDB 2.x driver ServerAddress(...) can throw UnknownHostException
-            throw new NucleusDataStoreException("Unable to connect to MongoClient", e);
+            throw new NucleusException(e.getMessage());
         }
     }
 
@@ -328,7 +255,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     }
 
     /**
-     * Obtain a connection from the Factory. 
+     * Obtain a connection from the Factory.
      * The connection will be enlisted within the transaction associated to the ExecutionContext.
      * Note that MongoDB doesn't have a "transaction" as such, so commit/rollback don't apply.
      * @param ec the pool that is bound the connection during its lifecycle (or null)
