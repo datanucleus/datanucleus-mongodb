@@ -236,7 +236,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             if (conn == null)
             {
                 // Create new connection
-                conn = mongo.getDB(dbName); // TODO Change this to getDatabase(...), dependent on TODO (line 98).
+                conn = mongo.getDB(dbName); // TODO Change this to getDatabase(...)
                 if (NucleusLogger.CONNECTION.isDebugEnabled())
                 {
                     NucleusLogger.CONNECTION.debug(Localiser.msg("009011", this.toString(), getResourceName()));
