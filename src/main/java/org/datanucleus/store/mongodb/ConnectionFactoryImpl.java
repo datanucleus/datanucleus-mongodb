@@ -17,10 +17,7 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mongodb;
 
-import com.mongodb.DB;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.MongoClientURI;
+import com.mongodb.*;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusException;
@@ -37,6 +34,8 @@ import org.datanucleus.util.StringUtils;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -74,7 +73,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     public static final String MONGODB_REPLICA_SET_NAME = "datanucleus.mongodb.replicaSetName";
 
     String dbName = "DataNucleus";
-
+    String defaultDbNameForAuthentication = "admin";
     MongoClient mongo;
 
     /**
@@ -92,27 +91,73 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
             throw new NucleusException("You haven't specified persistence property '" + PropertyNames.PROPERTY_CONNECTION_URL + "' (or alias)");
         }
 
-        MongoClientURI mongoClientURI = new MongoClientURI(url);
-
-        //Set database name provided in url.
-        if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
+        try
         {
-            dbName = mongoClientURI.getDatabase();
-        }
+            MongoClientURI mongoClientURI = new MongoClientURI(url);
 
-        // Create the Mongo connection pool
-        if (NucleusLogger.CONNECTION.isDebugEnabled())
+            //Set options
+            MongoClientOptions mongoClientOptionsFromURI = mongoClientURI.getOptions();
+            if(mongoClientOptionsFromURI == null)
+            {
+                //Only run if options not provided in url
+                MongoClientOptions mongoClientOptions = getMongodbOptions(storeMgr);
+                mongoClientURI = new MongoClientURI(url,MongoClientOptions.builder(mongoClientOptions));
+            }
+
+            //Set database name provided in url.
+            if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
+            {
+                dbName = mongoClientURI.getDatabase();
+            }
+
+            //Set mongo credential
+            //Credentials are optional and must not be forced (Null is acceptable)
+            MongoCredential credential = null;
+            String userName = storeMgr.getConnectionUserName();
+            String password = storeMgr.getConnectionPassword();
+            if (!StringUtils.isWhitespace(userName) && mongoClientURI.getCredentials() == null) //Only run if credentials not provided in url and datanucleus.ConnectionUserName is not empty.
+            {
+                if (storeMgr.hasProperty(MONGODB_AUTHENTICATION_DATABASE))
+                {
+                    // Use separate authentication DB
+                    credential = MongoCredential.createCredential(userName, storeMgr.getStringProperty(MONGODB_AUTHENTICATION_DATABASE), password.toCharArray());
+                }
+                else
+                {
+                    // Use admin db as authentication default
+                    credential = MongoCredential.createCredential(userName, defaultDbNameForAuthentication, password.toCharArray());
+                }
+            }
+
+            // Create the Mongo connection pool
+            if (NucleusLogger.CONNECTION.isDebugEnabled())
+            {
+                NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, mongoClientURI.getHosts().size(), StringUtils.collectionToString(mongoClientURI.getHosts())));
+            }
+
+            if (credential == null)
+            {
+                mongo = new MongoClient(mongoClientURI);
+            }
+            else
+            {
+                List<ServerAddress> addressList = new ArrayList<>();
+                for(String host:mongoClientURI.getHosts())
+                {
+                    addressList.add(new ServerAddress(host));
+                }
+                mongo = new MongoClient(addressList,credential,mongoClientURI.getOptions());
+            }
+
+            if (NucleusLogger.CONNECTION.isDebugEnabled())
+            {
+                NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
+            }
+        }
+        catch (IllegalArgumentException e)
         {
-            NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, mongoClientURI.getHosts().size(), StringUtils.collectionToString(mongoClientURI.getHosts())));
+            throw new NucleusException(e.getMessage());
         }
-
-        mongo = new MongoClient(mongoClientURI); //TODO Change to MongoClients.create(dbConnectionString)
-
-        if (NucleusLogger.CONNECTION.isDebugEnabled())
-        {
-            NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
-        }
-
     }
 
     private MongoClientOptions getMongodbOptions(StoreManager storeManager)
