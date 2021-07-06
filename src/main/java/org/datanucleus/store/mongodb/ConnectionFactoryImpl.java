@@ -1,20 +1,20 @@
 /**********************************************************************
- Copyright (c) 2011 Andy Jefferson and others. All rights reserved.
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Copyright (c) 2011 Andy Jefferson and others. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
- http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 
- Contributors:
- ...
- **********************************************************************/
+Contributors:
+...
+**********************************************************************/
 package org.datanucleus.store.mongodb;
 
 import com.mongodb.*;
@@ -29,6 +29,7 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
@@ -89,12 +90,26 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         }
 
         MongoClientURI mongoClientURI = new MongoClientURI(url);
-        mongo = new MongoClient(mongoClientURI); //TODO Change to MongoClients.create(dbConnectionString)
 
+        //Set database name provided in url.
         if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
         {
-            dbName = mongoClientURI.getDatabase(); //Set database name provided in url.
+            dbName = mongoClientURI.getDatabase();
         }
+
+        // Create the Mongo connection pool
+        if (NucleusLogger.CONNECTION.isDebugEnabled())
+        {
+            NucleusLogger.CONNECTION.debug(Localiser.msg("MongoDB.ServerConnect", dbName, mongoClientURI.getHosts().size(), StringUtils.collectionToString(mongoClientURI.getHosts())));
+        }
+
+        mongo = new MongoClient(mongoClientURI); //TODO Change to MongoClients.create(dbConnectionString)
+
+        if (NucleusLogger.CONNECTION.isDebugEnabled())
+        {
+            NucleusLogger.CONNECTION.debug("Created MongoClient object on resource " + getResourceName());
+        }
+
     }
 
     private MongoClientOptions getMongodbOptions(StoreManager storeManager)
