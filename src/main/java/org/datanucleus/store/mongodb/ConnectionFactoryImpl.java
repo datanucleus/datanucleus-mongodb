@@ -48,6 +48,7 @@ import java.util.Map;
  * Accepts a URL of the form
  * <pre>mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]</pre>
  * Defaults to a DB name of "DataNucleus" if nothing specified.
+ * Defaults to a DB name for authentication of "admin" if nothing specified and username supplied.
  * Has a DB object per PM/EM. TODO Allow the option of having DB per PMF/EMF.
  */
 public class ConnectionFactoryImpl extends AbstractConnectionFactory
@@ -100,28 +101,27 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         {
             MongoClientURI mongoClientURI = new MongoClientURI(url);
 
-            //Set options
+            // Set options
             MongoClientOptions mongoClientOptionsFromURI = mongoClientURI.getOptions();
-            if(mongoClientOptionsFromURI == null)
+            if (mongoClientOptionsFromURI == null)
             {
-                //Only run if options not provided in url
+                // Only run if options not provided in URL
                 MongoClientOptions mongoClientOptions = getMongodbOptions(storeMgr);
                 mongoClientURI = new MongoClientURI(url,MongoClientOptions.builder(mongoClientOptions));
             }
 
-            //Set database name provided in url.
-            if(mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
+            // Set database name provided in URL
+            if (mongoClientURI.getDatabase() != null && !mongoClientURI.getDatabase().isEmpty())
             {
                 dbName = mongoClientURI.getDatabase();
             }
 
-            //Set mongo credential
-            //Credentials are optional and must not be forced (Null is acceptable)
+            // Set mongo credential - Credentials are optional and must not be forced (Null is acceptable)
             MongoCredential credential = null;
             String userName = storeMgr.getConnectionUserName();
-            String password = storeMgr.getConnectionPassword();
             if (!StringUtils.isWhitespace(userName) && mongoClientURI.getCredentials() == null) //Only run if credentials not provided in url and datanucleus.ConnectionUserName is not empty.
             {
+                String password = storeMgr.getConnectionPassword();
                 if (storeMgr.hasProperty(MONGODB_AUTHENTICATION_DATABASE))
                 {
                     // Use separate authentication DB
@@ -165,6 +165,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         }
     }
 
+    @SuppressWarnings("deprecation")
     private MongoClientOptions getMongodbOptions(StoreManager storeManager)
     {
         MongoClientOptions.Builder mongoOptionsBuilder = MongoClientOptions.builder();
@@ -233,6 +234,7 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
 
         if (storeManager.hasProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER))
         {
+            // TODO Deprecated
             mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
         }
 
