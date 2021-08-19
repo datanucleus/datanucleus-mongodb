@@ -513,6 +513,12 @@ public class MongoDBUtils
                 query.put(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName(), currentVersion);
             }
         }
+        if (ec.getNucleusContext().isClassMultiTenant(cmd))
+        {
+            // Add tenancy restriction
+            String tenantId = ec.getNucleusContext().getMultiTenancyId(ec);
+            query.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), tenantId);
+        }
 
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
         {

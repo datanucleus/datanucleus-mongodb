@@ -18,7 +18,7 @@
 
     <properties>
         <dn.core.version>5.9</dn.core.version>
-        <mongodb.version>3.12.8</mongodb.version>
+        <mongodb.version>4.3.1</mongodb.version>
     </properties>
 
     <scm>
@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver</artifactId>
+            <artifactId>mongodb-driver-legacy</artifactId>
             <version>${mongodb.version}</version>
         </dependency>
     </dependencies>

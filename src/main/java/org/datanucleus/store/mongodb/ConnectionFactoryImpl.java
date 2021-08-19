@@ -75,7 +75,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
     public static final String MONGODB_SSL_INVALID_HOSTNAME_ALLOWED = "datanucleus.mongodb.sslInvalidHostnameAllowed";
 
     public static final String MONGODB_CONNECTIONS_PER_HOST = "datanucleus.mongodb.connectionsPerHost";
-    public static final String MONGODB_THREAD_BLOCK_FOR_MULTIPLIER = "datanucleus.mongodb.threadsAllowedToBlockForConnectionMultiplier";
     public static final String MONGODB_REPLICA_SET_NAME = "datanucleus.mongodb.replicaSetName";
 
     String dbName = "DataNucleus";
@@ -165,7 +164,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         }
     }
 
-    @SuppressWarnings("deprecation")
     private MongoClientOptions getMongodbOptions(StoreManager storeManager)
     {
         MongoClientOptions.Builder mongoOptionsBuilder = MongoClientOptions.builder();
@@ -230,12 +228,6 @@ public class ConnectionFactoryImpl extends AbstractConnectionFactory
         if (storeManager.hasProperty(MONGODB_SSL_INVALID_HOSTNAME_ALLOWED))
         {
             mongoOptionsBuilder.sslInvalidHostNameAllowed(storeManager.getBooleanProperty(MONGODB_SSL_INVALID_HOSTNAME_ALLOWED));
-        }
-
-        if (storeManager.hasProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER))
-        {
-            // TODO Deprecated
-            mongoOptionsBuilder.threadsAllowedToBlockForConnectionMultiplier(storeManager.getIntProperty(MONGODB_THREAD_BLOCK_FOR_MULTIPLIER));
         }
 
         if (storeManager.hasProperty(MONGODB_REPLICA_SET_NAME))
