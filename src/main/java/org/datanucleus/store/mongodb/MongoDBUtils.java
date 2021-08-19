@@ -519,6 +519,11 @@ public class MongoDBUtils
             String tenantId = ec.getNucleusContext().getMultiTenancyId(ec);
             query.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), tenantId);
         }
+        if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+        {
+            // Soft-delete flag restriction
+            query.put(table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
+        }
 
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
         {
