@@ -516,7 +516,7 @@ public class MongoDBUtils
         if (ec.getNucleusContext().isClassMultiTenant(cmd))
         {
             // Add tenancy restriction
-            String tenantId = ec.getNucleusContext().getTenantId(ec);
+            String tenantId = ec.getTenantId();
             query.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), tenantId);
         }
         if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
@@ -680,7 +680,7 @@ public class MongoDBUtils
             {
                 // Multitenancy discriminator present : Add restriction for this tenant
                 String fieldName = rootTable.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
-                String value = ec.getNucleusContext().getTenantId(ec);
+                String value = ec.getTenantId();
                 query.put(fieldName, value);
             }
 
