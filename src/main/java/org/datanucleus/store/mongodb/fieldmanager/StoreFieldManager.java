@@ -180,14 +180,34 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
-        if (value == null)
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        if (mapping.getTypeConverter() != null)
         {
-            dbObject.removeField(fieldName);
-            return;
+            // Persist using the provided converter
+            Object datastoreValue = mapping.getTypeConverter().toDatastoreType(value);
+            if (mapping.getNumberOfColumns() > 1)
+            {
+                for (int i=0;i<mapping.getNumberOfColumns();i++)
+                {
+                    dbObject.put(mapping.getColumn(i).getName(), MongoDBUtils.getAcceptableDatastoreValue(Array.get(datastoreValue, i)));
+                }
+            }
+            else
+            {
+                dbObject.put(mapping.getColumn(0).getName(), MongoDBUtils.getAcceptableDatastoreValue(datastoreValue));
+            }
         }
+        else
+        {
+            String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
+            if (value == null)
+            {
+                dbObject.removeField(fieldName);
+                return;
+            }
 
-        dbObject.put(fieldName, value);
+            dbObject.put(fieldName, value);
+        }
     }
 
     @Override

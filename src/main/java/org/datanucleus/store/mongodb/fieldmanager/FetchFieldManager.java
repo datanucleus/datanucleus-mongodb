@@ -253,6 +253,18 @@ public class FetchFieldManager extends AbstractFetchFieldManager
             return id.toString();
         }
 
+        MemberColumnMapping mapping = getColumnMapping(fieldNumber);
+        if (mapping.getTypeConverter() != null)
+        {
+            // Fetch using the provided converter
+            String colName = mapping.getColumn(0).getName();
+            if (!dbObject.containsField(colName))
+            {
+                return null;
+            }
+            return (String) mapping.getTypeConverter().toMemberType(dbObject.get(colName));
+        }
+
         String fieldName = getColumnMapping(fieldNumber).getColumn(0).getName();
         if (dbObject.containsField(fieldName))
         {
