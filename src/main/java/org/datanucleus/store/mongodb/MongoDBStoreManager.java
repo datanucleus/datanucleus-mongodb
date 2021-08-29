@@ -35,7 +35,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ClassPersistenceModifier;
-import org.datanucleus.metadata.IdentityMetaData;
+import org.datanucleus.metadata.DatastoreIdentityMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.store.AbstractStoreManager;
@@ -252,7 +252,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             }
         }
 
-        IdentityMetaData idmd = cmd.getBaseIdentityMetaData();
+        DatastoreIdentityMetaData idmd = cmd.getBaseDatastoreIdentityMetaData();
         if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
         {
             return ValueGenerationStrategy.UUIDHEX.toString();
