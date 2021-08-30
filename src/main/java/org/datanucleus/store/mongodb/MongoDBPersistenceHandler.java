@@ -540,13 +540,29 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             op.provideFields(cmd.getAllMemberPositions(), new DeleteFieldManager(op, true));
 
             // Delete this object
-            // TODO Support SOFT_DELETE
             op.removeAssociatedValue(OP_DB_OBJECT);
-            if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
+            Column softDeleteCol = table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE);
+            if (softDeleteCol != null)
             {
-                NucleusLogger.DATASTORE_NATIVE.debug("Removing object " + op + " using collection.remove(" + dbObject + ") from table=" + table.getName());
+                // Update the stored surrogate value
+                String fieldName = softDeleteCol.getName();
+                dbObject.put(fieldName, Boolean.TRUE);
+
+                if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
+                {
+                    NucleusLogger.DATASTORE_NATIVE.debug("Updating object " + op + " using collection.save(" + dbObject + ") into table=" + table.getName());
+                }
+                collection.save(dbObject);
             }
-            collection.remove(dbObject);
+            else
+            {
+                if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
+                {
+                    NucleusLogger.DATASTORE_NATIVE.debug("Removing object " + op + " using collection.remove(" + dbObject + ") from table=" + table.getName());
+                }
+                collection.remove(dbObject);
+            }
+
             if (ec.getStatistics() != null)
             {
                 ec.getStatistics().incrementNumWrites();
