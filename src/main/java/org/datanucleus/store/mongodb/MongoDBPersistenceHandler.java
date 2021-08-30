@@ -49,6 +49,7 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.fieldmanager.DeleteFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.FetchFieldManager;
 import org.datanucleus.store.mongodb.fieldmanager.StoreFieldManager;
+import org.datanucleus.store.schema.table.Column;
 import org.datanucleus.store.schema.table.SurrogateColumnType;
 import org.datanucleus.store.schema.table.Table;
 import org.datanucleus.util.Localiser;
@@ -325,16 +326,22 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             dbObject.put(table.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), cmd.getDiscriminatorValue());
         }
 
-        if (ec.getNucleusContext().isClassMultiTenant(cmd))
+        Column multitenancyCol = table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY);
+        if (multitenancyCol != null)
         {
-            // Multi-tenancy discriminator
-            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), ec.getTenantId());
+            String tenantId = ec.getTenantId();
+            if (tenantId != null)
+            {
+                // Multi-tenancy discriminator
+                dbObject.put(multitenancyCol.getName(), ec.getTenantId());
+            }
         }
 
-        if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+        Column softDeleteCol = table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE);
+        if (softDeleteCol != null)
         {
             // Soft-delete flag
-            dbObject.put(table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
+            dbObject.put(softDeleteCol.getName(), Boolean.FALSE);
         }
 
         VersionMetaData vermd = cmd.getVersionMetaDataForClass();

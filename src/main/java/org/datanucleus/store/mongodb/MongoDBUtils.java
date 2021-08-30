@@ -513,16 +513,23 @@ public class MongoDBUtils
                 query.put(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName(), currentVersion);
             }
         }
-        if (ec.getNucleusContext().isClassMultiTenant(cmd))
+
+        Column multitenancyCol = table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY);
+        if (multitenancyCol != null)
         {
-            // Add tenancy restriction
             String tenantId = ec.getTenantId();
-            query.put(table.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName(), tenantId);
+            if (tenantId != null)
+            {
+                // Add tenancy restriction
+                query.put(multitenancyCol.getName(), tenantId);
+            }
         }
-        if (table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+
+        Column softDeleteCol = table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE);
+        if (softDeleteCol != null)
         {
             // Soft-delete flag restriction
-            query.put(table.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
+            query.put(softDeleteCol.getName(), Boolean.FALSE);
         }
 
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
@@ -676,18 +683,23 @@ public class MongoDBUtils
                 query.put(rootTable.getSurrogateColumn(SurrogateColumnType.DISCRIMINATOR).getName(), rootCmd.getDiscriminatorValue());
             }
 
-            if (ec.getNucleusContext().isClassMultiTenant(rootCmd))
+            Column multitenancyCol = rootTable.getSurrogateColumn(SurrogateColumnType.MULTITENANCY);
+            if (multitenancyCol != null)
             {
-                // Multitenancy discriminator present : Add restriction for this tenant
-                String fieldName = rootTable.getSurrogateColumn(SurrogateColumnType.MULTITENANCY).getName();
                 String value = ec.getTenantId();
-                query.put(fieldName, value);
+                if (value != null)
+                {
+                    // Multitenancy discriminator present : Add restriction for this tenant
+                    String fieldName = multitenancyCol.getName();
+                    query.put(fieldName, value);
+                }
             }
 
-            if (rootTable.getSurrogateColumn(SurrogateColumnType.SOFTDELETE) != null)
+            Column softDeleteCol = rootTable.getSurrogateColumn(SurrogateColumnType.SOFTDELETE);
+            if (softDeleteCol != null)
             {
                 // Soft-delete flag
-                query.put(rootTable.getSurrogateColumn(SurrogateColumnType.SOFTDELETE).getName(), Boolean.FALSE);
+                query.put(softDeleteCol.getName(), Boolean.FALSE);
             }
 
             DBCollection dbColl = db.getCollection(collectionName);
