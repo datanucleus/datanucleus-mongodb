@@ -540,6 +540,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             op.provideFields(cmd.getAllMemberPositions(), new DeleteFieldManager(op, true));
 
             // Delete this object
+            // TODO Support SOFT_DELETE
             op.removeAssociatedValue(OP_DB_OBJECT);
             if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled())
             {
