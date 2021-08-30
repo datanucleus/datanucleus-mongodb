@@ -189,6 +189,7 @@ public class QueryToMongoDBMapper extends AbstractExpressionEvaluator
      */
     protected void compileFilter()
     {
+        // TODO Check for multitenancy tenant, and for softdelete flag as FALSE.
         if (compilation.getExprFilter() != null)
         {
             compileComponent = CompilationComponent.FILTER;
