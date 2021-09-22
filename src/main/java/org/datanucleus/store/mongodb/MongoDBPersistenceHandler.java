@@ -302,7 +302,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
 
     /**
      * Convenience method to populate the DBObject for the object managed by the ObjectProvider.
-     * @param op ObjectProvider
+     * @param op StateManager
      * @return The DBObject to persist
      */
     private DBObject getDBObjectForObjectProviderToInsert(ObjectProvider op, boolean includeRelationFields)
