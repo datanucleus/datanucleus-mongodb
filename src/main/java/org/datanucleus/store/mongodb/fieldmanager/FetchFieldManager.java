@@ -71,9 +71,9 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     /** Metadata for the owner field if this is embedded. TODO Is this needed now that we have "mmds" in EmbeddedFetchFieldManager? */
     protected AbstractMemberMetaData ownerMmd = null;
 
-    public FetchFieldManager(ObjectProvider op, DBObject dbObject, Table table)
+    public FetchFieldManager(ObjectProvider sm, DBObject dbObject, Table table)
     {
-        super(op);
+        super(sm);
         this.table = table;
         this.dbObject = dbObject;
     }
@@ -309,8 +309,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
                             {
                                 // Other side of owner bidirectional, so return the owner
-                                ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
-                                return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
+                                ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(op);
+                                return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                             }
                         }
                         else
@@ -323,8 +323,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                         ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                                 {
                                     // This is the owner-field linking back to the owning object so return the owner
-                                    ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
-                                    return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
+                                    ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(op);
+                                    return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                                 }
                             }
                             else if (ownerMmd.getEmbeddedMetaData() != null &&
@@ -332,8 +332,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                             {
                                 // This is the owner-field linking back to the owning object so return the owner
-                                ObjectProvider[] ownerOps = ec.getOwnersForEmbeddedObjectProvider(op);
-                                return (ownerOps != null && ownerOps.length > 0 ? ownerOps[0].getObject() : null);
+                                ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(op);
+                                return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                             }
                         }
                     }
@@ -369,10 +369,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                     embMmds.add(mmd);
 
-                    ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
-                    FetchFieldManager ffm = new FetchEmbeddedFieldManager(embOP, embeddedValue, embMmds, table);
-                    embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
-                    return embOP.getObject();
+                    ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
+                    FetchFieldManager ffm = new FetchEmbeddedFieldManager(embSM, embeddedValue, embMmds, table);
+                    embSM.replaceFields(embcmd.getAllMemberPositions(), ffm);
+                    return embSM.getObject();
                 }
 
                 // Flat embedding as fields of the owning document
@@ -416,10 +416,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
                 List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                 embMmds.add(mmd);
-                ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
-                FieldManager ffm = new FetchEmbeddedFieldManager(embOP, dbObject, embMmds, table);
-                embOP.replaceFields(embcmd.getAllMemberPositions(), ffm);
-                return embOP.getObject();
+                ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, op, fieldNumber);
+                FieldManager ffm = new FetchEmbeddedFieldManager(embSM, dbObject, embMmds, table);
+                embSM.replaceFields(embcmd.getAllMemberPositions(), ffm);
+                return embSM.getObject();
             }
             else if (RelationType.isRelationMultiValued(relationType))
             {
@@ -471,10 +471,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
-                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
+                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
 
-                        String embClassName = embOP.getClassMetaData().getFullClassName();
+                        String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
                         {
@@ -483,10 +483,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                         Table elemTable = sd.getTable();
                         // TODO Use FetchEmbeddedFieldManager
-                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
+                        FetchFieldManager ffm = new FetchFieldManager(embSM, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
-                        embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
-                        coll.add(embOP.getObject());
+                        embSM.replaceFields(elementCmd.getAllMemberPositions(), ffm);
+                        coll.add(embSM.getObject());
                     }
 
                     if (op != null)
@@ -532,10 +532,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
-                        embOP.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, op, fieldNumber);
+                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
 
-                        String embClassName = embOP.getClassMetaData().getFullClassName();
+                        String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
                         {
@@ -544,10 +544,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                         }
                         Table elemTable = sd.getTable();
                         // TODO Use FetchEmbeddedFieldManager
-                        FetchFieldManager ffm = new FetchFieldManager(embOP, elementObj, elemTable);
+                        FetchFieldManager ffm = new FetchFieldManager(embSM, elementObj, elemTable);
                         ffm.ownerMmd = mmd;
-                        embOP.replaceFields(elementCmd.getAllMemberPositions(), ffm);
-                        array[i] = embOP.getObject();
+                        embSM.replaceFields(elementCmd.getAllMemberPositions(), ffm);
+                        array[i] = embSM.getObject();
                     }
 
                     return array;
@@ -609,10 +609,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theKeyCmd, op, fieldNumber);
-                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
+                            ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theKeyCmd, op, fieldNumber);
+                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
 
-                            String embClassName = embOP.getClassMetaData().getFullClassName();
+                            String embClassName = embSM.getClassMetaData().getFullClassName();
                             StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                             if (sd == null)
                             {
@@ -621,10 +621,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                             Table keyTable = sd.getTable();
                             // TODO Use FetchEmbeddedFieldManager
-                            FetchFieldManager ffm = new FetchFieldManager(embOP, keyDbObj, keyTable);
+                            FetchFieldManager ffm = new FetchFieldManager(embSM, keyDbObj, keyTable);
                             ffm.ownerMmd = mmd;
-                            embOP.replaceFields(theKeyCmd.getAllMemberPositions(), ffm);
-                            mapKey = embOP.getObject();
+                            embSM.replaceFields(theKeyCmd.getAllMemberPositions(), ffm);
+                            mapKey = embSM.getObject();
                         }
                         else
                         {
@@ -658,10 +658,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            ObjectProvider embOP = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theValCmd, op, fieldNumber);
-                            embOP.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
+                            ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theValCmd, op, fieldNumber);
+                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
 
-                            String embClassName = embOP.getClassMetaData().getFullClassName();
+                            String embClassName = embSM.getClassMetaData().getFullClassName();
                             StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                             if (sd == null)
                             {
@@ -670,10 +670,10 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                             Table valTable = sd.getTable();
                             // TODO Use FetchEmbeddedFieldManager
-                            FetchFieldManager ffm = new FetchFieldManager(embOP, valDbObj, valTable);
+                            FetchFieldManager ffm = new FetchFieldManager(embSM, valDbObj, valTable);
                             ffm.ownerMmd = mmd;
-                            embOP.replaceFields(theValCmd.getAllMemberPositions(), ffm);
-                            mapVal = embOP.getObject();
+                            embSM.replaceFields(theValCmd.getAllMemberPositions(), ffm);
+                            mapVal = embSM.getObject();
                         }
                         else
                         {

@@ -336,18 +336,18 @@ public class MongoDBUtils
     /**
      * Method to return the DBObject that equates to the provided object.
      * @param dbCollection The collection in which it is stored
-     * @param op The ObjectProvider
+     * @param sm The ObjectProvider
      * @param checkVersion Whether to also check for a particular version
      * @param originalValue Whether to use the original value of fields (when using nondurable id and doing update).
      * @return The object (or null if not found)
      */
-    public static DBObject getObjectForObjectProvider(DBCollection dbCollection, ObjectProvider op, boolean checkVersion, boolean originalValue)
+    public static DBObject getObjectForObjectProvider(DBCollection dbCollection, ObjectProvider sm, boolean checkVersion, boolean originalValue)
     {
         // Build query object to use as template for the find
         BasicDBObject query = new BasicDBObject();
-        AbstractClassMetaData cmd = op.getClassMetaData();
-        Table table = op.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
-        ExecutionContext ec = op.getExecutionContext();
+        AbstractClassMetaData cmd = sm.getClassMetaData();
+        Table table = sm.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
+        ExecutionContext ec = sm.getExecutionContext();
         StoreManager storeMgr = ec.getStoreManager();
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
 
@@ -359,15 +359,15 @@ public class MongoDBUtils
             {
                 AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPositions[i]);
                 RelationType relType = pkMmd.getRelationType(clr);
-                Object fieldVal = op.provideField(pkPositions[i]);
-                if (relType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(op.getStoreManager().getMetaDataManager(), clr, pkMmd, relType, null))
+                Object fieldVal = sm.provideField(pkPositions[i]);
+                if (relType != RelationType.NONE && MetaDataUtils.getInstance().isMemberEmbedded(sm.getStoreManager().getMetaDataManager(), clr, pkMmd, relType, null))
                 {
                     // Embedded : allow 1 level of embedded field for PK
                     List<AbstractMemberMetaData> embMmds = new ArrayList();
                     embMmds.add(pkMmd);
 
-                    ObjectProvider embOP = ec.findObjectProvider(fieldVal);
-                    AbstractClassMetaData embCmd = embOP.getClassMetaData();
+                    ObjectProvider embSM = ec.findObjectProvider(fieldVal);
+                    AbstractClassMetaData embCmd = embSM.getClassMetaData();
                     int[] memberPositions = embCmd.getAllMemberPositions();
 
                     String embOwnerCol = null;
@@ -391,7 +391,7 @@ public class MongoDBUtils
                         embMmds.remove(embMmds.size()-1);
 
                         Column[] cols = mapping.getColumns();
-                        Object embFieldVal = embOP.provideField(memberPositions[j]);
+                        Object embFieldVal = embSM.provideField(memberPositions[j]);
                         if (embOwnerCol != null)
                         {
                             query.put(embOwnerCol + "." + cols[0].getName(), embFieldVal); // TODO Support field mapped to multiple cols
@@ -441,7 +441,7 @@ public class MongoDBUtils
         else if (cmd.getIdentityType() == IdentityType.DATASTORE)
         {
             // Datastore id - Add "id" field to the query object
-            Object id = op.getInternalObjectId();
+            Object id = sm.getInternalObjectId();
             if (id == null && storeMgr.isValueGenerationStrategyDatastoreAttributed(cmd, -1))
             {
                 // Not yet set, so return null (needs to be attributed in the datastore)
@@ -470,19 +470,19 @@ public class MongoDBUtils
                     Object fieldValue = null;
                     if (originalValue)
                     {
-                        Object oldValue = op.getAssociatedValue(ObjectProvider.ORIGINAL_FIELD_VALUE_KEY_PREFIX + fieldNumbers[i]);
+                        Object oldValue = sm.getAssociatedValue(ObjectProvider.ORIGINAL_FIELD_VALUE_KEY_PREFIX + fieldNumbers[i]);
                         if (oldValue != null)
                         {
                             fieldValue = oldValue;
                         }
                         else
                         {
-                            fieldValue = op.provideField(fieldNumbers[i]);
+                            fieldValue = sm.provideField(fieldNumbers[i]);
                         }
                     }
                     else
                     {
-                        fieldValue = op.provideField(fieldNumbers[i]);
+                        fieldValue = sm.provideField(fieldNumbers[i]);
                     }
 
                     MemberColumnMapping mapping = table.getMemberColumnMappingForMember(mmd);
@@ -500,7 +500,7 @@ public class MongoDBUtils
         if (checkVersion && cmd.isVersioned())
         {
             // Add version to the query object
-            Object currentVersion = op.getTransactionalVersion();
+            Object currentVersion = sm.getTransactionalVersion();
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
             if (vermd.getFieldName() != null)
             {
@@ -820,20 +820,20 @@ public class MongoDBUtils
         Object pc = ec.findObject(id,
             new FieldValues()
             {
-                public void fetchFields(ObjectProvider op)
+                public void fetchFields(ObjectProvider sm)
                 {
-                    op.replaceFields(fpMembers, fm);
+                    sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider op)
+                public void fetchNonLoadedFields(ObjectProvider sm)
                 {
-                    op.replaceNonLoadedFields(fpMembers, fm);
+                    sm.replaceNonLoadedFields(fpMembers, fm);
                 }
                 public FetchPlan getFetchPlanForLoading()
                 {
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider op = ec.findObjectProvider(pc);
+        ObjectProvider sm = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
@@ -843,18 +843,18 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
                 version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
-            op.setVersion(version);
+            sm.setVersion(version);
         }
 
         // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
-        op.replaceAllLoadedSCOFieldsWithWrappers();
+        sm.replaceAllLoadedSCOFieldsWithWrappers();
 
         return pc;
     }
@@ -884,20 +884,20 @@ public class MongoDBUtils
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
-                public void fetchFields(ObjectProvider op)
+                public void fetchFields(ObjectProvider sm)
                 {
-                    op.replaceFields(fpMembers, fm);
+                    sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider op)
+                public void fetchNonLoadedFields(ObjectProvider sm)
                 {
-                    op.replaceNonLoadedFields(fpMembers, fm);
+                    sm.replaceNonLoadedFields(fpMembers, fm);
                 }
                 public FetchPlan getFetchPlanForLoading()
                 {
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider op = ec.findObjectProvider(pc);
+        ObjectProvider sm = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
@@ -907,18 +907,18 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
                 version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
-            op.setVersion(version);
+            sm.setVersion(version);
         }
 
         // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
-        op.replaceAllLoadedSCOFieldsWithWrappers();
+        sm.replaceAllLoadedSCOFieldsWithWrappers();
 
         return pc;
     }
@@ -933,20 +933,20 @@ public class MongoDBUtils
             new FieldValues()
             {
                 // ObjectProvider calls the fetchFields method
-                public void fetchFields(ObjectProvider op)
+                public void fetchFields(ObjectProvider sm)
                 {
-                    op.replaceFields(fpMembers, fm);
+                    sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider op)
+                public void fetchNonLoadedFields(ObjectProvider sm)
                 {
-                    op.replaceNonLoadedFields(fpMembers, fm);
+                    sm.replaceNonLoadedFields(fpMembers, fm);
                 }
                 public FetchPlan getFetchPlanForLoading()
                 {
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider op = ec.findObjectProvider(pc);
+        ObjectProvider sm = ec.findObjectProvider(pc);
 
         if (cmd.isVersioned())
         {
@@ -956,18 +956,18 @@ public class MongoDBUtils
             if (vermd.getFieldName() != null)
             {
                 // Get the version from the field value
-                version = op.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
             }
             else
             {
                 // Get the surrogate version from the datastore
                 version = dbObject.get(table.getSurrogateColumn(SurrogateColumnType.VERSION).getName());
             }
-            op.setVersion(version);
+            sm.setVersion(version);
         }
 
         // Any fields loaded above will not be wrapped since we did not have the ObjectProvider at the point of creating the FetchFieldManager, so wrap them now
-        op.replaceAllLoadedSCOFieldsWithWrappers();
+        sm.replaceAllLoadedSCOFieldsWithWrappers();
 
         return pc;
     }
