@@ -72,16 +72,16 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this member being a link back to the owner. TODO Repeat this for nested and their owners
-            ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(op);
+            ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
             if (ownerSMs != null && ownerSMs.length == 1 && value != ownerSMs[0].getObject())
             {
                 // Make sure the owner field is set
-                op.replaceField(fieldNumber, ownerSMs[0].getObject());
+                sm.replaceField(fieldNumber, ownerSMs[0].getObject());
             }
             return;
         }
 
-        ExecutionContext ec = op.getExecutionContext();
+        ExecutionContext ec = sm.getExecutionContext();
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
 
@@ -130,7 +130,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                     obj = dbObject;
                 }
 
-                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, op, mmd);
+                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, sm, mmd);
                 FieldManager ffm = new StoreEmbeddedFieldManager(embSM, obj, insert, embMmds, table);
                 embSM.provideFields(embCmd.getAllMemberPositions(), ffm);
 
@@ -173,7 +173,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                         BasicDBObject embeddedObject = new BasicDBObject();
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, op, mmd);
+                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
                         embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         StoreFieldManager sfm = new StoreEmbeddedFieldManager(embSM, embeddedObject, insert, embMmds, table);
@@ -187,12 +187,12 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                 if (mmd.hasArray())
                 {
-                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded array fields in this location (owner=" + op + ")");
+                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded array fields in this location (owner=" + sm + ")");
                 }
 
                 if (mmd.hasMap())
                 {
-                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded map fields in this location (owner=" + op + ")");
+                    throw new NucleusException("Member " + mmd.getFullFieldName() + " is embedded but we do not support embedded map fields in this location (owner=" + sm + ")");
                 }
             }
         }

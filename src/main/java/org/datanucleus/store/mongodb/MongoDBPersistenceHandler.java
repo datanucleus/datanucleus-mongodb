@@ -301,7 +301,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     }
 
     /**
-     * Convenience method to populate the DBObject for the object managed by the ObjectProvider.
+     * Convenience method to populate the DBObject for the object managed by StateManager.
      * @param sm StateManager
      * @return The DBObject to persist
      */

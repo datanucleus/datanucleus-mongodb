@@ -219,7 +219,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        ExecutionContext ec = op.getExecutionContext();
+        ExecutionContext ec = sm.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
@@ -303,7 +303,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
                 }
 
-                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, op, mmd);
+                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, sm, mmd);
                 DBObject embeddedObject = dbObject;
                 if (nested)
                 {
@@ -382,7 +382,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, op, mmd);
+                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
                         embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -429,7 +429,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, op, mmd);
+                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
                         embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -465,7 +465,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getKey(), op, mmd);
+                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getKey(), sm, mmd);
                             embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
 
@@ -504,7 +504,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getValue(), op, mmd);
+                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getValue(), sm, mmd);
                             embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
 
@@ -550,7 +550,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     protected void storeNonEmbeddedObjectField(AbstractMemberMetaData mmd, RelationType relationType, ClassLoaderResolver clr, Object value)
     {
         int fieldNumber = mmd.getAbsoluteFieldNumber();
-        ExecutionContext ec = op.getExecutionContext();
+        ExecutionContext ec = sm.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
         if (value instanceof Optional)
@@ -606,7 +606,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 ObjectProvider pcSM = ec.findObjectProvider(value);
                 if (pcSM == null || ec.getApiAdapter().getExecutionContext(value) == null)
                 {
-                    pcSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, value, false, op, fieldNumber);
+                    pcSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, value, false, sm, fieldNumber);
                 }
 
                 if (pcSM != null)
@@ -632,13 +632,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             {
                 byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
                 dbObject.put(mapping.getColumn(0).getName(), bytes);
-                SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+                SCOUtils.wrapSCOField(sm, fieldNumber, value, true);
                 return;
             }
 
             // Collection/Map/Array
             processContainerRelationField(mmd, mapping, value, ec, mapping.getColumn(0).getName());
-            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+            SCOUtils.wrapSCOField(sm, fieldNumber, value, true);
         }
         else
         {
@@ -646,7 +646,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             {
                 byte[] bytes = MongoDBUtils.getStoredValueForJavaSerialisedField(mmd, value);
                 dbObject.put(mapping.getColumn(0).getName(), bytes);
-                SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+                SCOUtils.wrapSCOField(sm, fieldNumber, value, true);
                 return;
             }
 
@@ -670,13 +670,13 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             {
                 processContainerNonRelationField(mapping.getColumn(0).getName(), ec, value, dbObject, mmd, mapping, FieldRole.ROLE_FIELD);
             }
-            SCOUtils.wrapSCOField(op, fieldNumber, value, true);
+            SCOUtils.wrapSCOField(sm, fieldNumber, value, true);
         }
     }
 
     protected void processSingleRelationField(Object value, ExecutionContext ec, String fieldName)
     {
-        Object valuePC = op.getExecutionContext().persistObjectInternal(value, null, -1, -1);
+        Object valuePC = sm.getExecutionContext().persistObjectInternal(value, null, -1, -1);
         Object valueId = ec.getApiAdapter().getIdForObject(valuePC);
         // TODO Add option to store DBRef here instead of just the id string
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
