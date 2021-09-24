@@ -336,7 +336,7 @@ public class MongoDBUtils
     /**
      * Method to return the DBObject that equates to the provided object.
      * @param dbCollection The collection in which it is stored
-     * @param sm The ObjectProvider
+     * @param sm StateManager
      * @param checkVersion Whether to also check for a particular version
      * @param originalValue Whether to use the original value of fields (when using nondurable id and doing update).
      * @return The object (or null if not found)
