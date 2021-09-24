@@ -29,7 +29,7 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
@@ -49,7 +49,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
     /** Metadata for the embedded member (maybe nested) that this FieldManager represents. */
     protected List<AbstractMemberMetaData> mmds;
 
-    public StoreEmbeddedFieldManager(ObjectProvider sm, DBObject dbObject, boolean insert, List<AbstractMemberMetaData> mmds, Table table)
+    public StoreEmbeddedFieldManager(DNStateManager sm, DBObject dbObject, boolean insert, List<AbstractMemberMetaData> mmds, Table table)
     {
         super(sm, dbObject, insert, table);
         this.mmds = mmds;
@@ -72,7 +72,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this member being a link back to the owner. TODO Repeat this for nested and their owners
-            ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
+            DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
             if (ownerSMs != null && ownerSMs.length == 1 && value != ownerSMs[0].getObject())
             {
                 // Make sure the owner field is set
@@ -130,7 +130,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                     obj = dbObject;
                 }
 
-                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, sm, mmd);
+                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd);
                 FieldManager ffm = new StoreEmbeddedFieldManager(embSM, obj, insert, embMmds, table);
                 embSM.provideFields(embCmd.getAllMemberPositions(), ffm);
 
@@ -173,8 +173,8 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                         BasicDBObject embeddedObject = new BasicDBObject();
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         StoreFieldManager sfm = new StoreEmbeddedFieldManager(embSM, embeddedObject, insert, embMmds, table);
                         sfm.ownerMmd = mmd;

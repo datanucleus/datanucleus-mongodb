@@ -43,7 +43,7 @@ import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.AbstractFetchFieldManager;
@@ -71,7 +71,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
     /** Metadata for the owner field if this is embedded. TODO Is this needed now that we have "mmds" in EmbeddedFetchFieldManager? */
     protected AbstractMemberMetaData ownerMmd = null;
 
-    public FetchFieldManager(ObjectProvider sm, DBObject dbObject, Table table)
+    public FetchFieldManager(DNStateManager sm, DBObject dbObject, Table table)
     {
         super(sm);
         this.table = table;
@@ -309,7 +309,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
                             {
                                 // Other side of owner bidirectional, so return the owner
-                                ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
+                                DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
                                 return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                             }
                         }
@@ -323,7 +323,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                         ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                                 {
                                     // This is the owner-field linking back to the owning object so return the owner
-                                    ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
+                                    DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
                                     return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                                 }
                             }
@@ -332,7 +332,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                             {
                                 // This is the owner-field linking back to the owning object so return the owner
-                                ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
+                                DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
                                 return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
                             }
                         }
@@ -369,7 +369,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                     List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                     embMmds.add(mmd);
 
-                    ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, sm, fieldNumber);
+                    DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, embcmd, sm, fieldNumber);
                     FetchFieldManager ffm = new FetchEmbeddedFieldManager(embSM, embeddedValue, embMmds, table);
                     embSM.replaceFields(embcmd.getAllMemberPositions(), ffm);
                     return embSM.getObject();
@@ -416,7 +416,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
                 List<AbstractMemberMetaData> embMmds = new ArrayList<>();
                 embMmds.add(mmd);
-                ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embcmd, sm, fieldNumber);
+                DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, embcmd, sm, fieldNumber);
                 FieldManager ffm = new FetchEmbeddedFieldManager(embSM, dbObject, embMmds, table);
                 embSM.replaceFields(embcmd.getAllMemberPositions(), ffm);
                 return embSM.getObject();
@@ -471,8 +471,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -532,8 +532,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -609,8 +609,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theKeyCmd, sm, fieldNumber);
-                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
+                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theKeyCmd, sm, fieldNumber);
+                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
 
                             String embClassName = embSM.getClassMetaData().getFullClassName();
                             StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -658,8 +658,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, theValCmd, sm, fieldNumber);
-                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
+                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theValCmd, sm, fieldNumber);
+                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
 
                             String embClassName = embSM.getClassMetaData().getFullClassName();
                             StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -727,11 +727,11 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
             if (RelationType.isRelationSingleValued(relationType))
             {
-                // Make sure this object is managed by an ObjectProvider
-                ObjectProvider embSM = ec.findObjectProvider(obj);
+                // Make sure this object is managed by an StateManager
+                DNStateManager embSM = ec.findStateManager(obj);
                 if (embSM == null || ec.getApiAdapter().getExecutionContext(obj) == null)
                 {
-                    ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, obj, false, sm, fieldNumber);
+                    ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, obj, false, sm, fieldNumber);
                 }
             }
             return obj;

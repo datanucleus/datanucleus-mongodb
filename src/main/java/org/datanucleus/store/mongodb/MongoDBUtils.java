@@ -45,7 +45,7 @@ import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.VersionMetaData;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
@@ -341,7 +341,7 @@ public class MongoDBUtils
      * @param originalValue Whether to use the original value of fields (when using nondurable id and doing update).
      * @return The object (or null if not found)
      */
-    public static DBObject getObjectForObjectProvider(DBCollection dbCollection, ObjectProvider sm, boolean checkVersion, boolean originalValue)
+    public static DBObject getObjectForStateManager(DBCollection dbCollection, DNStateManager sm, boolean checkVersion, boolean originalValue)
     {
         // Build query object to use as template for the find
         BasicDBObject query = new BasicDBObject();
@@ -366,7 +366,7 @@ public class MongoDBUtils
                     List<AbstractMemberMetaData> embMmds = new ArrayList();
                     embMmds.add(pkMmd);
 
-                    ObjectProvider embSM = ec.findObjectProvider(fieldVal);
+                    DNStateManager embSM = ec.findStateManager(fieldVal);
                     AbstractClassMetaData embCmd = embSM.getClassMetaData();
                     int[] memberPositions = embCmd.getAllMemberPositions();
 
@@ -470,7 +470,7 @@ public class MongoDBUtils
                     Object fieldValue = null;
                     if (originalValue)
                     {
-                        Object oldValue = sm.getAssociatedValue(ObjectProvider.ORIGINAL_FIELD_VALUE_KEY_PREFIX + fieldNumbers[i]);
+                        Object oldValue = sm.getAssociatedValue(DNStateManager.ORIGINAL_FIELD_VALUE_KEY_PREFIX + fieldNumbers[i]);
                         if (oldValue != null)
                         {
                             fieldValue = oldValue;
@@ -820,11 +820,11 @@ public class MongoDBUtils
         Object pc = ec.findObject(id,
             new FieldValues()
             {
-                public void fetchFields(ObjectProvider sm)
+                public void fetchFields(DNStateManager sm)
                 {
                     sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider sm)
+                public void fetchNonLoadedFields(DNStateManager sm)
                 {
                     sm.replaceNonLoadedFields(fpMembers, fm);
                 }
@@ -833,7 +833,7 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider sm = ec.findObjectProvider(pc);
+        DNStateManager sm = ec.findStateManager(pc);
 
         if (cmd.isVersioned())
         {
@@ -883,12 +883,12 @@ public class MongoDBUtils
         Object pc = ec.findObject(oid,
             new FieldValues()
             {
-                // ObjectProvider calls the fetchFields method
-                public void fetchFields(ObjectProvider sm)
+                // StateManager calls the fetchFields method
+                public void fetchFields(DNStateManager sm)
                 {
                     sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider sm)
+                public void fetchNonLoadedFields(DNStateManager sm)
                 {
                     sm.replaceNonLoadedFields(fpMembers, fm);
                 }
@@ -897,7 +897,7 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider sm = ec.findObjectProvider(pc);
+        DNStateManager sm = ec.findStateManager(pc);
 
         if (cmd.isVersioned())
         {
@@ -927,17 +927,17 @@ public class MongoDBUtils
     {
         Table table = ec.getStoreManager().getStoreDataForClass(cmd.getFullClassName()).getTable();
         SCOID oid = new SCOID(cmd.getFullClassName());
-        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // TODO Use the constructor with op so we always wrap SCOs
+        final FetchFieldManager fm = new FetchFieldManager(ec, dbObject, cmd, table); // StateManager
         Class type = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
         Object pc = ec.findObject(oid,
             new FieldValues()
             {
-                // ObjectProvider calls the fetchFields method
-                public void fetchFields(ObjectProvider sm)
+                // StateManager calls the fetchFields method
+                public void fetchFields(DNStateManager sm)
                 {
                     sm.replaceFields(fpMembers, fm);
                 }
-                public void fetchNonLoadedFields(ObjectProvider sm)
+                public void fetchNonLoadedFields(DNStateManager sm)
                 {
                     sm.replaceNonLoadedFields(fpMembers, fm);
                 }
@@ -946,7 +946,7 @@ public class MongoDBUtils
                     return null;
                 }
             }, type, ignoreCache, false);
-        ObjectProvider sm = ec.findObjectProvider(pc);
+        DNStateManager sm = ec.findStateManager(pc);
 
         if (cmd.isVersioned())
         {

@@ -41,7 +41,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.AbstractPersistenceHandler;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
@@ -70,10 +70,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     }
 
     /* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractPersistenceHandler#insertObjects(org.datanucleus.store.ObjectProvider[])
+     * @see org.datanucleus.store.AbstractPersistenceHandler#insertObjects(org.datanucleus.state.DNStateManager[])
      */
     @Override
-    public void insertObjects(ObjectProvider... sms)
+    public void insertObjects(DNStateManager... sms)
     {
         if (sms.length == 1)
         {
@@ -82,7 +82,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
 
         // Process "identity" cases first in case they are referenced
-        for (ObjectProvider sm : sms)
+        for (DNStateManager sm : sms)
         {
             AbstractClassMetaData cmd = sm.getClassMetaData();
             if (cmd.pkIsDatastoreAttributed(storeMgr))
@@ -98,8 +98,8 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DB db = (DB)mconn.getConnection();
 
             // Separate the objects to be persisted into groups, for the "table" in question
-            Map<String, Set<ObjectProvider>> opsByTable = new HashMap<>();
-            for (ObjectProvider sm : sms)
+            Map<String, Set<DNStateManager>> opsByTable = new HashMap<>();
+            for (DNStateManager sm : sms)
             {
                 AbstractClassMetaData cmd = sm.getClassMetaData();
                 if (!cmd.pkIsDatastoreAttributed(storeMgr))
@@ -113,7 +113,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     }
                     Table table = sd.getTable();
                     String tableName = table.getName();
-                    Set<ObjectProvider> smsForTable = opsByTable.get(tableName);
+                    Set<DNStateManager> smsForTable = opsByTable.get(tableName);
                     if (smsForTable == null)
                     {
                         smsForTable = new HashSet<>();
@@ -123,10 +123,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
             }
 
-            for (Map.Entry<String, Set<ObjectProvider>> smsEntry : opsByTable.entrySet())
+            for (Map.Entry<String, Set<DNStateManager>> smsEntry : opsByTable.entrySet())
             {
                 String tableName = smsEntry.getKey();
-                Set<ObjectProvider> smsForTable = smsEntry.getValue();
+                Set<DNStateManager> smsForTable = smsEntry.getValue();
                 try
                 {
                     long startTime = System.currentTimeMillis();
@@ -134,7 +134,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     DBCollection collection = db.getCollection(tableName);
                     DBObject[] dbObjects = new DBObject[smsForTable.size()];
                     int i=0;
-                    for (ObjectProvider sm : smsForTable)
+                    for (DNStateManager sm : smsForTable)
                     {
                         assertReadOnlyForUpdateOfObject(sm);
 
@@ -143,7 +143,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                             NucleusLogger.DATASTORE_PERSIST.debug(Localiser.msg("MongoDB.Insert.Start", sm.getObjectAsPrintable(), sm.getInternalObjectId()));
                         }
 
-                        dbObjects[i] = getDBObjectForObjectProviderToInsert(sm, true);
+                        dbObjects[i] = getDBObjectForStateManagerToInsert(sm, true);
 
                         if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled())
                         {
@@ -185,7 +185,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
     }
 
-    public void insertObject(ObjectProvider sm)
+    public void insertObject(DNStateManager sm)
     {
         assertReadOnlyForUpdateOfObject(sm);
 
@@ -212,7 +212,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
 
             DBCollection collection = db.getCollection(table.getName());
-            DBObject dbObject = getDBObjectForObjectProviderToInsert(sm, !cmd.pkIsDatastoreAttributed(storeMgr));
+            DBObject dbObject = getDBObjectForStateManagerToInsert(sm, !cmd.pkIsDatastoreAttributed(storeMgr));
 
             NucleusLogger.DATASTORE_NATIVE.debug("Persisting object " + sm + " using collection.insert(" + dbObject + ") into table=" + table.getName());
             collection.insert(dbObject, new WriteConcern(1));
@@ -305,7 +305,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
      * @param sm StateManager
      * @return The DBObject to persist
      */
-    private DBObject getDBObjectForObjectProviderToInsert(ObjectProvider sm, boolean includeRelationFields)
+    private DBObject getDBObjectForStateManagerToInsert(DNStateManager sm, boolean includeRelationFields)
     {
         DBObject dbObject = new BasicDBObject();
         AbstractClassMetaData cmd = sm.getClassMetaData();
@@ -378,7 +378,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         return dbObject;
     }
 
-    public void updateObject(ObjectProvider sm, int[] fieldNumbers)
+    public void updateObject(DNStateManager sm, int[] fieldNumbers)
     {
         assertReadOnlyForUpdateOfObject(sm);
 
@@ -414,7 +414,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
 
             DBCollection collection = db.getCollection(table.getName());
-            DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, sm, true, true);
+            DBObject dbObject = MongoDBUtils.getObjectForStateManager(collection, sm, true, true);
             if (dbObject == null)
             {
                 if (cmd.isVersioned())
@@ -493,16 +493,16 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     }
 
     /* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractPersistenceHandler#deleteObjects(org.datanucleus.store.ObjectProvider[])
+     * @see org.datanucleus.store.AbstractPersistenceHandler#deleteObjects(org.datanucleus.state.DNStateManager[])
      */
     @Override
-    public void deleteObjects(ObjectProvider... sms)
+    public void deleteObjects(DNStateManager... sms)
     {
         // TODO If MongoDB java driver ever provides bulk delete of multiple objects at once, support it
         super.deleteObjects(sms);
     }
 
-    public void deleteObject(ObjectProvider sm)
+    public void deleteObject(DNStateManager sm)
     {
         // Check if read-only so update not permitted
         assertReadOnlyForUpdateOfObject(sm);
@@ -521,7 +521,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             }
 
             DBCollection collection = db.getCollection(table.getName());
-            DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, sm, true, false);
+            DBObject dbObject = MongoDBUtils.getObjectForStateManager(collection, sm, true, false);
             if (dbObject == null)
             {
                 if (cmd.isVersioned())
@@ -585,7 +585,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         }
     }
 
-    public void fetchObject(ObjectProvider sm, int[] fieldNumbers)
+    public void fetchObject(DNStateManager sm, int[] fieldNumbers)
     {
         AbstractClassMetaData cmd = sm.getClassMetaData();
 
@@ -623,7 +623,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             if (dbObject == null)
             {
                 DBCollection collection = db.getCollection(table.getName());
-                dbObject = MongoDBUtils.getObjectForObjectProvider(collection, sm, false, false);
+                dbObject = MongoDBUtils.getObjectForStateManager(collection, sm, false, false);
                 if (dbObject == null)
                 {
                     throw new NucleusObjectNotFoundException("Could not find object with id " + IdentityUtils.getPersistableIdentityForId(sm.getInternalObjectId()));
@@ -712,16 +712,16 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
     }
 
     /* (non-Javadoc)
-     * @see org.datanucleus.store.AbstractPersistenceHandler#locateObjects(org.datanucleus.store.ObjectProvider[])
+     * @see org.datanucleus.store.AbstractPersistenceHandler#locateObjects(org.datanucleus.state.DNStateManager[])
      */
     @Override
-    public void locateObjects(ObjectProvider[] sms)
+    public void locateObjects(DNStateManager[] sms)
     {
         // TODO Implement bulk location of objects. Split into DBCollections, then do bulk get
         super.locateObjects(sms);
     }
 
-    public void locateObject(ObjectProvider sm)
+    public void locateObject(DNStateManager sm)
     {
         final AbstractClassMetaData cmd = sm.getClassMetaData();
         if (cmd.getIdentityType() == IdentityType.APPLICATION || cmd.getIdentityType() == IdentityType.DATASTORE)
@@ -741,7 +741,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 }
                 Table table = sd.getTable();
                 DBCollection collection = db.getCollection(table.getName());
-                DBObject dbObject = MongoDBUtils.getObjectForObjectProvider(collection, sm, false, false);
+                DBObject dbObject = MongoDBUtils.getObjectForStateManager(collection, sm, false, false);
                 if (dbObject == null)
                 {
                     throw new NucleusObjectNotFoundException();

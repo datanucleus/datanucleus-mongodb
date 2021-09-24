@@ -26,7 +26,7 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.schema.table.MemberColumnMapping;
@@ -46,7 +46,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
     /** Metadata for the embedded member (maybe nested) that this FieldManager represents. */
     protected List<AbstractMemberMetaData> mmds;
 
-    public FetchEmbeddedFieldManager(ObjectProvider sm, DBObject dbObject, List<AbstractMemberMetaData> mmds, Table table)
+    public FetchEmbeddedFieldManager(DNStateManager sm, DBObject dbObject, List<AbstractMemberMetaData> mmds, Table table)
     {
         super(sm, dbObject, table);
         this.ownerMmd = (mmds != null ? mmds.get(mmds.size()-1) : null);
@@ -69,7 +69,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this being a link back to the owner. TODO Repeat this for nested and their owners
-            ObjectProvider[] ownerSMs = ec.getOwnersForEmbeddedObjectProvider(sm);
+            DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
             return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
         }
 
@@ -89,10 +89,10 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                         (embMmd.getMappedBy() != null && ownerMmd.getName().equals(embMmd.getMappedBy())))
                     {
                         // Other side of owner bidirectional, so return the owner
-                        ObjectProvider[] ownerSms = op.getEmbeddedOwners();
+                        StateManager[] ownerSms = op.getEmbeddedOwners();
                         if (ownerSms == null)
                         {
-                            throw new NucleusException("Processing of " + embMmd.getFullFieldName() + " cannot set value to owner since owner ObjectProvider not set");
+                            throw new NucleusException("Processing of " + embMmd.getFullFieldName() + " cannot set value to owner since owner StateManager not set");
                         }
                         return ownerSms[0].getObject();
                     }
@@ -135,7 +135,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                 }
 
                 AbstractClassMetaData embCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
-                ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, embCmd, sm, fieldNumber);
+                DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, embCmd, sm, fieldNumber);
                 FieldManager fetchEmbFM = new FetchEmbeddedFieldManager(embSM, subObject, embMmds, table);
                 embSM.replaceFields(embCmd.getAllMemberPositions(), fetchEmbFM);
                 return embSM.getObject();
@@ -178,8 +178,8 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     {
                         DBObject elementObj = (DBObject) aCollValue;
 
-                        ObjectProvider embSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, elemCmd, sm, fieldNumber);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elemCmd, sm, fieldNumber);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         FetchFieldManager ffm = new FetchEmbeddedFieldManager(embSM, elementObj, embMmds, table);
                         ffm.ownerMmd = mmd;

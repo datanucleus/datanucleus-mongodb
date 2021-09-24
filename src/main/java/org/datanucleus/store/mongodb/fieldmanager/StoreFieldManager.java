@@ -40,7 +40,7 @@ import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
-import org.datanucleus.state.ObjectProvider;
+import org.datanucleus.state.DNStateManager;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.AbstractStoreFieldManager;
@@ -65,7 +65,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     /** Metadata of the owner field if this is for an embedded object. */
     protected AbstractMemberMetaData ownerMmd = null;
 
-    public StoreFieldManager(ObjectProvider sm, DBObject dbObject, boolean insert, Table table)
+    public StoreFieldManager(DNStateManager sm, DBObject dbObject, boolean insert, Table table)
     {
         super(sm, insert);
         this.table = table;
@@ -303,7 +303,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
                 }
 
-                ObjectProvider embSM = ec.findObjectProviderForEmbedded(value, sm, mmd);
+                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd);
                 DBObject embeddedObject = dbObject;
                 if (nested)
                 {
@@ -382,8 +382,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
@@ -429,8 +429,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        ObjectProvider embSM = ec.findObjectProviderForEmbedded(element, sm, mmd);
-                        embSM.setPcObjectType(ObjectProvider.EMBEDDED_COLLECTION_ELEMENT_PC);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
@@ -465,8 +465,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getKey(), sm, mmd);
-                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_KEY_PC);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd);
+                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
 
                             if (keyCmd.hasDiscriminatorStrategy())
@@ -504,8 +504,8 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            ObjectProvider embSM = ec.findObjectProviderForEmbedded(entry.getValue(), sm, mmd);
-                            embSM.setPcObjectType(ObjectProvider.EMBEDDED_MAP_VALUE_PC);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd);
+                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
 
                             if (valCmd.hasDiscriminatorStrategy())
@@ -602,11 +602,11 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
             if (mmd.isSerialized())
             {
-                // Assign an ObjectProvider to the serialised object if none present
-                ObjectProvider pcSM = ec.findObjectProvider(value);
+                // Assign a StateManage to the serialised object if none present
+                DNStateManager pcSM = ec.findStateManager(value);
                 if (pcSM == null || ec.getApiAdapter().getExecutionContext(value) == null)
                 {
-                    pcSM = ec.getNucleusContext().getObjectProviderFactory().newForEmbedded(ec, value, false, sm, fieldNumber);
+                    pcSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, value, false, sm, fieldNumber);
                 }
 
                 if (pcSM != null)
