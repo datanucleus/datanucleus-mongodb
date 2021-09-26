@@ -98,7 +98,7 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
             DB db = (DB)mconn.getConnection();
 
             // Separate the objects to be persisted into groups, for the "table" in question
-            Map<String, Set<DNStateManager>> opsByTable = new HashMap<>();
+            Map<String, Set<DNStateManager>> smsByTable = new HashMap<>();
             for (DNStateManager sm : sms)
             {
                 AbstractClassMetaData cmd = sm.getClassMetaData();
@@ -113,17 +113,17 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                     }
                     Table table = sd.getTable();
                     String tableName = table.getName();
-                    Set<DNStateManager> smsForTable = opsByTable.get(tableName);
+                    Set<DNStateManager> smsForTable = smsByTable.get(tableName);
                     if (smsForTable == null)
                     {
                         smsForTable = new HashSet<>();
-                        opsByTable.put(tableName, smsForTable);
+                        smsByTable.put(tableName, smsForTable);
                     }
                     smsForTable.add(sm);
                 }
             }
 
-            for (Map.Entry<String, Set<DNStateManager>> smsEntry : opsByTable.entrySet())
+            for (Map.Entry<String, Set<DNStateManager>> smsEntry : smsByTable.entrySet())
             {
                 String tableName = smsEntry.getKey();
                 Set<DNStateManager> smsForTable = smsEntry.getValue();
