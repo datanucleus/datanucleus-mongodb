@@ -20,7 +20,6 @@ package org.datanucleus.store.mongodb.fieldmanager;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -81,7 +80,6 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
             return;
         }
 
-        ExecutionContext ec = sm.getExecutionContext();
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
         RelationType relationType = mmd.getRelationType(clr);
 

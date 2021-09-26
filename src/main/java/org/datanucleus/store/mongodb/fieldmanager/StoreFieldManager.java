@@ -219,7 +219,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
             return;
         }
 
-        ExecutionContext ec = sm.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
         ClassLoaderResolver clr = ec.getClassLoaderResolver();
@@ -550,7 +549,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
     protected void storeNonEmbeddedObjectField(AbstractMemberMetaData mmd, RelationType relationType, ClassLoaderResolver clr, Object value)
     {
         int fieldNumber = mmd.getAbsoluteFieldNumber();
-        ExecutionContext ec = sm.getExecutionContext();
         MemberColumnMapping mapping = getColumnMapping(fieldNumber);
 
         if (value instanceof Optional)
@@ -624,7 +622,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 return;
             }
 
-            processSingleRelationField(value, ec, mapping.getColumn(0).getName());
+            processSingleRelationField(value, mapping.getColumn(0).getName());
         }
         else if (RelationType.isRelationMultiValued(relationType))
         {
@@ -674,9 +672,9 @@ public class StoreFieldManager extends AbstractStoreFieldManager
         }
     }
 
-    protected void processSingleRelationField(Object value, ExecutionContext ec, String fieldName)
+    protected void processSingleRelationField(Object value, String fieldName)
     {
-        Object valuePC = sm.getExecutionContext().persistObjectInternal(value, null, -1, -1);
+        Object valuePC = ec.persistObjectInternal(value, null, -1, -1);
         Object valueId = ec.getApiAdapter().getIdForObject(valuePC);
         // TODO Add option to store DBRef here instead of just the id string
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
