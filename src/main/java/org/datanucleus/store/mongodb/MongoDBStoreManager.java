@@ -198,6 +198,7 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
      * @param strategy The strategy
      * @return Whether it is supported.
      */
+    @Override
     public boolean supportsValueGenerationStrategy(String strategy)
     {
         if (super.supportsValueGenerationStrategy(strategy))
@@ -213,45 +214,9 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * @see org.datanucleus.store.AbstractStoreManager#getValueGenerationStrategyForNative(org.datanucleus.metadata.
-     * AbstractClassMetaData, int)
-     */
     @Override
-    public String getValueGenerationStrategyForNative(AbstractClassMetaData cmd, int absFieldNumber)
+    public String getValueGenerationStrategyForNative(AbstractClassMetaData cmd)
     {
-        if (absFieldNumber >= 0)
-        {
-            AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(absFieldNumber);
-            Class type = mmd.getType();
-            if (String.class.isAssignableFrom(type))
-            {
-                if (supportsValueGenerationStrategy(ValueGenerationStrategy.IDENTITY.toString()))
-                {
-                    return ValueGenerationStrategy.IDENTITY.toString();
-                }
-
-                return ValueGenerationStrategy.UUIDHEX.toString();
-            }
-            else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
-            {
-                if (supportsValueGenerationStrategy(ValueGenerationStrategy.SEQUENCE.toString()) && mmd.getSequence() != null)
-                {
-                    return ValueGenerationStrategy.SEQUENCE.toString();
-                }
-                else if (supportsValueGenerationStrategy(ValueGenerationStrategy.INCREMENT.toString()))
-                {
-                    return ValueGenerationStrategy.INCREMENT.toString();
-                }
-                throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for member " + mmd.getFullFieldName());
-            }
-            else
-            {
-                throw new NucleusUserException("This datastore provider doesn't support native strategy for field of type " + type.getName());
-            }
-        }
-
         DatastoreIdentityMetaData idmd = cmd.getBaseDatastoreIdentityMetaData();
         if (idmd != null && idmd.getColumnMetaData() != null && MetaDataUtils.isJdbcTypeString(idmd.getColumnMetaData().getJdbcType()))
         {
@@ -271,6 +236,35 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
             return ValueGenerationStrategy.INCREMENT.toString();
         }
         throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for class " + cmd.getFullClassName());
+    }
+
+    @Override
+    public String getValueGenerationStrategyForNative(AbstractMemberMetaData mmd)
+    {
+        Class type = mmd.getType();
+        if (String.class.isAssignableFrom(type))
+        {
+            if (supportsValueGenerationStrategy(ValueGenerationStrategy.IDENTITY.toString()))
+            {
+                return ValueGenerationStrategy.IDENTITY.toString();
+            }
+
+            return ValueGenerationStrategy.UUIDHEX.toString();
+        }
+        else if (type == Long.class || type == Integer.class || type == Short.class || type == long.class || type == int.class || type == short.class)
+        {
+            if (supportsValueGenerationStrategy(ValueGenerationStrategy.SEQUENCE.toString()) && mmd.getSequence() != null)
+            {
+                return ValueGenerationStrategy.SEQUENCE.toString();
+            }
+            else if (supportsValueGenerationStrategy(ValueGenerationStrategy.INCREMENT.toString()))
+            {
+                return ValueGenerationStrategy.INCREMENT.toString();
+            }
+            throw new NucleusUserException("This datastore provider doesn't support numeric native strategy for member " + mmd.getFullFieldName());
+        }
+
+        throw new NucleusUserException("This datastore provider doesn't support native strategy for field of type " + type.getName());
     }
 
     /*
