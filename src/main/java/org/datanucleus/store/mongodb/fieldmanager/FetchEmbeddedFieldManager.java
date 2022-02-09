@@ -36,6 +36,7 @@ import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -116,16 +117,21 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     // TODO Cater for null using embmd.getNullIndicatorColumn etc
                     if (embmd != null)
                     {
-                        AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
                         boolean isNull = true;
-                        for (int i=0;i<embmmds.length;i++)
+                        int i = 0;
+                        // TODO This is utterly wrong. We got the embmmds above but then ignore them in the loop. Use the embmmd
+                        List<AbstractMemberMetaData> embmmds = embmd.getMemberMetaData();
+                        Iterator<AbstractMemberMetaData> embMmdsIter = embmmds.iterator();
+                        while (embMmdsIter.hasNext())
                         {
+                            embMmdsIter.next(); // TODO Not using this!!
                             String embFieldName = MongoDBUtils.getFieldName(ownerMmd, i);
                             if (dbObject.containsField(embFieldName))
                             {
                                 isNull = false;
                                 break;
                             }
+                            i++;
                         }
                         if (isNull)
                         {

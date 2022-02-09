@@ -398,16 +398,21 @@ public class FetchFieldManager extends AbstractFetchFieldManager
 
                 // TODO Cater for null (use embmd.getNullIndicatorColumn/Value)
                 EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
-                AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
                 boolean isNull = true;
-                for (int i=0;i<embmmds.length;i++)
+                int i = 0;
+                // TODO This is utterly wrong. We got the embmmds above but then ignore them in the loop. Use the embmmd
+                List<AbstractMemberMetaData> embmmds = embmd.getMemberMetaData();
+                Iterator<AbstractMemberMetaData> embMmdsIter = embmmds.iterator();
+                while (embMmdsIter.hasNext())
                 {
+                    embMmdsIter.next(); // TODO Not using this!!
                     String embFieldName = MongoDBUtils.getFieldName(mmd, i);
                     if (dbObject.containsField(embFieldName))
                     {
                         isNull = false;
                         break;
                     }
+                    i++;
                 }
                 if (isNull)
                 {

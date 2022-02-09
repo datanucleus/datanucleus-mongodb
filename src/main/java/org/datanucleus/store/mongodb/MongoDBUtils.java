@@ -158,8 +158,7 @@ public class MongoDBUtils
         AbstractMemberMetaData embMmd = null;
         if (embmd != null)
         {
-            AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-            embMmd = embmmds[fieldNumber];
+            embMmd = embmd.getMemberMetaData().get(fieldNumber);
         }
 
         if (embMmd != null)
@@ -795,18 +794,20 @@ public class MongoDBUtils
     protected static void selectAllFieldsOfEmbeddedObject(AbstractMemberMetaData mmd, BasicDBObject fieldsSelection, ExecutionContext ec, ClassLoaderResolver clr)
     {
         EmbeddedMetaData embmd = mmd.getEmbeddedMetaData();
-        AbstractMemberMetaData[] embmmds = embmd.getMemberMetaData();
-        for (int i=0;i<embmmds.length;i++)
+        List<AbstractMemberMetaData> embmmds = embmd.getMemberMetaData();
+        int i = 0;
+        for (AbstractMemberMetaData embmmd : embmmds)
         {
-            RelationType relationType = embmmds[i].getRelationType(clr);
-            if (embmmds[i].isEmbedded() && RelationType.isRelationSingleValued(relationType))
+            RelationType relationType = embmmd.getRelationType(clr);
+            if (embmmd.isEmbedded() && RelationType.isRelationSingleValued(relationType))
             {
-                selectAllFieldsOfEmbeddedObject(embmmds[i], fieldsSelection, ec, clr);
+                selectAllFieldsOfEmbeddedObject(embmmd, fieldsSelection, ec, clr);
             }
             else
             {
                 fieldsSelection.append(MongoDBUtils.getFieldName(mmd, i), 1);
             }
+            i++;
         }
     }
 
