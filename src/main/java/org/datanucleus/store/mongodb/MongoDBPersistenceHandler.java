@@ -348,10 +348,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
         if (vermd != null)
         {
             Object versionValue = ec.getLockManager().getNextVersion(vermd, null);
-            if (vermd.getFieldName() != null)
+            if (vermd.getMemberName() != null)
             {
                 // Version is stored in a member, so update the member too
-                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
+                AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getMemberName());
                 Object verFieldValue = Long.valueOf((Long)versionValue);
                 if (verMmd.getType() == int.class || verMmd.getType() == Integer.class)
                 {
@@ -433,10 +433,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 Object nextVersion = ec.getLockManager().getNextVersion(vermd, currentVersion);
                 sm.setTransactionalVersion(nextVersion);
 
-                if (vermd.getFieldName() != null)
+                if (vermd.getMemberName() != null)
                 {
                     // Update the version field value
-                    AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getFieldName());
+                    AbstractMemberMetaData verMmd = cmd.getMetaDataForMember(vermd.getMemberName());
                     sm.replaceField(verMmd.getAbsoluteFieldNumber(), nextVersion);
 
                     boolean updatingVerField = false;
@@ -675,10 +675,10 @@ public class MongoDBPersistenceHandler extends AbstractPersistenceHandler
                 if (vermd != null && sm.getTransactionalVersion() == null)
                 {
                     // No version set, so retrieve it (note we do this after the retrieval of fields in case just got version)
-                    if (vermd.getFieldName() != null)
+                    if (vermd.getMemberName() != null)
                     {
                         // Version stored in a field
-                        Object datastoreVersion = sm.provideField(cmd.getAbsolutePositionOfMember(vermd.getFieldName()));
+                        Object datastoreVersion = sm.provideField(cmd.getAbsolutePositionOfMember(vermd.getMemberName()));
                         sm.setVersion(datastoreVersion);
                     }
                     else

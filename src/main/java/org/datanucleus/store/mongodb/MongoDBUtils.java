@@ -501,10 +501,10 @@ public class MongoDBUtils
             // Add version to the query object
             Object currentVersion = sm.getTransactionalVersion();
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd.getFieldName() != null)
+            if (vermd.getMemberName() != null)
             {
                 // Version field in class
-                query.put(table.getMemberColumnMappingForMember(cmd.getMetaDataForMember(vermd.getFieldName())).getColumn(0).getName(), currentVersion);
+                query.put(table.getMemberColumnMappingForMember(cmd.getMetaDataForMember(vermd.getMemberName())).getColumn(0).getName(), currentVersion);
             }
             else
             {
@@ -648,9 +648,9 @@ public class MongoDBUtils
             if (rootCmd.isVersioned())
             {
                 VersionMetaData vermd = rootCmd.getVersionMetaDataForClass();
-                if (vermd.getFieldName() != null)
+                if (vermd.getMemberName() != null)
                 {
-                    AbstractMemberMetaData verMmd = rootCmd.getMetaDataForMember(vermd.getFieldName());
+                    AbstractMemberMetaData verMmd = rootCmd.getMetaDataForMember(vermd.getMemberName());
                     String fieldName = rootTable.getMemberColumnMappingForMember(verMmd).getColumn(0).getName();
                     fieldsSelection.append(fieldName, 1);
                 }
@@ -841,10 +841,10 @@ public class MongoDBUtils
             // Set the version on the retrieved object
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd.getFieldName() != null)
+            if (vermd.getMemberName() != null)
             {
                 // Get the version from the field value
-                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getMemberName()).getAbsoluteFieldNumber());
             }
             else
             {
@@ -905,10 +905,10 @@ public class MongoDBUtils
             // Set the version on the retrieved object
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd.getFieldName() != null)
+            if (vermd.getMemberName() != null)
             {
                 // Get the version from the field value
-                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getMemberName()).getAbsoluteFieldNumber());
             }
             else
             {
@@ -954,10 +954,10 @@ public class MongoDBUtils
             // Set the version on the retrieved object
             Object version = null;
             VersionMetaData vermd = cmd.getVersionMetaDataForClass();
-            if (vermd.getFieldName() != null)
+            if (vermd.getMemberName() != null)
             {
                 // Get the version from the field value
-                version = sm.provideField(cmd.getMetaDataForMember(vermd.getFieldName()).getAbsoluteFieldNumber());
+                version = sm.provideField(cmd.getMetaDataForMember(vermd.getMemberName()).getAbsoluteFieldNumber());
             }
             else
             {
