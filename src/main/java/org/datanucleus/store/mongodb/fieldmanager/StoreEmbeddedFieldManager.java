@@ -26,6 +26,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.DNStateManager;
@@ -128,7 +129,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                     obj = dbObject;
                 }
 
-                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd);
+                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd, null);
                 FieldManager ffm = new StoreEmbeddedFieldManager(embSM, obj, insert, embMmds, table);
                 embSM.provideFields(embCmd.getAllMemberPositions(), ffm);
 
@@ -171,7 +172,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                         BasicDBObject embeddedObject = new BasicDBObject();
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.COLLECTION_ELEMENT);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         StoreFieldManager sfm = new StoreEmbeddedFieldManager(embSM, embeddedObject, insert, embMmds, table);

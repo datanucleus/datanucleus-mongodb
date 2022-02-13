@@ -37,6 +37,7 @@ import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.FieldRole;
+import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
@@ -302,7 +303,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         " specified as embedded but metadata not found for the class of type " + mmd.getTypeName());
                 }
 
-                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd);
+                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd, null);
                 DBObject embeddedObject = dbObject;
                 if (nested)
                 {
@@ -381,7 +382,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.COLLECTION_ELEMENT);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -428,7 +429,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.ARRAY_ELEMENT);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -464,7 +465,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd, MemberComponent.MAP_KEY);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
 
@@ -503,7 +504,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd, MemberComponent.MAP_VALUE);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
 
@@ -604,7 +605,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 DNStateManager pcSM = ec.findStateManager(value);
                 if (pcSM == null || ec.getApiAdapter().getExecutionContext(value) == null)
                 {
-                    pcSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, value, false, sm, fieldNumber);
+                    pcSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, value, false, sm, fieldNumber, null);
                 }
 
                 if (pcSM != null)
