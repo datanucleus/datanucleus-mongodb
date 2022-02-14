@@ -129,7 +129,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                     obj = dbObject;
                 }
 
-                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd, null);
+                DNStateManager embSM = ec.findStateManagerForEmbedded(value, sm, mmd, PersistableObjectType.EMBEDDED_PC);
                 FieldManager ffm = new StoreEmbeddedFieldManager(embSM, obj, insert, embMmds, table);
                 embSM.provideFields(embCmd.getAllMemberPositions(), ffm);
 
@@ -173,8 +173,6 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
                         BasicDBObject embeddedObject = new BasicDBObject();
 
                         DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
-
                         StoreFieldManager sfm = new StoreEmbeddedFieldManager(embSM, embeddedObject, insert, embMmds, table);
                         sfm.ownerMmd = mmd;
                         embSM.provideFields(embcmd.getAllMemberPositions(), sfm);

@@ -383,7 +383,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
 
                         DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_COLLECTION_ELEMENT_PC);
-                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
@@ -430,7 +429,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
 
                         DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_ARRAY_ELEMENT_PC);
-                        embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
                         if (sd == null)
@@ -466,7 +464,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         else
                         {
                             DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd, PersistableObjectType.EMBEDDED_MAP_KEY_PC);
-                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
 
                             if (keyCmd.hasDiscriminatorStrategy())
@@ -505,7 +502,6 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         else
                         {
                             DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd, PersistableObjectType.EMBEDDED_MAP_VALUE_PC);
-                            embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
 
                             if (valCmd.hasDiscriminatorStrategy())
@@ -605,7 +601,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 DNStateManager pcSM = ec.findStateManager(value);
                 if (pcSM == null || ec.getApiAdapter().getExecutionContext(value) == null)
                 {
-                    pcSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, value, false, sm, fieldNumber, null);
+                    pcSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, value, false, sm, fieldNumber, PersistableObjectType.EMBEDDED_PC);
                 }
 
                 if (pcSM != null)
