@@ -31,13 +31,13 @@ import com.mongodb.DBObject;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
+import org.datanucleus.PersistableObjectType;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.exceptions.ReachableObjectNotCascadedException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.FieldRole;
-import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
@@ -382,7 +382,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.COLLECTION_ELEMENT);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_COLLECTION_ELEMENT_PC);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -429,7 +429,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                             embeddedObject.put(discPropName, embcmd.getDiscriminatorValue());
                         }
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.ARRAY_ELEMENT);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_ARRAY_ELEMENT_PC);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
                         String embClassName = embSM.getClassMetaData().getFullClassName();
                         StoreData sd = storeMgr.getStoreDataForClass(embClassName);
@@ -465,7 +465,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd, MemberComponent.MAP_KEY);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getKey(), sm, mmd, PersistableObjectType.EMBEDDED_MAP_KEY_PC);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
                             BasicDBObject embeddedKey = new BasicDBObject();
 
@@ -504,7 +504,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                         }
                         else
                         {
-                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd, MemberComponent.MAP_VALUE);
+                            DNStateManager embSM = ec.findStateManagerForEmbedded(entry.getValue(), sm, mmd, PersistableObjectType.EMBEDDED_MAP_VALUE_PC);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
                             BasicDBObject embeddedVal = new BasicDBObject();
 
@@ -675,7 +675,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
     protected void processSingleRelationField(Object value, String fieldName)
     {
-        Object valuePC = ec.persistObjectInternal(value, null, -1, -1);
+        Object valuePC = ec.persistObjectInternal(value, null, -1, PersistableObjectType.PC);
         Object valueId = ec.getApiAdapter().getIdForObject(valuePC);
         // TODO Add option to store DBRef here instead of just the id string
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
@@ -719,7 +719,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 Object element = collIter.next();
                 if (element != null)
                 {
-                    Object elementPC = ec.persistObjectInternal(element, null, -1, -1);
+                    Object elementPC = ec.persistObjectInternal(element, null, -1, PersistableObjectType.PC);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
                     collIds.add(IdentityUtils.getPersistableIdentityForId(elementID));
@@ -751,7 +751,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 BasicDBObject entryObj = new BasicDBObject();
                 if (ec.getApiAdapter().isPersistable(mapKey))
                 {
-                    Object pc = ec.persistObjectInternal(mapKey, null, -1, -1);
+                    Object pc = ec.persistObjectInternal(mapKey, null, -1, PersistableObjectType.PC);
                     Object keyID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
                     entryObj.append("key", IdentityUtils.getPersistableIdentityForId(keyID));
@@ -763,7 +763,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                 if (ec.getApiAdapter().isPersistable(mapValue))
                 {
-                    Object pc = ec.persistObjectInternal(mapValue, null, -1, -1);
+                    Object pc = ec.persistObjectInternal(mapValue, null, -1, PersistableObjectType.PC);
                     Object valueID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
                     entryObj.append("value", IdentityUtils.getPersistableIdentityForId(valueID));
@@ -791,7 +791,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 Object element = Array.get(value, i);
                 if (element != null)
                 {
-                    Object elementPC = ec.persistObjectInternal(element, null, -1, -1);
+                    Object elementPC = ec.persistObjectInternal(element, null, -1, PersistableObjectType.PC);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
                     collIds.add(IdentityUtils.getPersistableIdentityForId(elementID));

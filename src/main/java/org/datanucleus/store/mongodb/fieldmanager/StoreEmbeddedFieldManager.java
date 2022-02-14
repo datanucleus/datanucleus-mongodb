@@ -20,13 +20,13 @@ package org.datanucleus.store.mongodb.fieldmanager;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.PersistableObjectType;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
-import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.DNStateManager;
@@ -172,7 +172,7 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
 
                         BasicDBObject embeddedObject = new BasicDBObject();
 
-                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, MemberComponent.COLLECTION_ELEMENT);
+                        DNStateManager embSM = ec.findStateManagerForEmbedded(element, sm, mmd, PersistableObjectType.EMBEDDED_COLLECTION_ELEMENT_PC);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         StoreFieldManager sfm = new StoreEmbeddedFieldManager(embSM, embeddedObject, insert, embMmds, table);

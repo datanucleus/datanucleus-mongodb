@@ -30,6 +30,7 @@ import com.mongodb.DBRef;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
+import org.datanucleus.PersistableObjectType;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
@@ -40,7 +41,6 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.FieldRole;
-import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
@@ -477,7 +477,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber, MemberComponent.COLLECTION_ELEMENT);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber, PersistableObjectType.EMBEDDED_COLLECTION_ELEMENT_PC);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embSM.getClassMetaData().getFullClassName();
@@ -538,7 +538,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                             }
                         }
 
-                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber, MemberComponent.ARRAY_ELEMENT);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elementCmd, sm, fieldNumber, PersistableObjectType.EMBEDDED_ARRAY_ELEMENT_PC);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         String embClassName = embSM.getClassMetaData().getFullClassName();
@@ -615,7 +615,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theKeyCmd, sm, fieldNumber, MemberComponent.MAP_KEY);
+                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theKeyCmd, sm, fieldNumber, PersistableObjectType.EMBEDDED_MAP_KEY_PC);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_KEY_PC);
 
                             String embClassName = embSM.getClassMetaData().getFullClassName();
@@ -664,7 +664,7 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                 }
                             }
 
-                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theValCmd, sm, fieldNumber, MemberComponent.MAP_VALUE);
+                            DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, theValCmd, sm, fieldNumber, PersistableObjectType.EMBEDDED_MAP_VALUE_PC);
                             embSM.setPcObjectType(DNStateManager.EMBEDDED_MAP_VALUE_PC);
 
                             String embClassName = embSM.getClassMetaData().getFullClassName();
