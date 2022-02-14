@@ -24,6 +24,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.MemberComponent;
 import org.datanucleus.metadata.MetaDataUtils;
 import org.datanucleus.metadata.RelationType;
 import org.datanucleus.state.DNStateManager;
@@ -184,7 +185,7 @@ public class FetchEmbeddedFieldManager extends FetchFieldManager
                     {
                         DBObject elementObj = (DBObject) aCollValue;
 
-                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elemCmd, sm, fieldNumber, null);
+                        DNStateManager embSM = ec.getNucleusContext().getStateManagerFactory().newForEmbedded(ec, elemCmd, sm, fieldNumber, MemberComponent.COLLECTION_ELEMENT);
                         embSM.setPcObjectType(DNStateManager.EMBEDDED_COLLECTION_ELEMENT_PC);
 
                         FetchFieldManager ffm = new FetchEmbeddedFieldManager(embSM, elementObj, embMmds, table);
