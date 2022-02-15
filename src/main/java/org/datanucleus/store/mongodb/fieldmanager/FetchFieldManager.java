@@ -310,8 +310,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     (mmd.getMappedBy() != null && ownerMmd.getName().equals(mmd.getMappedBy())))
                             {
                                 // Other side of owner bidirectional, so return the owner
-                                DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
-                                return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
+                                DNStateManager ownerSM = ec.getOwnerForEmbeddedStateManager(sm);
+                                return (ownerSM != null) ? ownerSM.getObject() : null;
                             }
                         }
                         else
@@ -324,8 +324,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                         ownerMmd.getElementMetaData().getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                                 {
                                     // This is the owner-field linking back to the owning object so return the owner
-                                    DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
-                                    return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
+                                    DNStateManager ownerSM = ec.getOwnerForEmbeddedStateManager(sm);
+                                    return (ownerSM != null) ? ownerSM.getObject() : null;
                                 }
                             }
                             else if (ownerMmd.getEmbeddedMetaData() != null &&
@@ -333,8 +333,8 @@ public class FetchFieldManager extends AbstractFetchFieldManager
                                     ownerMmd.getEmbeddedMetaData().getOwnerMember().equals(mmd.getName()))
                             {
                                 // This is the owner-field linking back to the owning object so return the owner
-                                DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
-                                return (ownerSMs != null && ownerSMs.length > 0 ? ownerSMs[0].getObject() : null);
+                                DNStateManager ownerSM = ec.getOwnerForEmbeddedStateManager(sm);
+                                return (ownerSM != null) ? ownerSM.getObject() : null;
                             }
                         }
                     }

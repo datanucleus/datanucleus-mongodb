@@ -72,11 +72,11 @@ public class StoreEmbeddedFieldManager extends StoreFieldManager
         if (mmds.size() == 1 && embmd != null && embmd.getOwnerMember() != null && embmd.getOwnerMember().equals(mmd.getName()))
         {
             // Special case of this member being a link back to the owner. TODO Repeat this for nested and their owners
-            DNStateManager[] ownerSMs = ec.getOwnersForEmbeddedStateManager(sm);
-            if (ownerSMs != null && ownerSMs.length == 1 && value != ownerSMs[0].getObject())
+            DNStateManager ownerSM = ec.getOwnerForEmbeddedStateManager(sm);
+            if (ownerSM != null && value != ownerSM.getObject())
             {
                 // Make sure the owner field is set
-                sm.replaceField(fieldNumber, ownerSMs[0].getObject());
+                sm.replaceField(fieldNumber, ownerSM.getObject());
             }
             return;
         }
