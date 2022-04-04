@@ -671,7 +671,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
     protected void processSingleRelationField(Object value, String fieldName)
     {
-        Object valuePC = ec.persistObjectInternal(value, null, -1, PersistableObjectType.PC);
+        Object valuePC = ec.persistObjectInternal(value, null, PersistableObjectType.PC, null, -1);
         Object valueId = ec.getApiAdapter().getIdForObject(valuePC);
         // TODO Add option to store DBRef here instead of just the id string
         dbObject.put(fieldName, IdentityUtils.getPersistableIdentityForId(valueId)); // Store the id String form
@@ -715,7 +715,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 Object element = collIter.next();
                 if (element != null)
                 {
-                    Object elementPC = ec.persistObjectInternal(element, null, -1, PersistableObjectType.PC);
+                    Object elementPC = ec.persistObjectInternal(element, null, PersistableObjectType.PC, null, -1);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
                     collIds.add(IdentityUtils.getPersistableIdentityForId(elementID));
@@ -747,7 +747,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 BasicDBObject entryObj = new BasicDBObject();
                 if (ec.getApiAdapter().isPersistable(mapKey))
                 {
-                    Object pc = ec.persistObjectInternal(mapKey, null, -1, PersistableObjectType.PC);
+                    Object pc = ec.persistObjectInternal(mapKey, null, PersistableObjectType.PC, null, -1);
                     Object keyID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
                     entryObj.append("key", IdentityUtils.getPersistableIdentityForId(keyID));
@@ -759,7 +759,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
 
                 if (ec.getApiAdapter().isPersistable(mapValue))
                 {
-                    Object pc = ec.persistObjectInternal(mapValue, null, -1, PersistableObjectType.PC);
+                    Object pc = ec.persistObjectInternal(mapValue, null, PersistableObjectType.PC, null, -1);
                     Object valueID = ec.getApiAdapter().getIdForObject(pc);
                     // TODO Add option to store DBRef here instead of just the id string
                     entryObj.append("value", IdentityUtils.getPersistableIdentityForId(valueID));
@@ -787,7 +787,7 @@ public class StoreFieldManager extends AbstractStoreFieldManager
                 Object element = Array.get(value, i);
                 if (element != null)
                 {
-                    Object elementPC = ec.persistObjectInternal(element, null, -1, PersistableObjectType.PC);
+                    Object elementPC = ec.persistObjectInternal(element, null, PersistableObjectType.PC, null, -1);
                     Object elementID = ec.getApiAdapter().getIdForObject(elementPC);
                     // TODO Add option to store DBRef here instead of just the id string
                     collIds.add(IdentityUtils.getPersistableIdentityForId(elementID));
