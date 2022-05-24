@@ -29,6 +29,7 @@ import java.util.Map;
 import org.datanucleus.ExecutionContext;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.QueryLanguage;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
@@ -37,7 +38,6 @@ import org.datanucleus.store.mongodb.MongoDBUtils;
 import org.datanucleus.store.mongodb.query.expression.MongoBooleanExpression;
 import org.datanucleus.store.query.AbstractJPQLQuery;
 import org.datanucleus.store.query.AbstractQueryResult;
-import org.datanucleus.store.query.Query;
 import org.datanucleus.store.query.QueryManager;
 import org.datanucleus.store.query.QueryResult;
 import org.datanucleus.store.query.inmemory.JPQLInMemoryEvaluator;
@@ -238,7 +238,7 @@ public class JPQLQuery extends AbstractJPQLQuery
             long startTime = System.currentTimeMillis();
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(Localiser.msg("021046", Query.LANGUAGE_JPQL, getSingleStringQuery(), null));
+                NucleusLogger.QUERY.debug(Localiser.msg("021046", QueryLanguage.JPQL.name(), getSingleStringQuery(), null));
             }
 
             boolean filterInMemory = (filter != null && !datastoreCompilation.isFilterComplete());
@@ -326,7 +326,7 @@ public class JPQLQuery extends AbstractJPQLQuery
 
             if (NucleusLogger.QUERY.isDebugEnabled())
             {
-                NucleusLogger.QUERY.debug(Localiser.msg("021074", Query.LANGUAGE_JPQL, "" + (System.currentTimeMillis() - startTime)));
+                NucleusLogger.QUERY.debug(Localiser.msg("021074", QueryLanguage.JPQL.name(), "" + (System.currentTimeMillis() - startTime)));
             }
 
             if (type == QueryType.BULK_DELETE)

@@ -37,6 +37,7 @@ import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ClassPersistenceModifier;
 import org.datanucleus.metadata.DatastoreIdentityMetaData;
 import org.datanucleus.metadata.MetaDataUtils;
+import org.datanucleus.metadata.QueryLanguage;
 import org.datanucleus.metadata.ValueGenerationStrategy;
 import org.datanucleus.store.AbstractStoreManager;
 import org.datanucleus.store.StoreData;
@@ -110,11 +111,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     @Override
     public Query newQuery(String language, ExecutionContext ec)
     {
-        if (language.equalsIgnoreCase(Query.LANGUAGE_JDOQL))
+        if (language.equals(QueryLanguage.JDOQL.name()))
         {
             return new JDOQLQuery(this, ec);
         }
-        else if (language.equalsIgnoreCase(Query.LANGUAGE_JPQL))
+        else if (language.equals(QueryLanguage.JPQL.name()))
         {
             return new JPQLQuery(this, ec);
         }
@@ -127,11 +128,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     @Override
     public Query newQuery(String language, ExecutionContext ec, String queryString)
     {
-        if (language.equalsIgnoreCase(Query.LANGUAGE_JDOQL))
+        if (language.equals(QueryLanguage.JDOQL.name()))
         {
             return new JDOQLQuery(this, ec, queryString);
         }
-        else if (language.equalsIgnoreCase(Query.LANGUAGE_JPQL))
+        else if (language.equals(QueryLanguage.JPQL.name()))
         {
             return new JPQLQuery(this, ec, queryString);
         }
@@ -144,11 +145,11 @@ public class MongoDBStoreManager extends AbstractStoreManager implements SchemaA
     @Override
     public Query newQuery(String language, ExecutionContext ec, Query q)
     {
-        if (language.equalsIgnoreCase(Query.LANGUAGE_JDOQL))
+        if (language.equals(QueryLanguage.JDOQL.name()))
         {
             return new JDOQLQuery(this, ec, (JDOQLQuery) q);
         }
-        else if (language.equalsIgnoreCase(Query.LANGUAGE_JPQL))
+        else if (language.equals(QueryLanguage.JPQL.name()))
         {
             return new JPQLQuery(this, ec, (JPQLQuery) q);
         }
